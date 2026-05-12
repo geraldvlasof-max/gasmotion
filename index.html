@@ -264,6 +264,7 @@ input,select,textarea{font-size:16px!important}
         <strong>iPhone:</strong> Toca ⬆️ y luego <strong>"Añadir a pantalla de inicio"</strong>
       </div>
       <div class="login-footer">Gasmotion Software Automotriz | En colaboracion con Carrigas Peru E.I.R.L.<br>Sistema Seguro SSL | Uso Interno Autorizado | &copy; 2025</div>
+      <div style="margin-top:16px;text-align:center"><button onclick="diagnosticarLogin()" style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:6px 14px;font-size:11px;color:#94a3b8;cursor:pointer">🔍 Diagnóstico</button></div><div id="diagBox" style="display:none;margin-top:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:11px;color:#374151;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -549,7 +550,10 @@ var GM_CONFIG={
   sheetsId:      '1rjDfZjdqWBbkclHPJJIY3v2Zg9wOE0iE8DPLzy34dYg',
   sheetsTab:     'Expedientes',
   usersTab:      'Usuarios',
-  appsScriptUrl: 'https://script.google.com/macros/s/AKfycbwNk-jPP7rxDTZiDdPRXqztj4RkoRpXst1SJcPqlq2aLlfimlWN_STA5TONCBMnR-U9Fw/exec'
+  appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxDbKb5mQL5FX_FEOiLRQL7PbF18cCRufxmOVfIkmbR8vEwGZ4TVvH6gtjIaLE6U75_eA/exec',
+  jsonBinId:     '6a02b8ab250b1311c339409d',
+  jsonBinKey:    '$2a$10$hbLrqCjJ1klG0QDhC2oBMOcQxICYhSXVzBKyWPiAQlzrZIyzyn/Jq',
+  jsonBinUrl:    'https://api.jsonbin.io/v3/b/6a02b8ab250b1311c339409d'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
@@ -557,15 +561,17 @@ var GM_CONFIG={
 var USERS_CACHE = null;
 
 function getUsers() {
-  if(USERS_CACHE && Object.keys(USERS_CACHE).length > 1) return USERS_CACHE;
+  // Siempre partir de DEFAULT_USERS como base
+  var base = JSON.parse(JSON.stringify(DEFAULT_USERS));
+  // Fusionar con localStorage (usuarios adicionales creados por admin)
   try {
     var saved = JSON.parse(localStorage.getItem('gm_users')||'null');
-    if(saved && Object.keys(saved).length > 0) {
-      USERS_CACHE = saved;
-      return USERS_CACHE;
+    if(saved && typeof saved === 'object') {
+      var keys = Object.keys(saved);
+      for(var i=0;i<keys.length;i++) base[keys[i]] = saved[keys[i]];
     }
   } catch(e){}
-  USERS_CACHE = JSON.parse(JSON.stringify(DEFAULT_USERS));
+  USERS_CACHE = base;
   return USERS_CACHE;
 }
 
@@ -576,36 +582,61 @@ function saveUsers(u) {
 }
 
 function loadUsersFromSheets(callback) {
-  var url = GM_CONFIG.appsScriptUrl + '?action=getUsers';
-  fetch(url, {redirect:'follow'})
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(data && data.users && Object.keys(data.users).length > 0) {
-      USERS_CACHE = data.users;
-      try{ localStorage.setItem('gm_users', JSON.stringify(data.users)); }catch(e){}
-    }
-    if(callback) callback(USERS_CACHE || getUsers());
-  })
-  .catch(function(err){
-    console.warn('loadUsers error:', err);
+  // Usar JSONBin — funciona en iOS, Android y desktop sin restricciones
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', GM_CONFIG.jsonBinUrl + '/latest', true);
+  xhr.setRequestHeader('X-Access-Key', GM_CONFIG.jsonBinKey);
+  xhr.setRequestHeader('X-Bin-Meta', 'false');
+  xhr.timeout = 10000;
+  xhr.onload = function() {
+    try {
+      var data = JSON.parse(xhr.responseText);
+      // JSONBin devuelve el JSON directo con X-Bin-Meta:false
+      if(data && typeof data === 'object' && !data.message) {
+        var users = data.record || data;
+        if(users && Object.keys(users).length > 0) {
+          USERS_CACHE = users;
+          try{ localStorage.setItem('gm_users', JSON.stringify(users)); }catch(e){}
+          if(callback) callback(users);
+          return;
+        }
+      }
+    } catch(e) { console.warn('JSONBin parse error:', e); }
     if(callback) callback(getUsers());
-  });
+  };
+  xhr.ontimeout = function() {
+    if(callback) callback(getUsers());
+  };
+  xhr.onerror = function() {
+    if(callback) callback(getUsers());
+  };
+  xhr.send();
+}
+
+function saveUsersToJsonBin(users, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('PUT', GM_CONFIG.jsonBinUrl, true);
+  xhr.setRequestHeader('Content-Type', 'application/json');
+  xhr.setRequestHeader('X-Access-Key', GM_CONFIG.jsonBinKey);
+  xhr.timeout = 10000;
+  xhr.onload = function() {
+    if(callback) callback(xhr.status === 200);
+  };
+  xhr.onerror = function() {
+    if(callback) callback(false);
+  };
+  xhr.send(JSON.stringify(users));
 }
 
 function syncUsersToSheets(users, callback) {
-  if(!GM_CONFIG.appsScriptUrl) { if(callback) callback(false); return; }
   var usersObj = users || getUsers();
-  var encoded = encodeURIComponent(JSON.stringify(usersObj));
-  var url = GM_CONFIG.appsScriptUrl + '?action=saveUsers&data=' + encoded;
-  fetch(url, {redirect:'follow'})
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    console.log('Users sync OK:', d.total||d);
-    if(callback) callback(true, d);
-  })
-  .catch(function(e){
-    console.warn('Users sync error:', e);
-    if(callback) callback(false, e);
+  // Guardar en JSONBin — funciona en todos los dispositivos
+  saveUsersToJsonBin(usersObj, function(ok) {
+    if(ok) {
+      USERS_CACHE = usersObj;
+      try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
+    }
+    if(callback) callback(ok);
   });
 }
 
@@ -738,7 +769,11 @@ function nowHora() { return new Date().toLocaleTimeString('es-PE',{hour:'2-digit
 // ==================
 // STORAGE
 // ==================
-var DEFAULT_USERS = { iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'carrigas2025' } };
+var DEFAULT_USERS = {
+  iki:        { nombre:'Iki',   role:'admin',   sede:'Todas', pass:'carrigas2025', especialidad:'' },
+  felix_5699: { nombre:'felix', role:'tecnico', sede:'Todas', pass:'123456',       especialidad:'Ambos' }
+};
+var SERVER_USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
 // USUARIOS EN SHEETS + localStorage (cache local)
 // ═══════════════════════════════════════════════════════════
@@ -955,22 +990,49 @@ function doLogin() {
   }
 
   // Paso 2: no está local — buscar en servidor
-  setLoginBtn('☁️ Buscando en servidor...', true);
-  loadUsersFromSheets(function(serverUsers) {
+  setLoginBtn('☁️ Verificando...', true);
+  
+  // Intentar cargar desde servidor
+  var scriptUrl = GM_CONFIG.jsonBinUrl + '/latest';
+  var img = new Image();
+  var xhr2 = new XMLHttpRequest();
+  xhr2.open('GET', scriptUrl, true);
+  xhr2.timeout = 8000;
+  xhr2.onreadystatechange = function() {
+    if(xhr2.readyState !== 4) return;
     setLoginBtn('Ingresar al sistema', false);
-    var foundServer = buscarUsuario(rawUid, serverUsers);
-    if(!foundServer) {
-      _loginAttempts++;
-      setLoginError('❌ Usuario "' + rawUid + '" no encontrado. Verifica el nombre exacto con el administrador.');
-      return;
-    }
-    if(foundServer.user.pass !== pass) {
-      _loginAttempts++;
-      setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
-      return;
-    }
-    completarLogin(foundServer.id, foundServer.user);
-  });
+    try {
+      var data = JSON.parse(xhr2.responseText);
+      if(data && data.users) {
+        // Guardar en localStorage para próximas veces
+        USERS_CACHE = data.users;
+        try{ localStorage.setItem('gm_users', JSON.stringify(data.users)); }catch(e){}
+        var foundServer = buscarUsuario(rawUid, data.users);
+        if(!foundServer) {
+          _loginAttempts++;
+          setLoginError('❌ Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
+          return;
+        }
+        if(foundServer.user.pass !== pass) {
+          _loginAttempts++;
+          setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+          return;
+        }
+        completarLogin(foundServer.id, foundServer.user);
+        return;
+      }
+    } catch(e) {}
+    // Si falló la conexión
+    _loginAttempts++;
+    setLoginError('❌ Usuario "' + rawUid + '" no encontrado. Sin conexión al servidor.');
+  };
+  xhr2.ontimeout = function() {
+    setLoginBtn('Ingresar al sistema', false);
+    setLoginError('⏳ Sin respuesta del servidor. Verifica tu conexión a internet.');
+  };
+  xhr2.setRequestHeader('X-Access-Key', GM_CONFIG.jsonBinKey);
+  xhr2.setRequestHeader('X-Bin-Meta', 'false');
+  xhr2.send();
 }
 
 function buscarUsuario(rawUid, users) {
@@ -3212,15 +3274,14 @@ window.onload=function(){
     }
   }catch(e){}
 
-  // Mostrar login con loading mientras carga usuarios
-  var loginScreen=document.getElementById('loginScreen');
-  var loginBtn=document.querySelector('.btn-login-main');
-  if(loginBtn){loginBtn.textContent='Cargando...';loginBtn.disabled=true;}
-
-  loadUsersFromSheets(function(){
-    if(loginBtn){loginBtn.textContent='Ingresar al sistema';loginBtn.disabled=false;}
-    loginScreen.style.display='flex';
-    document.getElementById('app').style.display='none';
+  // Mostrar login inmediatamente, cargar usuarios en background
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  
+  // Cargar usuarios del servidor en background
+  loadUsersFromSheets(function(users) {
+    // Usuarios cargados en cache — listos para login
+    console.log('Usuarios cargados:', Object.keys(users).length);
   });
 };
 
@@ -3229,6 +3290,76 @@ function togglePassVis(){
   var icon=document.getElementById('eyeIcon');
   if(inp.type==='password'){inp.type='text';icon.textContent='🙈';}
   else{inp.type='password';icon.textContent='👁';}
+}
+
+function diagnosticarLogin() {
+  var box = document.getElementById('diagBox');
+  if(!box) return;
+  box.style.display = 'block';
+  box.textContent = 'Iniciando diagnóstico...\n';
+  
+  var log = function(msg) {
+    box.textContent += msg + '\n';
+    box.scrollTop = box.scrollHeight;
+  };
+  
+  // 1. Info del dispositivo
+  log('--- DISPOSITIVO ---');
+  log('UA: ' + navigator.userAgent.substring(0,80));
+  log('Online: ' + navigator.onLine);
+  
+  // 2. Usuarios en cache
+  log('\n--- USUARIOS LOCAL ---');
+  try {
+    var saved = localStorage.getItem('gm_users');
+    if(saved) {
+      var users = JSON.parse(saved);
+      var keys = Object.keys(users);
+      log('Total: ' + keys.length);
+      keys.forEach(function(k){ log('  - ' + k + ' (' + users[k].nombre + ')'); });
+    } else {
+      log('Sin usuarios en localStorage');
+    }
+  } catch(e) { log('Error localStorage: ' + e); }
+  
+  // 3. USERS_CACHE
+  log('\n--- USERS_CACHE ---');
+  if(USERS_CACHE) {
+    var ckeys = Object.keys(USERS_CACHE);
+    log('Total: ' + ckeys.length);
+    ckeys.forEach(function(k){ log('  - ' + k + ' (' + USERS_CACHE[k].nombre + ')'); });
+  } else {
+    log('USERS_CACHE vacío');
+  }
+  
+  // 4. Test conexión al servidor
+  log('\n--- SERVIDOR ---');
+  log('URL JSONBin: ' + GM_CONFIG.jsonBinUrl);
+  log('Conectando...');
+  
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', GM_CONFIG.appsScriptUrl + '?action=getUsers', true);
+  xhr.timeout = 8000;
+  xhr.onload = function() {
+    log('Status: ' + xhr.status);
+    log('Respuesta: ' + xhr.responseText.substring(0,200));
+    try {
+      var data = JSON.parse(xhr.responseText);
+      if(data.users) {
+        var ukeys = Object.keys(data.users);
+        log('Usuarios en servidor: ' + ukeys.length);
+        ukeys.forEach(function(k){ log('  - ' + data.users[k].nombre); });
+        // Guardar en cache
+        USERS_CACHE = data.users;
+        localStorage.setItem('gm_users', JSON.stringify(data.users));
+        log('\n✅ Usuarios guardados en cache local');
+        log('Intenta ingresar ahora.');
+      }
+    } catch(e) { log('Error parse: ' + e); }
+  };
+  xhr.onerror = function() { log('❌ Error de red'); };
+  xhr.ontimeout = function() { log('❌ Timeout (8s)'); };
+  xhr.send();
 }
 </script>
 </body>
