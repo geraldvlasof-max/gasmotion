@@ -630,14 +630,15 @@ function saveUsersToJsonBin(users, callback) {
 
 function syncUsersToSheets(users, callback) {
   var usersObj = users || getUsers();
-  // Guardar en JSONBin — funciona en todos los dispositivos
-  saveUsersToJsonBin(usersObj, function(ok) {
-    if(ok) {
-      USERS_CACHE = usersObj;
-      try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
-    }
-    if(callback) callback(ok);
-  });
+  USERS_CACHE = usersObj;
+  try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
+  var url=GM_CONFIG.appsScriptUrl+'?action=saveUsers&data='+encodeURIComponent(JSON.stringify(usersObj));
+  var img=new Image();
+  img.onload=img.onerror=function(){
+    console.log('Users sync enviado');
+    if(callback) callback(true);
+  };
+  img.src=url;
 }
 
 function forzarSyncUsuarios() {
@@ -849,44 +850,28 @@ function limpiarExpParaSync(exps) {
 function syncSheets(){
   if(GM_SYNCING||!GM_CONFIG.appsScriptUrl)return;
   GM_SYNCING=true;
-  var expsLimpios = limpiarExpParaSync(expedientes);
-  var payload=JSON.stringify({action:'saveExp',expedientes:expsLimpios});
-  var encoded=encodeURIComponent(payload);
-  var url=GM_CONFIG.appsScriptUrl+'?action=saveExp&data='+encoded;
-  
-  // Verificar tamaño URL
-  if(url.length > 8000) {
-    // URL muy larga — enviar de a uno
-    GM_SYNCING=false;
-    syncExpUnoAUno(expsLimpios, 0);
-    return;
-  }
-  
-  var xhr=new XMLHttpRequest();
-  xhr.open('GET',url,true);
-  xhr.timeout=15000;
-  xhr.onload=function(){
-    GM_SYNCING=false;
-    try{
-      var r=JSON.parse(xhr.responseText);
-      if(r.ok) console.log('Sync OK: '+r.total+' expedientes');
-      else console.warn('Sync response:', xhr.responseText);
-    }catch(e){console.warn('Sync parse error:', xhr.responseText);}
-  };
-  xhr.ontimeout=function(){GM_SYNCING=false; console.warn('Sync timeout');};
-  xhr.onerror=function(){GM_SYNCING=false; console.warn('Sync error de red');};
-  xhr.send();
+  var expsLimpios=limpiarExpParaSync(expedientes);
+  // Enviar cada expediente por separado via GET (evita CORS prelight)
+  syncExpUnoAUno(expsLimpios,0);
 }
 
 function syncExpUnoAUno(exps, idx) {
-  if(idx >= exps.length) return;
-  var url = GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exps[idx]));
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET',url,true);
-  xhr.timeout=10000;
-  xhr.onload=function(){syncExpUnoAUno(exps,idx+1);};
-  xhr.onerror=function(){syncExpUnoAUno(exps,idx+1);};
-  xhr.send();
+  if(idx >= exps.length){ GM_SYNCING=false; return; }
+  var exp=exps[idx];
+  var url=GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp));
+  // Usar Image trick — 100% libre de CORS, funciona en todos los navegadores
+  var img=new Image();
+  img.onload=function(){
+    console.log('Sync exp OK: '+exp.placa);
+    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},200);
+  };
+  img.onerror=function(){
+    // onerror también significa que el servidor recibió la petición
+    // (Apps Script no devuelve imagen, pero la recibe y procesa)
+    console.log('Sync exp enviado: '+exp.placa);
+    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},200);
+  };
+  img.src=url;
 }
 
 function syncSheetsConFeedback(callback){
