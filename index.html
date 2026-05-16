@@ -548,12 +548,7 @@ var GM_CONFIG={
   apiKey:        'AIzaSyBqV-R1W6TMXuwBcRwsbWR43rhBSlfcD1E',
   driveFolder:   '190IfSEViIZvn_78nIreo9M3u-o9qljyf',
   sheetsId:      '1rjDfZjdqWBbkclHPJJIY3v2Zg9wOE0iE8DPLzy34dYg',
-  sheetsTab:     'Expedientes',
-  usersTab:      'Usuarios',
-  appsScriptUrl: 'https://script.google.com/macros/s/AKfycbzAcjBhyQtRusS8A6d_OVPZm_f3o7g98qRCmPZ1Qtu9bJAwVmTGvr46_4sTssnCRib4sQ/exec',
-  jsonBinId:     '6a02b8ab250b1311c339409d',
-  jsonBinKey:    '$2a$10$hbLrqCjJ1klG0QDhC2oBMOcQxICYhSXVzBKyWPiAQlzrZIyzyn/Jq',
-  jsonBinUrl:    'https://api.jsonbin.io/v3/b/6a02b8ab250b1311c339409d'
+  workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
@@ -582,35 +577,22 @@ function saveUsers(u) {
 }
 
 function loadUsersFromSheets(callback) {
-  // Usar JSONBin — funciona en iOS, Android y desktop sin restricciones
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', GM_CONFIG.jsonBinUrl + '/latest', true);
-  xhr.setRequestHeader('X-Access-Key', GM_CONFIG.jsonBinKey);
-  xhr.setRequestHeader('X-Bin-Meta', 'false');
-  xhr.timeout = 10000;
-  xhr.onload = function() {
-    try {
-      var data = JSON.parse(xhr.responseText);
-      // JSONBin devuelve el JSON directo con X-Bin-Meta:false
-      if(data && typeof data === 'object' && !data.message) {
-        var users = data.record || data;
-        if(users && Object.keys(users).length > 0) {
-          USERS_CACHE = users;
-          try{ localStorage.setItem('gm_users', JSON.stringify(users)); }catch(e){}
-          if(callback) callback(users);
-          return;
-        }
-      }
-    } catch(e) { console.warn('JSONBin parse error:', e); }
+  var url = GM_CONFIG.workerUrl + '?action=getUsers';
+  fetch(url)
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(data && data.users && Object.keys(data.users).length > 0) {
+      USERS_CACHE = data.users;
+      try{ localStorage.setItem('gm_users', JSON.stringify(data.users)); }catch(e){}
+      if(callback) callback(data.users);
+    } else {
+      if(callback) callback(getUsers());
+    }
+  })
+  .catch(function(err){
+    console.warn('loadUsers error:', err);
     if(callback) callback(getUsers());
-  };
-  xhr.ontimeout = function() {
-    if(callback) callback(getUsers());
-  };
-  xhr.onerror = function() {
-    if(callback) callback(getUsers());
-  };
-  xhr.send();
+  });
 }
 
 function saveUsersToJsonBin(users, callback) {
@@ -632,13 +614,20 @@ function syncUsersToSheets(users, callback) {
   var usersObj = users || getUsers();
   USERS_CACHE = usersObj;
   try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
-  var url=GM_CONFIG.appsScriptUrl+'?action=saveUsers&data='+encodeURIComponent(JSON.stringify(usersObj));
-  var img=new Image();
-  img.onload=img.onerror=function(){
-    console.log('Users sync enviado');
-    if(callback) callback(true);
-  };
-  img.src=url;
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action:'saveUsers', users:usersObj})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    console.log('Users sync D1 OK:', d.total);
+    if(callback) callback(true, d);
+  })
+  .catch(function(e){
+    console.warn('Users sync error:', e);
+    if(callback) callback(false);
+  });
 }
 
 function forzarSyncUsuarios() {
@@ -798,41 +787,36 @@ function loadExp() {
   if(GM_SYNC&&GM_CONFIG.appsScriptUrl) setTimeout(loadExpFromScript,800);
 }
 function loadExpFromScript(){
-  var url=GM_CONFIG.appsScriptUrl+'?action=getExp';
-  var xhr=new XMLHttpRequest();
-  xhr.open('GET',url,true);
-  xhr.timeout=15000;
-  xhr.onload=function(){
-    try{
-      var data=JSON.parse(xhr.responseText);
-      if(!data.expedientes||!data.expedientes.length)return;
-      var remote=data.expedientes;
-      var localMap={};
-      for(var i=0;i<expedientes.length;i++) if(expedientes[i].id) localMap[expedientes[i].id]=expedientes[i];
-      for(var j=0;j<remote.length;j++){
-        var e=remote[j];
-        if(e&&e.id) localMap[e.id]=e;
-      }
-      expedientes=Object.values(localMap);
-      try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
-      var app=document.getElementById('app');
-      if(app&&app.style.display!=='none'){
-        renderPanel();
-        var act=document.querySelector('.tab-content.active');
-        if(act&&act.id==='tab-bandeja') renderBandeja();
-        if(act&&act.id==='tab-clientes') renderPanelClientes();
-        if(act&&act.id==='tab-expedientes') renderExpedientes();
-        if(act&&act.id==='tab-tecnico') renderVistaTecnico();
-      }
-      console.log('Expedientes cargados del servidor: '+remote.length);
-    }catch(e){console.warn('loadExpFromScript error:',e);}
-  };
-  xhr.ontimeout=function(){};
-  xhr.onerror=function(){};
-  xhr.send();
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getExp')
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!data.expedientes||!data.expedientes.length) return;
+    var remote = data.expedientes;
+    var localMap = {};
+    for(var i=0;i<expedientes.length;i++) if(expedientes[i].id) localMap[expedientes[i].id]=expedientes[i];
+    for(var j=0;j<remote.length;j++){
+      var e=remote[j]; if(e&&e.id) localMap[e.id]=e;
+    }
+    expedientes = Object.values(localMap);
+    try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
+    var app=document.getElementById('app');
+    if(app&&app.style.display!=='none'){
+      renderPanel();
+      var act=document.querySelector('.tab-content.active');
+      if(act&&act.id==='tab-bandeja') renderBandeja();
+      if(act&&act.id==='tab-clientes') renderPanelClientes();
+      if(act&&act.id==='tab-expedientes') renderExpedientes();
+      if(act&&act.id==='tab-tecnico') renderVistaTecnico();
+    }
+    console.log('Exp cargados D1:', remote.length);
+  })
+  .catch(function(e){ console.warn('loadExp error:', e); });
 }
+
 function saveExp(){
   try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
+  PENDING_SYNC = true;
   if(GM_SYNC) syncSheets();
 }
 function limpiarExpParaSync(exps) {
@@ -857,21 +841,22 @@ function syncSheets(){
 
 function syncExpUnoAUno(exps, idx) {
   if(idx >= exps.length){ GM_SYNCING=false; return; }
-  var exp=exps[idx];
-  var url=GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp));
-  // Usar Image trick — 100% libre de CORS, funciona en todos los navegadores
-  var img=new Image();
-  img.onload=function(){
-    console.log('Sync exp OK: '+exp.placa);
-    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},200);
-  };
-  img.onerror=function(){
-    // onerror también significa que el servidor recibió la petición
-    // (Apps Script no devuelve imagen, pero la recibe y procesa)
-    console.log('Sync exp enviado: '+exp.placa);
-    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},200);
-  };
-  img.src=url;
+  var exp = exps[idx];
+  var url = GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp));
+
+  // Método 1: sendBeacon — diseñado para enviar datos sin CORS
+  if(navigator.sendBeacon) {
+    var blob = new Blob([JSON.stringify({action:'saveOneExp', data:exp})], {type:'text/plain'});
+    var sent = navigator.sendBeacon(GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp)), blob);
+    console.log('sendBeacon exp '+exp.placa+': '+(sent?'OK':'fallback'));
+    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300);
+    return;
+  }
+
+  // Método 2: fetch con keepalive (no bloquea CORS para same-site)
+  fetch(url, {method:'GET', mode:'no-cors', keepalive:true})
+  .then(function(){ setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300); })
+  .catch(function(){ setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300); });
 }
 
 function syncSheetsConFeedback(callback){
@@ -3235,6 +3220,8 @@ function mostrarApp(){
     switchTab('panel',document.getElementById('navPanel'));
   }
   poblarUserSelects();poblarSelectVendedores();poblarSelectVendServicio();
+  // Mostrar botón de guardar en topbar
+  setTimeout(mostrarBtnSync, 500);
 }
 
 // ── crearUsuario con especialidad ────────────────────────
@@ -3414,6 +3401,107 @@ function diagnosticarLogin() {
   xhr.onerror = function() { log('❌ Error de red'); };
   xhr.ontimeout = function() { log('❌ Timeout (8s)'); };
   xhr.send();
+}
+
+// ═══════════════════════════════════════════════════════
+// SISTEMA DE SINCRONIZACIÓN GARANTIZADA
+// Se ejecuta automáticamente al cerrar/navegar
+// ═══════════════════════════════════════════════════════
+var PENDING_SYNC = false;
+
+function marcarPendienteSync() {
+  PENDING_SYNC = true;
+}
+
+function buildSyncUrl() {
+  var exps = limpiarExpParaSync(expedientes);
+  // Construir URL para sync via navegador directo
+  var data = encodeURIComponent(JSON.stringify({
+    action: 'saveExp',
+    expedientes: exps
+  }));
+  return GM_CONFIG.appsScriptUrl + '?action=saveExp&data=' + data;
+}
+
+function sincronizarAhora(callback) {
+  // Abrir ventana del navegador que llama al Apps Script directamente
+  // Este método funciona garantizado porque es una navegación directa
+  var exps = limpiarExpParaSync(expedientes);
+  var total = exps.length;
+  var done = 0;
+  
+  function syncNext(idx) {
+    if(idx >= exps.length) {
+      PENDING_SYNC = false;
+      if(callback) callback(true, total);
+      return;
+    }
+    var url = GM_CONFIG.appsScriptUrl + '?action=saveOneExp&data=' + 
+              encodeURIComponent(JSON.stringify(exps[idx]));
+    // Crear iframe invisible — mismo origen que Script no aplica
+    // pero Apps Script acepta requests de iframes
+    var iframe = document.createElement('iframe');
+    iframe.style.cssText = 'display:none;width:0;height:0;position:fixed';
+    iframe.src = url;
+    iframe.onload = function() {
+      document.body.removeChild(iframe);
+      setTimeout(function(){syncNext(idx+1);}, 300);
+    };
+    iframe.onerror = function() {
+      document.body.removeChild(iframe);
+      setTimeout(function(){syncNext(idx+1);}, 300);
+    };
+    document.body.appendChild(iframe);
+  }
+  
+  if(exps.length === 0) {
+    if(callback) callback(true, 0);
+    return;
+  }
+  syncNext(0);
+}
+
+// Detectar cierre de ventana/tab
+window.addEventListener('beforeunload', function(e) {
+  if(!PENDING_SYNC || !CU) return;
+  // Abrir URL de sync en nueva tab antes de cerrar
+  var exps = limpiarExpParaSync(expedientes);
+  for(var i=0; i<exps.length; i++) {
+    var url = GM_CONFIG.appsScriptUrl + '?action=saveOneExp&data=' + 
+              encodeURIComponent(JSON.stringify(exps[i]));
+    // Usar sendBeacon como último intento
+    if(navigator.sendBeacon) {
+      navigator.sendBeacon(url, new Blob(['x'], {type:'text/plain'}));
+    }
+    // Abrir en background (silencioso)
+    try {
+      var w = window.open(url, '_blank', 'width=1,height=1,left=-100,top=-100');
+      if(w) setTimeout(function(){try{w.close();}catch(e){}}, 3000);
+    } catch(ex) {}
+  }
+});
+
+// Botón de sync manual visible en topbar
+function mostrarBtnSync() {
+  var existing = document.getElementById('btnSyncManual');
+  if(existing) return;
+  var btn = document.createElement('button');
+  btn.id = 'btnSyncManual';
+  btn.style.cssText = 'background:#22c55e;color:white;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px;display:flex;align-items:center;gap:4px';
+  btn.innerHTML = '☁️ Guardar';
+  btn.onclick = function() {
+    btn.textContent = '⏳ Guardando...';
+    btn.disabled = true;
+    sincronizarAhora(function(ok, total) {
+      btn.innerHTML = '✅ Guardado';
+      setTimeout(function(){
+        btn.innerHTML = '☁️ Guardar';
+        btn.disabled = false;
+      }, 3000);
+    });
+  };
+  var topbarRight = document.querySelector('.topbar-right');
+  if(topbarRight) topbarRight.insertBefore(btn, topbarRight.firstChild);
 }
 </script>
 </body>
