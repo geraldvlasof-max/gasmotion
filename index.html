@@ -828,7 +828,20 @@ function loadExpFromScript(){
 function saveExp(){
   try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
   PENDING_SYNC = true;
-  if(GM_SYNC) syncSheets();
+  if(GM_SYNC && GM_CONFIG.workerUrl) {
+    var exps = limpiarExpParaSync(expedientes);
+    fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'saveExp', expedientes:exps})
+    })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      PENDING_SYNC = false;
+      console.log('AutoSync OK:', d.total);
+    })
+    .catch(function(e){console.warn('AutoSync error:', e);});
+  }
 }
 function limpiarExpParaSync(exps) {
   // Quitar archivos base64 grandes — solo guardar metadata
