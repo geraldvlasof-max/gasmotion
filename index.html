@@ -784,7 +784,7 @@ function saveAsistenteFise(id) { localStorage.setItem('gm_asistente_fise',id); }
 var expedientes = [];
 function loadExp() {
   try{expedientes=JSON.parse(localStorage.getItem('gm_exp')||'[]');}catch(e){expedientes=[];}
-  if(GM_SYNC&&GM_CONFIG.appsScriptUrl) setTimeout(loadExpFromScript,800);
+  if(GM_SYNC&&GM_CONFIG.workerUrl) setTimeout(loadExpFromScript,800);
 }
 function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
@@ -832,7 +832,7 @@ function limpiarExpParaSync(exps) {
 }
 
 function syncSheets(){
-  if(GM_SYNCING||!GM_CONFIG.appsScriptUrl)return;
+  if(GM_SYNCING||!GM_CONFIG.workerUrl)return;
   GM_SYNCING=true;
   var expsLimpios=limpiarExpParaSync(expedientes);
   // Enviar cada expediente por separado via GET (evita CORS prelight)
@@ -842,27 +842,26 @@ function syncSheets(){
 function syncExpUnoAUno(exps, idx) {
   if(idx >= exps.length){ GM_SYNCING=false; return; }
   var exp = exps[idx];
-  var url = GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp));
-
-  // Método 1: sendBeacon — diseñado para enviar datos sin CORS
-  if(navigator.sendBeacon) {
-    var blob = new Blob([JSON.stringify({action:'saveOneExp', data:exp})], {type:'text/plain'});
-    var sent = navigator.sendBeacon(GM_CONFIG.appsScriptUrl+'?action=saveOneExp&data='+encodeURIComponent(JSON.stringify(exp)), blob);
-    console.log('sendBeacon exp '+exp.placa+': '+(sent?'OK':'fallback'));
-    setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300);
-    return;
-  }
-
-  // Método 2: fetch con keepalive (no bloquea CORS para same-site)
-  fetch(url, {method:'GET', mode:'no-cors', keepalive:true})
-  .then(function(){ setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300); })
-  .catch(function(){ setTimeout(function(){syncExpUnoAUno(exps,idx+1);},300); });
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'saveOneExp', data:exp})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    console.log('Sync exp OK:', exp.placa, d);
+    setTimeout(function(){syncExpUnoAUno(exps,idx+1);}, 200);
+  })
+  .catch(function(e){
+    console.warn('Sync exp error:', exp.placa, e);
+    setTimeout(function(){syncExpUnoAUno(exps,idx+1);}, 200);
+  });
 }
 
 function syncSheetsConFeedback(callback){
   var payload=JSON.stringify({action:'saveExp',expedientes:expedientes});
   var encoded=encodeURIComponent(payload);
-  var url=GM_CONFIG.appsScriptUrl+'?action=saveExp&data='+encoded;
+  var url=GM_CONFIG.workerUrl+'?action=saveExp&data='+encoded;
   var xhr=new XMLHttpRequest();
   xhr.open('GET',url,true);
   xhr.timeout=15000;
@@ -3379,7 +3378,7 @@ function diagnosticarLogin() {
   log('Conectando...');
   
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', GM_CONFIG.appsScriptUrl + '?action=getUsers', true);
+  xhr.open('GET', GM_CONFIG.workerUrl + '?action=getUsers', true);
   xhr.timeout = 8000;
   xhr.onload = function() {
     log('Status: ' + xhr.status);
@@ -3420,45 +3419,26 @@ function buildSyncUrl() {
     action: 'saveExp',
     expedientes: exps
   }));
-  return GM_CONFIG.appsScriptUrl + '?action=saveExp&data=' + data;
+  return GM_CONFIG.workerUrl + '?action=saveExp&data=' + data;
 }
 
 function sincronizarAhora(callback) {
-  // Abrir ventana del navegador que llama al Apps Script directamente
-  // Este método funciona garantizado porque es una navegación directa
   var exps = limpiarExpParaSync(expedientes);
-  var total = exps.length;
-  var done = 0;
-  
-  function syncNext(idx) {
-    if(idx >= exps.length) {
-      PENDING_SYNC = false;
-      if(callback) callback(true, total);
-      return;
-    }
-    var url = GM_CONFIG.appsScriptUrl + '?action=saveOneExp&data=' + 
-              encodeURIComponent(JSON.stringify(exps[idx]));
-    // Crear iframe invisible — mismo origen que Script no aplica
-    // pero Apps Script acepta requests de iframes
-    var iframe = document.createElement('iframe');
-    iframe.style.cssText = 'display:none;width:0;height:0;position:fixed';
-    iframe.src = url;
-    iframe.onload = function() {
-      document.body.removeChild(iframe);
-      setTimeout(function(){syncNext(idx+1);}, 300);
-    };
-    iframe.onerror = function() {
-      document.body.removeChild(iframe);
-      setTimeout(function(){syncNext(idx+1);}, 300);
-    };
-    document.body.appendChild(iframe);
-  }
-  
-  if(exps.length === 0) {
-    if(callback) callback(true, 0);
-    return;
-  }
-  syncNext(0);
+  if(exps.length === 0) { if(callback) callback(true, 0); return; }
+  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({action:'saveExp', expedientes:exps})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    PENDING_SYNC = false;
+    if(callback) callback(true, d.total||exps.length);
+  })
+  .catch(function(e){
+    console.warn('sincronizarAhora error:', e);
+    if(callback) callback(false, 0);
+  });
 }
 
 // Detectar cierre de ventana/tab
@@ -3466,18 +3446,11 @@ window.addEventListener('beforeunload', function(e) {
   if(!PENDING_SYNC || !CU) return;
   // Abrir URL de sync en nueva tab antes de cerrar
   var exps = limpiarExpParaSync(expedientes);
-  for(var i=0; i<exps.length; i++) {
-    var url = GM_CONFIG.appsScriptUrl + '?action=saveOneExp&data=' + 
-              encodeURIComponent(JSON.stringify(exps[i]));
-    // Usar sendBeacon como último intento
-    if(navigator.sendBeacon) {
-      navigator.sendBeacon(url, new Blob(['x'], {type:'text/plain'}));
-    }
-    // Abrir en background (silencioso)
-    try {
-      var w = window.open(url, '_blank', 'width=1,height=1,left=-100,top=-100');
-      if(w) setTimeout(function(){try{w.close();}catch(e){}}, 3000);
-    } catch(ex) {}
+  if(exps.length > 0) {
+    navigator.sendBeacon(
+      GM_CONFIG.workerUrl + '?action=saveExp',
+      new Blob([JSON.stringify({action:'saveExp', expedientes:exps})], {type:'application/json'})
+    );
   }
 });
 
