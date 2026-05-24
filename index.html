@@ -802,12 +802,16 @@ function loadExpFromScript(){
     try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
     var app=document.getElementById('app');
     if(app&&app.style.display!=='none'){
-      renderPanel();
       var act=document.querySelector('.tab-content.active');
-      if(act&&act.id==='tab-bandeja') renderBandeja();
-      if(act&&act.id==='tab-clientes') renderPanelClientes();
-      if(act&&act.id==='tab-expedientes') renderExpedientes();
-      if(act&&act.id==='tab-tecnico') renderVistaTecnico();
+      if(isTecnico()) {
+        // Siempre refrescar vista técnico cuando llegan nuevos expedientes
+        renderVistaTecnico();
+      } else {
+        renderPanel();
+        if(act&&act.id==='tab-bandeja') renderBandeja();
+        if(act&&act.id==='tab-clientes') renderPanelClientes();
+        if(act&&act.id==='tab-expedientes') renderExpedientes();
+      }
     }
     console.log('Exp cargados D1:', remote.length);
   })
@@ -3211,9 +3215,10 @@ function mostrarApp(){
     var tT=TAB_TITLES['tecnico']||['Mis Tareas','Tareas asignadas'];
     document.getElementById('topbarTitle').textContent=tT[0];
     document.getElementById('topbarSub').textContent=tT[1];
-    // Cargar expedientes del servidor para ver tareas asignadas
+    // Mostrar pantalla vacía mientras carga
+    renderVistaTecnico();
+    // Cargar expedientes del servidor y refrescar
     loadExpFromScript();
-    setTimeout(function(){ renderVistaTecnico(); }, 1500);
   } else {
     renderPanel();
     switchTab('panel',document.getElementById('navPanel'));
