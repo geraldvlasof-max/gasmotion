@@ -794,10 +794,20 @@ function loadExpFromScript(){
   fetch(GM_CONFIG.workerUrl + '?action=getExp')
   .then(function(r){ return r.json(); })
   .then(function(data){
-    // El servidor es la fuente de verdad — reemplazar localStorage completamente
     var remote = data.expedientes || [];
-    expedientes = remote;
-    try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
+    // REGLA: solo reemplazar si el servidor tiene datos
+    // O si el servidor tiene MENOS que local (alguien eliminó)
+    // Nunca reemplazar datos locales con array vacío
+    if(remote.length > 0) {
+      expedientes = remote;
+      try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
+    } else if(remote.length === 0 && expedientes.length > 0) {
+      // Servidor vacío pero local tiene datos → subir al servidor
+      console.log('Servidor vacío — subiendo datos locales al servidor...');
+      sincronizarAhora(null);
+      return;
+    }
+    GM_LAST_SYNC = Date.now();
     var app=document.getElementById('app');
     if(app&&app.style.display!=='none'){
       var act=document.querySelector('.tab-content.active');
@@ -810,7 +820,6 @@ function loadExpFromScript(){
         if(act&&act.id==='tab-expedientes') renderExpedientes();
       }
     }
-    GM_LAST_SYNC = Date.now();
     console.log('Exp cargados D1:', remote.length);
   })
   .catch(function(e){ console.warn('loadExp error:', e); });
