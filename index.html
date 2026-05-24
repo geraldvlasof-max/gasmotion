@@ -1414,7 +1414,19 @@ function renderExpedientes() {
 
 function eliminarExp(id) {
   for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===id){expedientes.splice(i,1);break;}}
-  saveExp(); renderExpedientes();
+  saveExp();
+  renderExpedientes();
+  // Eliminar del servidor D1
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({action:'deleteExp', id:id})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ console.log('Exp eliminado del servidor:', id, d); })
+    .catch(function(e){ console.warn('Error eliminando del servidor:', e); });
+  }
 }
 
 // ==================
