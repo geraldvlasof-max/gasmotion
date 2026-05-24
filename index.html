@@ -794,20 +794,14 @@ function loadExpFromScript(){
   fetch(GM_CONFIG.workerUrl + '?action=getExp')
   .then(function(r){ return r.json(); })
   .then(function(data){
-    if(!data.expedientes||!data.expedientes.length) return;
-    var remote = data.expedientes;
-    var localMap = {};
-    for(var i=0;i<expedientes.length;i++) if(expedientes[i].id) localMap[expedientes[i].id]=expedientes[i];
-    for(var j=0;j<remote.length;j++){
-      var e=remote[j]; if(e&&e.id) localMap[e.id]=e;
-    }
-    expedientes = Object.values(localMap);
+    // El servidor es la fuente de verdad — reemplazar localStorage completamente
+    var remote = data.expedientes || [];
+    expedientes = remote;
     try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
     var app=document.getElementById('app');
     if(app&&app.style.display!=='none'){
       var act=document.querySelector('.tab-content.active');
       if(isTecnico()) {
-        // Siempre refrescar vista técnico cuando llegan nuevos expedientes
         renderVistaTecnico();
       } else {
         renderPanel();
