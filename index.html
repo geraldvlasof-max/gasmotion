@@ -810,6 +810,7 @@ function loadExpFromScript(){
         if(act&&act.id==='tab-expedientes') renderExpedientes();
       }
     }
+    GM_LAST_SYNC = Date.now();
     console.log('Exp cargados D1:', remote.length);
   })
   .catch(function(e){ console.warn('loadExp error:', e); });
@@ -3226,11 +3227,13 @@ function mostrarApp(){
     document.getElementById('topbarSub').textContent=tT[1];
     // Mostrar pantalla vacía mientras carga
     renderVistaTecnico();
-    // Cargar expedientes del servidor y refrescar
-    loadExpFromScript();
+    // Iniciar polling automático para técnico
+    iniciarPolling();
   } else {
     renderPanel();
     switchTab('panel',document.getElementById('navPanel'));
+    // Admin también hace polling para ver actualizaciones del técnico
+    iniciarPolling();
   }
   poblarUserSelects();poblarSelectVendedores();poblarSelectVendServicio();
   // Mostrar botón de guardar en topbar
@@ -3490,6 +3493,42 @@ function mostrarBtnSync() {
   var topbarRight = document.querySelector('.topbar-right');
   if(topbarRight) topbarRight.insertBefore(btn, topbarRight.firstChild);
 }
+
+// ═══════════════════════════════════════════════════════
+// POLLING AUTOMÁTICO — Actualización en tiempo real
+// Revisa el servidor cada 30 segundos automáticamente
+// ═══════════════════════════════════════════════════════
+var GM_POLLING_INTERVAL = null;
+var GM_LAST_SYNC = 0;
+
+function iniciarPolling() {
+  if(GM_POLLING_INTERVAL) clearInterval(GM_POLLING_INTERVAL);
+  // Primera carga inmediata
+  loadExpFromScript();
+  // Luego cada 30 segundos
+  GM_POLLING_INTERVAL = setInterval(function() {
+    if(!CU) { detenerPolling(); return; }
+    loadExpFromScript();
+  }, 30000);
+  console.log('Polling iniciado — actualización cada 30s');
+}
+
+function detenerPolling() {
+  if(GM_POLLING_INTERVAL) {
+    clearInterval(GM_POLLING_INTERVAL);
+    GM_POLLING_INTERVAL = null;
+  }
+}
+
+// Actualizar cuando el usuario vuelve a la app (desde otra tab o pantalla)
+document.addEventListener('visibilitychange', function() {
+  if(document.visibilityState === 'visible' && CU) {
+    // Han pasado más de 10 segundos → actualizar
+    if(Date.now() - GM_LAST_SYNC > 10000) {
+      loadExpFromScript();
+    }
+  }
+});
 </script>
 </body>
 </html>
