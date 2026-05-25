@@ -808,21 +808,42 @@ function loadExp() {
 }
 function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
+  // No hacer polling si hay sync pendiente
+  if(PENDING_SYNC) { console.log('Sync pendiente — omitiendo polling'); return; }
   fetch(GM_CONFIG.workerUrl + '?action=getExp')
   .then(function(r){ return r.json(); })
   .then(function(data){
     var remote = data.expedientes || [];
-    // REGLA: solo reemplazar si el servidor tiene datos
-    // O si el servidor tiene MENOS que local (alguien eliminó)
-    // Nunca reemplazar datos locales con array vacío
-    if(remote.length > 0) {
-      expedientes = remote;
-      try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
-    } else if(remote.length === 0 && expedientes.length > 0) {
-      // Servidor vacío pero local tiene datos → subir al servidor
-      console.log('Servidor vacío — subiendo datos locales al servidor...');
+    if(remote.length === 0 && expedientes.length > 0) {
+      // Servidor vacío pero tenemos datos locales → subir al servidor
+      console.log('Servidor vacío — subiendo datos locales...');
       sincronizarAhora(null);
       return;
+    }
+    if(remote.length > 0) {
+      // Merge: mantener expedientes locales que no están en servidor todavía
+      var remoteIds = {};
+      for(var i=0;i<remote.length;i++) remoteIds[remote[i].id]=true;
+      // Agregar expedientes locales que no llegaron al servidor aún
+      var localOnly = expedientes.filter(function(e){ return e && e.id && !remoteIds[e.id]; });
+      if(localOnly.length > 0) {
+        console.log('Expedientes locales pendientes de sync:', localOnly.length);
+        // Subir los que faltan
+        for(var j=0;j<localOnly.length;j++) {
+          (function(exp){
+            fetch(GM_CONFIG.workerUrl+'?action=saveOneExp',{
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({action:'saveOneExp',data:exp})
+            }).catch(function(){});
+          })(localOnly[j]);
+        }
+        // Combinar
+        expedientes = remote.concat(localOnly);
+      } else {
+        expedientes = remote;
+      }
+      try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
     }
     GM_LAST_SYNC = Date.now();
     var app=document.getElementById('app');
@@ -844,8 +865,8 @@ function loadExpFromScript(){
 
 function saveExp(){
   try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
-  PENDING_SYNC = true;
   if(GM_SYNC && GM_CONFIG.workerUrl) {
+    PENDING_SYNC = true;
     var exps = limpiarExpParaSync(expedientes);
     fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
       method: 'POST',
@@ -857,7 +878,10 @@ function saveExp(){
       PENDING_SYNC = false;
       console.log('AutoSync OK:', d.total);
     })
-    .catch(function(e){console.warn('AutoSync error:', e);});
+    .catch(function(e){
+      PENDING_SYNC = false;
+      console.warn('AutoSync error:', e);
+    });
   }
 }
 function limpiarExpParaSync(exps) {
