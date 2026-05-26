@@ -2113,63 +2113,413 @@ function renderEtapa4(cont, exp) {
 }
 
 function crearFotoCilindroCard(exp, canSub) {
-  var e4=exp.e4||{};
-  var card=document.createElement('div');card.className='doc-box'+(e4.fotoCilindro1&&e4.fotoCilindro1.completado?' done':'');card.style.marginTop='10px';
-  card.innerHTML='<div class="doc-box-title">3. Foto de Cilindro <span style="font-size:11px;font-weight:400;color:#0d9488">— Resp: Técnico</span></div>';
-  // Campos obligatorios
-  var fieldsDiv=document.createElement('div');fieldsDiv.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px';
-  var f1=document.createElement('div');f1.innerHTML='<label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Serie Cilindro <span style="color:#cc2200">*</span></label>';
-  var inp1=document.createElement('input');inp1.type='text';inp1.id='cil_serie_'+exp.id;inp1.value=e4.serieCilindro||'';inp1.disabled=!canSub;
-  inp1.style.cssText='border:2px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;'+(canSub?'background:white':'background:#f8fafc');
-  f1.appendChild(inp1);
-  var f2=document.createElement('div');f2.innerHTML='<label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Fecha de Fabricacion <span style="color:#cc2200">*</span></label>';
-  var inp2=document.createElement('input');inp2.type='date';inp2.id='cil_fecha_'+exp.id;inp2.value=e4.fechaFabCilindro||'';inp2.disabled=!canSub;
-  inp2.style.cssText='border:2px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;'+(canSub?'background:white':'background:#f8fafc');
-  f2.appendChild(inp2);
-  fieldsDiv.appendChild(f1);fieldsDiv.appendChild(f2);card.appendChild(fieldsDiv);
-  // Fotos
-  var fotosLabel=document.createElement('div');fotosLabel.style.cssText='font-size:12px;color:#6b82a0;margin-bottom:8px';fotosLabel.textContent='Adjuntar hasta 2 fotos (minimo 1)';
-  card.appendChild(fotosLabel);
-  var fotos=[{key:'fotoCilindro1',label:'Foto 1',meta:e4.fotoCilindro1||null},{key:'fotoCilindro2',label:'Foto 2 (opcional)',meta:e4.fotoCilindro2||null}];
-  for(var fi=0;fi<fotos.length;fi++){
-    var fo=fotos[fi];
-    if(fo.meta&&fo.meta.completado){
-      var furl=getFileUrl(exp.id,fo.key);
-      var fdone=document.createElement('div');fdone.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:8px 12px;margin-bottom:6px';
-      fdone.innerHTML='<div><div style="font-size:12px;font-weight:600;color:#065f46">&#10003; '+fo.label+': '+fo.meta.nombre+'</div><div style="font-size:11px;color:#6b82a0">'+fo.meta.subidoPor+' — '+fo.meta.fecha+' '+fo.meta.hora+'</div></div>';
-      var fdlA=document.createElement('a');
-      if(furl){fdlA.href=furl;fdlA.download=fo.meta.nombre;fdlA.className='btn btn-teal btn-sm';fdlA.innerHTML='&#11015;';}
-      else{fdlA.className='btn btn-sm';fdlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';fdlA.textContent='N/D';}
-      fdone.appendChild(fdlA);card.appendChild(fdone);
-    } else if(canSub){
-      var fdrop=document.createElement('div');fdrop.style.cssText='position:relative;border:2px dashed #e2e8f0;border-radius:8px;padding:10px;text-align:center;margin-bottom:6px;background:#f8fafc;cursor:pointer';
-      fdrop.innerHTML='<div style="font-size:11px;color:#6b82a0">'+fo.label+' — haz clic para adjuntar imagen</div>';
-      var finp=document.createElement('input');finp.type='file';finp.accept='image/*';finp.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
-      finp.onchange=(function(eid,fk){return function(){grabarFotoCilindro(eid,fk,this);};})(exp.id,fo.key);
-      fdrop.appendChild(finp);card.appendChild(fdrop);
+  var e4 = exp.e4 || {};
+  var card = document.createElement('div');
+  card.className = 'doc-box' + (e4.fotoCilindro1 && e4.fotoCilindro1.completado ? ' done' : '');
+  card.style.marginTop = '10px';
+  card.innerHTML = '<div class="doc-box-title">3. Cilindro(s) <span style="font-size:11px;font-weight:400;color:#0d9488">— Resp: Técnico Tanque</span></div>';
+
+  // ── CILINDRO 1 ──
+  var c1 = document.createElement('div');
+  c1.style.cssText = 'background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px';
+  c1.innerHTML = '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🔵 Cilindro 1</div>';
+
+  // 1. Foto cilindro 1
+  c1.appendChild(crearBloquefoto(exp, 'fotoCilindro1', 'Foto del Cilindro 1', canSub));
+
+  // 2. Serie cilindro 1
+  if(canSub || e4.serieCilindro) {
+    var s1div = document.createElement('div');
+    s1div.style.cssText = 'margin-top:10px';
+    s1div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Cilindro 1 <span style="color:#cc2200">*</span></label>';
+    var s1inp = document.createElement('input');
+    s1inp.type = 'text'; s1inp.id = 'cil_serie_' + exp.id;
+    s1inp.value = e4.serieCilindro || '';
+    s1inp.disabled = !canSub;
+    s1inp.placeholder = 'Ej: ABC123456';
+    s1inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+    s1inp.oninput = function() { this.value = this.value.toUpperCase(); };
+    s1div.appendChild(s1inp);
+    c1.appendChild(s1div);
+  }
+
+  // 3. Fecha fabricación cilindro 1 (MM/AAAA)
+  if(canSub || e4.fechaFabCilindro) {
+    var f1div = document.createElement('div');
+    f1div.style.cssText = 'margin-top:10px';
+    f1div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Fecha Fabricación <span style="color:#cc2200">*</span> <span style="font-size:10px;color:#94a3b8;font-weight:400">(MM/AAAA)</span></label>';
+    var f1inp = document.createElement('input');
+    f1inp.type = 'text'; f1inp.id = 'cil_fecha_' + exp.id;
+    f1inp.value = e4.fechaFabCilindro || '';
+    f1inp.disabled = !canSub;
+    f1inp.placeholder = 'MM/AAAA';
+    f1inp.inputMode = 'numeric';
+    f1inp.maxLength = 7;
+    f1inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+    f1inp.oninput = function() {
+      var v = this.value.replace(/\D/g,'');
+      if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
+      this.value = v;
+    };
+    f1div.appendChild(f1inp);
+    c1.appendChild(f1div);
+  }
+
+  // Botón grabar cilindro 1
+  if(canSub) {
+    var btn1 = document.createElement('button');
+    btn1.className = 'btn btn-teal btn-sm';
+    btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+    btn1.textContent = '💾 Grabar datos Cilindro 1';
+    btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
+    c1.appendChild(btn1);
+  }
+
+  card.appendChild(c1);
+
+  // ── CILINDRO 2 ──
+  var c2header = document.createElement('div');
+  c2header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
+  c2header.innerHTML = '<div style="font-size:12px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:.5px">🔵 Cilindro 2</div>';
+
+  if(canSub) {
+    var noAplLab = document.createElement('label');
+    noAplLab.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;color:#64748b;cursor:pointer';
+    var noAplChk = document.createElement('input');
+    noAplChk.type = 'checkbox';
+    noAplChk.checked = !!e4.cilindro2NoAplica;
+    noAplChk.onchange = (function(eid){ return function() {
+      for(var i=0;i<expedientes.length;i++) {
+        if(expedientes[i].id===eid) {
+          if(!expedientes[i].e4) expedientes[i].e4={};
+          expedientes[i].e4.cilindro2NoAplica = this.checked;
+          saveExp(); break;
+        }
+      }
+      abrirExpediente(eid);
+    }; })(exp.id);
+    noAplLab.appendChild(noAplChk);
+    noAplLab.appendChild(document.createTextNode('No aplica'));
+    c2header.appendChild(noAplLab);
+  }
+
+  var c2 = document.createElement('div');
+  c2.style.cssText = 'background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px';
+  c2.appendChild(c2header);
+
+  if(!e4.cilindro2NoAplica) {
+    c2.appendChild(crearBloquefoto(exp, 'fotoCilindro2', 'Foto del Cilindro 2', canSub));
+
+    if(canSub || e4.serieCilindro2) {
+      var s2div = document.createElement('div');
+      s2div.style.cssText = 'margin-top:10px';
+      s2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Cilindro 2 <span style="color:#cc2200">*</span></label>';
+      var s2inp = document.createElement('input');
+      s2inp.type = 'text'; s2inp.id = 'cil2_serie_' + exp.id;
+      s2inp.value = e4.serieCilindro2 || '';
+      s2inp.disabled = !canSub;
+      s2inp.placeholder = 'Ej: ABC789012';
+      s2inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+      s2inp.oninput = function() { this.value = this.value.toUpperCase(); };
+      s2div.appendChild(s2inp);
+      c2.appendChild(s2div);
     }
+
+    if(canSub || e4.fechaFabCilindro2) {
+      var f2div = document.createElement('div');
+      f2div.style.cssText = 'margin-top:10px';
+      f2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Fecha Fabricación Cil. 2 <span style="color:#cc2200">*</span> <span style="font-size:10px;color:#94a3b8;font-weight:400">(MM/AAAA)</span></label>';
+      var f2inp = document.createElement('input');
+      f2inp.type = 'text'; f2inp.id = 'cil2_fecha_' + exp.id;
+      f2inp.value = e4.fechaFabCilindro2 || '';
+      f2inp.disabled = !canSub;
+      f2inp.placeholder = 'MM/AAAA';
+      f2inp.inputMode = 'numeric';
+      f2inp.maxLength = 7;
+      f2inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+      f2inp.oninput = function() {
+        var v = this.value.replace(/\D/g,'');
+        if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
+        this.value = v;
+      };
+      f2div.appendChild(f2inp);
+      c2.appendChild(f2div);
+    }
+
+    if(canSub) {
+      var btn2 = document.createElement('button');
+      btn2.className = 'btn btn-teal btn-sm';
+      btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+      btn2.textContent = '💾 Grabar datos Cilindro 2';
+      btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
+      c2.appendChild(btn2);
+    }
+  } else {
+    c2.innerHTML += '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:8px">No aplica para este vehículo</div>';
   }
-  if(canSub&&!(e4.fotoCilindro1&&e4.fotoCilindro1.completado)){
-    var gBtn=document.createElement('button');gBtn.className='btn btn-teal btn-sm';gBtn.textContent='Grabar datos cilindro';
-    gBtn.style.marginTop='8px';
-    gBtn.onclick=(function(eid){return function(){grabarDatosCilindro(eid);};})(exp.id);
-    card.appendChild(gBtn);
-  }
+
+  card.appendChild(c2);
   return card;
 }
 
+// Bloque de foto con cámara + galería + confirmación
+function crearBloquefoto(exp, fotoKey, label, canSub) {
+  var e4 = exp.e4 || {};
+  var meta = e4[fotoKey] || null;
+  var wrap = document.createElement('div');
+
+  if(meta && meta.completado) {
+    var furl = getFileUrl(exp.id, fotoKey);
+    wrap.style.cssText = 'background:#d1fae5;border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between';
+    wrap.innerHTML = '<div><div style="font-size:12px;font-weight:600;color:#065f46">✅ ' + label + '</div>' +
+      '<div style="font-size:11px;color:#6b82a0">' + (meta.subidoPor||'') + ' — ' + (meta.fecha||'') + '</div></div>';
+    if(furl) {
+      var dl = document.createElement('a');
+      dl.href = furl; dl.target = '_blank';
+      dl.className = 'btn btn-teal btn-sm';
+      dl.innerHTML = '👁 Ver';
+      wrap.appendChild(dl);
+    }
+    return wrap;
+  }
+
+  if(!canSub) {
+    wrap.style.cssText = 'background:#f1f5f9;border-radius:8px;padding:10px;text-align:center;color:#94a3b8;font-size:13px';
+    wrap.textContent = label + ' — pendiente';
+    return wrap;
+  }
+
+  // Botones: Cámara + Galería
+  wrap.innerHTML = '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px">' + label + ' <span style="color:#cc2200">*</span></div>';
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px';
+
+  // Botón cámara directa
+  var btnCam = document.createElement('button');
+  btnCam.type = 'button';
+  btnCam.style.cssText = 'flex:1;background:#0f172a;color:white;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px';
+  btnCam.innerHTML = '📷 Cámara';
+  btnCam.onclick = (function(eid, fk, lbl){ return function() {
+    abrirCamaraParaFoto(eid, fk, lbl);
+  }; })(exp.id, fotoKey, label);
+
+  // Input para galería
+  var wrapGal = document.createElement('div');
+  wrapGal.style.cssText = 'flex:1;position:relative';
+  var btnGal = document.createElement('div');
+  btnGal.style.cssText = 'background:#0ea5e9;color:white;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;height:100%;box-sizing:border-box';
+  btnGal.innerHTML = '🖼️ Galería';
+  var inpGal = document.createElement('input');
+  inpGal.type = 'file'; inpGal.accept = 'image/*';
+  inpGal.style.cssText = 'position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
+  inpGal.onchange = (function(eid, fk){ return function() {
+    if(!this.files[0]) return;
+    mostrarConfirmacionFoto(eid, fk, this.files[0]);
+  }; })(exp.id, fotoKey);
+  wrapGal.appendChild(btnGal);
+  wrapGal.appendChild(inpGal);
+
+  btnRow.appendChild(btnCam);
+  btnRow.appendChild(wrapGal);
+  wrap.appendChild(btnRow);
+  return wrap;
+}
+
+// Abrir cámara con MediaDevices API
+function abrirCamaraParaFoto(expId, fotoKey, label) {
+  // Crear modal de cámara
+  var modal = document.createElement('div');
+  modal.id = 'camaraModal_' + fotoKey;
+  modal.style.cssText = 'position:fixed;inset:0;background:black;z-index:9000;display:flex;flex-direction:column';
+
+  var video = document.createElement('video');
+  video.style.cssText = 'flex:1;object-fit:cover;width:100%';
+  video.autoplay = true; video.playsinline = true;
+
+  var controls = document.createElement('div');
+  controls.style.cssText = 'background:#0f172a;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:16px';
+
+  var btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'background:#374151;color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer';
+  btnCancel.textContent = '❌ Cancelar';
+
+  var btnCapture = document.createElement('button');
+  btnCapture.style.cssText = 'flex:1;background:#ef4444;color:white;border:none;border-radius:50%;width:64px;height:64px;font-size:24px;cursor:pointer;flex-shrink:0';
+  btnCapture.textContent = '⚪';
+
+  controls.appendChild(btnCancel);
+  controls.appendChild(btnCapture);
+  modal.appendChild(video);
+  modal.appendChild(controls);
+  document.body.appendChild(modal);
+
+  // Iniciar stream de cámara trasera
+  var stream = null;
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: {ideal:1920}, height: {ideal:1080} }
+  }).then(function(s) {
+    stream = s;
+    video.srcObject = s;
+  }).catch(function(err) {
+    console.error('Cámara error:', err);
+    document.body.removeChild(modal);
+    showToast('No se pudo acceder a la cámara', 'error');
+    // Fallback: abrir galería
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+    inp.onchange = function() {
+      if(this.files[0]) mostrarConfirmacionFoto(expId, fotoKey, this.files[0]);
+    };
+    inp.click();
+  });
+
+  function cerrarCamara() {
+    if(stream) stream.getTracks().forEach(function(t){ t.stop(); });
+    if(modal.parentNode) document.body.removeChild(modal);
+  }
+
+  btnCancel.onclick = cerrarCamara;
+
+  btnCapture.onclick = function() {
+    // Capturar frame del video
+    var canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    cerrarCamara();
+    // Convertir a File
+    canvas.toBlob(function(blob) {
+      var file = new File([blob], 'foto_' + fotoKey + '_' + Date.now() + '.jpg', {type:'image/jpeg'});
+      mostrarConfirmacionFoto(expId, fotoKey, file);
+    }, 'image/jpeg', 0.85);
+  };
+}
+
+// Modal de confirmación de foto
+function mostrarConfirmacionFoto(expId, fotoKey, file) {
+  var modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9001;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+
+  var img = document.createElement('img');
+  img.src = URL.createObjectURL(file);
+  img.style.cssText = 'max-width:100%;max-height:60vh;border-radius:12px;object-fit:contain';
+
+  var label = document.createElement('div');
+  label.style.cssText = 'color:white;font-size:14px;font-weight:600;margin:16px 0;text-align:center';
+  label.textContent = '¿Usar esta foto?';
+
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:12px;width:100%;max-width:360px';
+
+  var btnRetomar = document.createElement('button');
+  btnRetomar.style.cssText = 'flex:1;background:#374151;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
+  btnRetomar.textContent = '🔄 Retomar';
+
+  var btnUsar = document.createElement('button');
+  btnUsar.style.cssText = 'flex:1;background:#22c55e;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
+  btnUsar.textContent = '✅ Usar foto';
+
+  var btnCancelar = document.createElement('button');
+  btnCancelar.style.cssText = 'flex:1;background:#ef4444;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
+  btnCancelar.textContent = '❌ Cancelar';
+
+  btnRow.appendChild(btnRetomar);
+  btnRow.appendChild(btnUsar);
+  btnRow.appendChild(btnCancelar);
+
+  modal.appendChild(img);
+  modal.appendChild(label);
+  modal.appendChild(btnRow);
+  document.body.appendChild(modal);
+
+  function cerrar() { if(modal.parentNode) document.body.removeChild(modal); }
+
+  btnCancelar.onclick = cerrar;
+
+  btnRetomar.onclick = function() {
+    cerrar();
+    abrirCamaraParaFoto(expId, fotoKey, '');
+  };
+
+  btnUsar.onclick = function() {
+    cerrar();
+    // Guardar la foto
+    storeFile(expId, fotoKey, file, function(url, name) {
+      for(var i=0;i<expedientes.length;i++) {
+        if(expedientes[i].id===expId) {
+          if(!expedientes[i].e4) expedientes[i].e4={};
+          expedientes[i].e4[fotoKey] = {
+            nombre: name, subidoPor: CU?CU.nombre:'-',
+            fecha: nowFecha(), hora: nowHora(), completado: true
+          };
+          saveExp(); break;
+        }
+      }
+      showToast('✅ Foto guardada correctamente', 'success');
+      abrirExpediente(expId);
+    });
+  };
+}
+
 function grabarDatosCilindro(id) {
-  var serie=document.getElementById('cil_serie_'+id);
-  var fecha=document.getElementById('cil_fecha_'+id);
-  if(!serie||!fecha||!serie.value||!fecha.value){showAlert('alertExp','Completa Serie y Fecha de Fabricacion del cilindro.','error');return;}
-  for(var i=0;i<expedientes.length;i++){
-    if(expedientes[i].id===id){
-      if(!expedientes[i].e4)expedientes[i].e4={};
-      expedientes[i].e4.serieCilindro=serie.value;
-      expedientes[i].e4.fechaFabCilindro=fecha.value;
-      saveExp();break;
+  var serie = document.getElementById('cil_serie_' + id);
+  var fecha = document.getElementById('cil_fecha_' + id);
+  if(!serie || !fecha || !serie.value || !fecha.value) {
+    showToast('Completa Serie y Fecha de Fabricación del cilindro 1', 'error'); return;
+  }
+  // Validar formato MM/AAAA
+  var fechaVal = fecha.value;
+  if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
+    showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
+  }
+  for(var i=0;i<expedientes.length;i++) {
+    if(expedientes[i].id===id) {
+      if(!expedientes[i].e4) expedientes[i].e4={};
+      expedientes[i].e4.serieCilindro = serie.value;
+      expedientes[i].e4.fechaFabCilindro = fechaVal;
+      saveExp(); break;
     }
   }
+  showToast('✅ Datos Cilindro 1 grabados', 'success');
+}
+
+function grabarDatosCilindro2(id) {
+  var serie = document.getElementById('cil2_serie_' + id);
+  var fecha = document.getElementById('cil2_fecha_' + id);
+  if(!serie || !fecha || !serie.value || !fecha.value) {
+    showToast('Completa Serie y Fecha de Fabricación del cilindro 2', 'error'); return;
+  }
+  var fechaVal = fecha.value;
+  if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
+    showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
+  }
+  for(var i=0;i<expedientes.length;i++) {
+    if(expedientes[i].id===id) {
+      if(!expedientes[i].e4) expedientes[i].e4={};
+      expedientes[i].e4.serieCilindro2 = serie.value;
+      expedientes[i].e4.fechaFabCilindro2 = fechaVal;
+      saveExp(); break;
+    }
+  }
+  showToast('✅ Datos Cilindro 2 grabados', 'success');
+}
+
+function grabarDatosReductor(id) {
+  var marca = document.getElementById('red_marca_' + id);
+  var serie = document.getElementById('red_serie_' + id);
+  if(!marca || !serie || !marca.value || !serie.value) {
+    showToast('Completa Marca y Serie del reductor', 'error'); return;
+  }
+  for(var i=0;i<expedientes.length;i++) {
+    if(expedientes[i].id===id) {
+      if(!expedientes[i].e4) expedientes[i].e4={};
+      expedientes[i].e4.marcaReductor = marca.value;
+      expedientes[i].e4.serieReductor = serie.value;
+      saveExp(); break;
+    }
+  }
+  showToast('✅ Datos Reductor grabados', 'success');
 }
 
 function grabarFotoCilindro(expId, fotoKey, input) {
@@ -2195,48 +2545,62 @@ function grabarFotoCilindro(expId, fotoKey, input) {
 }
 
 function crearFotoReductorCard(exp, canSub) {
-  var e4=exp.e4||{};
-  var card=document.createElement('div');card.className='doc-box'+(e4.fotoReductor&&e4.fotoReductor.completado?' done':'');card.style.marginTop='10px';
-  card.innerHTML='<div class="doc-box-title">4. Foto de Reductor <span style="font-size:11px;font-weight:400;color:#0d9488">— Resp: Técnico</span></div>';
-  var fieldsDiv=document.createElement('div');fieldsDiv.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px';
-  var f1=document.createElement('div');f1.innerHTML='<label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Marca Reductor <span style="color:#cc2200">*</span></label>';
-  var inp1=document.createElement('input');inp1.type='text';inp1.id='red_marca_'+exp.id;inp1.value=e4.marcaReductor||'';inp1.disabled=!canSub;
-  inp1.style.cssText='border:2px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;'+(canSub?'background:white':'background:#f8fafc');
-  f1.appendChild(inp1);
-  var f2=document.createElement('div');f2.innerHTML='<label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em">Serie Reductor <span style="color:#cc2200">*</span></label>';
-  var inp2=document.createElement('input');inp2.type='text';inp2.id='red_serie_'+exp.id;inp2.value=e4.serieReductor||'';inp2.disabled=!canSub;
-  inp2.style.cssText='border:2px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;width:100%;outline:none;'+(canSub?'background:white':'background:#f8fafc');
-  f2.appendChild(inp2);
-  fieldsDiv.appendChild(f1);fieldsDiv.appendChild(f2);card.appendChild(fieldsDiv);
-  if(e4.fotoReductor&&e4.fotoReductor.completado){
-    var rurl=getFileUrl(exp.id,'fotoReductor');
-    var rdone=document.createElement('div');rdone.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:8px 12px;margin-bottom:6px';
-    rdone.innerHTML='<div><div style="font-size:12px;font-weight:600;color:#065f46">&#10003; '+e4.fotoReductor.nombre+'</div><div style="font-size:11px;color:#6b82a0">'+e4.fotoReductor.subidoPor+' — '+e4.fotoReductor.fecha+' '+e4.fotoReductor.hora+'</div></div>';
-    var rdlA=document.createElement('a');
-    if(rurl){rdlA.href=rurl;rdlA.download=e4.fotoReductor.nombre;rdlA.className='btn btn-teal btn-sm';rdlA.innerHTML='&#11015;';}
-    else{rdlA.className='btn btn-sm';rdlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';rdlA.textContent='N/D';}
-    rdone.appendChild(rdlA);card.appendChild(rdone);
-  } else if(canSub){
-    var rdrop=document.createElement('div');rdrop.style.cssText='position:relative;border:2px dashed #e2e8f0;border-radius:8px;padding:10px;text-align:center;margin-bottom:8px;background:#f8fafc;cursor:pointer';
-    rdrop.innerHTML='<div style="font-size:11px;color:#6b82a0">Haz clic para adjuntar foto del reductor (imagen)</div>';
-    var rinp=document.createElement('input');rinp.type='file';rinp.accept='image/*';rinp.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
-    rinp.onchange=(function(eid){return function(){grabarFotoReductor(eid,this);};})(exp.id);
-    rdrop.appendChild(rinp);card.appendChild(rdrop);
-    var rgBtn=document.createElement('button');rgBtn.className='btn btn-teal btn-sm';rgBtn.style.marginTop='6px';
-    rgBtn.textContent='Grabar datos del reductor';
-    rgBtn.onclick=(function(eid){return function(){
-      var mEl=document.getElementById('red_marca_'+eid);var sEl=document.getElementById('red_serie_'+eid);
-      if(!mEl||!sEl||!mEl.value||!sEl.value){showAlert('alertExp','Completa Marca y Serie del reductor.','error');return;}
-      for(var i=0;i<expedientes.length;i++){
-        if(expedientes[i].id===eid){
-          if(!expedientes[i].e4)expedientes[i].e4={};
-          expedientes[i].e4.marcaReductor=mEl.value;expedientes[i].e4.serieReductor=sEl.value;saveExp();break;
-        }
-      }
-      showAlert('alertExp','Datos reductor guardados: '+mEl.value+' / '+sEl.value,'success');
-    };})(exp.id);
-    card.appendChild(rgBtn);
+  var e4 = exp.e4 || {};
+  var card = document.createElement('div');
+  card.className = 'doc-box' + (e4.fotoReductor && e4.fotoReductor.completado ? ' done' : '');
+  card.style.marginTop = '10px';
+  card.innerHTML = '<div class="doc-box-title">4. Reductor <span style="font-size:11px;font-weight:400;color:#0d9488">— Resp: Técnico Delantera</span></div>';
+
+  var rWrap = document.createElement('div');
+  rWrap.style.cssText = 'background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:14px';
+  rWrap.innerHTML = '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🔧 Reductor</div>';
+
+  // 1. Foto reductor
+  rWrap.appendChild(crearBloquefoto(exp, 'fotoReductor', 'Foto del Reductor', canSub));
+
+  // 2. Marca reductor
+  if(canSub || e4.marcaReductor) {
+    var mDiv = document.createElement('div');
+    mDiv.style.cssText = 'margin-top:10px';
+    mDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Marca Reductor <span style="color:#cc2200">*</span></label>';
+    var mInp = document.createElement('input');
+    mInp.type = 'text'; mInp.id = 'red_marca_' + exp.id;
+    mInp.value = e4.marcaReductor || '';
+    mInp.disabled = !canSub;
+    mInp.placeholder = 'Ej: TARTARINI';
+    mInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+    mInp.oninput = function() { this.value = this.value.toUpperCase(); };
+    mDiv.appendChild(mInp);
+    rWrap.appendChild(mDiv);
   }
+
+  // 3. Serie reductor
+  if(canSub || e4.serieReductor) {
+    var sDiv = document.createElement('div');
+    sDiv.style.cssText = 'margin-top:10px';
+    sDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Reductor <span style="color:#cc2200">*</span></label>';
+    var sInp = document.createElement('input');
+    sInp.type = 'text'; sInp.id = 'red_serie_' + exp.id;
+    sInp.value = e4.serieReductor || '';
+    sInp.disabled = !canSub;
+    sInp.placeholder = 'Ej: RED789012';
+    sInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
+    sInp.oninput = function() { this.value = this.value.toUpperCase(); };
+    sDiv.appendChild(sInp);
+    rWrap.appendChild(sDiv);
+  }
+
+  // Botón grabar
+  if(canSub) {
+    var gBtn = document.createElement('button');
+    gBtn.className = 'btn btn-teal btn-sm';
+    gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+    gBtn.textContent = '💾 Grabar datos Reductor';
+    gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
+    rWrap.appendChild(gBtn);
+  }
+
+  card.appendChild(rWrap);
   return card;
 }
 
