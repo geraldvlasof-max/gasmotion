@@ -3026,12 +3026,8 @@ function renderVistaTecnico() {
 }
 
 function abrirExpedienteDesdeId(expId) {
-  for(var i=0;i<expedientes.length;i++) {
-    if(expedientes[i].id === expId) {
-      abrirExpediente(expedientes[i]);
-      return;
-    }
-  }
+  // abrirExpediente espera el ID, no el objeto
+  abrirExpediente(expId);
 }
 
 function calcularPorcentajePlaca(exp, nombre) {
