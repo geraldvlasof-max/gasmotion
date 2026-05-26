@@ -810,7 +810,7 @@ function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
   // No hacer polling si hay sync pendiente
   if(PENDING_SYNC) { console.log('Sync pendiente — omitiendo polling'); return; }
-  fetch(GM_CONFIG.workerUrl + '?action=getExp')
+  fetch(GM_CONFIG.workerUrl + '?action=getExp', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(data){
     var remote = data.expedientes || [];
@@ -871,6 +871,7 @@ function saveExp(){
     fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
+      cache: 'no-store',
       body: JSON.stringify({action:'saveExp', expedientes:exps})
     })
     .then(function(r){return r.json();})
@@ -3335,13 +3336,27 @@ function toggleEspecialidadField(){
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js')
   .then(function(reg){
-    console.log('SW OK');
-    // Forzar actualización del SW
+    console.log('SW registrado');
     reg.update();
-    // Verificar actualizaciones cada 15 minutos
-    setInterval(function(){ reg.update(); }, 900000);
+    // Cuando hay nueva versión instalada → recargar automáticamente
+    reg.onupdatefound = function() {
+      var newWorker = reg.installing;
+      newWorker.onstatechange = function() {
+        if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('Nueva versión disponible — actualizando...');
+          window.location.reload();
+        }
+      };
+    };
   })
   .catch(function(e){console.log('SW error',e);});
+  
+  // Escuchar mensajes del SW para forzar recarga
+  navigator.serviceWorker.addEventListener('message', function(e) {
+    if(e.data && e.data.type === 'FORCE_RELOAD') {
+      window.location.reload();
+    }
+  });
 }
 var deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',function(e){
