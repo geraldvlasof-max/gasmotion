@@ -1095,7 +1095,6 @@ function loadExpFromScript(){
       var localOnly = expedientes.filter(function(e){ return e && e.id && !remoteIds[e.id]; });
       if(localOnly.length > 0) {
         console.log('Expedientes locales pendientes de sync:', localOnly.length);
-        // Subir los que faltan
         for(var j=0;j<localOnly.length;j++) {
           (function(exp){
             fetch(GM_CONFIG.workerUrl+'?action=saveOneExp',{
@@ -1105,11 +1104,35 @@ function loadExpFromScript(){
             }).catch(function(){});
           })(localOnly[j]);
         }
-        // Combinar
-        expedientes = remote.concat(localOnly);
-      } else {
-        expedientes = remote;
       }
+      // ═══════════════════════════════════════════════════════
+      // FIX CRÍTICO: Al mergear datos del servidor con locales,
+      // PRESERVAR fotosData local si el servidor lo trae vacío.
+      // Esto ocurre cuando saveExp falló por tamaño del request.
+      // ═══════════════════════════════════════════════════════
+      var mergeado = remote.concat(localOnly);
+      for(var m=0;m<mergeado.length;m++){
+        var expRemoto = mergeado[m];
+        if(!expRemoto || !expRemoto.id) continue;
+        // Buscar el mismo expediente en localStorage local
+        var expLocal = null;
+        for(var n=0;n<expedientes.length;n++){
+          if(expedientes[n].id === expRemoto.id){ expLocal = expedientes[n]; break; }
+        }
+        if(!expLocal) continue;
+        // Si el remoto tiene fotosData vacío pero el local tiene fotos → preservar local
+        var fdRemoto = expRemoto.fotosData;
+        var fdLocal  = expLocal.fotosData;
+        var remotoVacio = !fdRemoto || typeof fdRemoto !== 'object' || Object.keys(fdRemoto).length === 0;
+        var localTieneFotos = fdLocal && typeof fdLocal === 'object' && Object.keys(fdLocal).length > 0;
+        if(remotoVacio && localTieneFotos){
+          console.log('PRESERVANDO fotosData local para', expRemoto.placa, '— servidor lo tenía vacío');
+          mergeado[m].fotosData = fdLocal;
+          // Re-subir este expediente al servidor con las fotos
+          saveOneExpConFotos(mergeado[m]);
+        }
+      }
+      expedientes = mergeado;
       try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(ex){}
     }
     GM_LAST_SYNC = Date.now();
