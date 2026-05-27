@@ -2396,18 +2396,26 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
     var btnWrap = document.createElement('div');
     btnWrap.style.cssText = 'display:flex;gap:6px;flex-shrink:0';
     
-    // Buscar dataUrl en fotosData del expediente
+    // Usar fotosData directamente del exp recibido (ya viene completo del array)
     var dataUrlFoto = null;
     var driveUrl = null;
-    for(var di=0;di<expedientes.length;di++) {
-      if(expedientes[di].id === exp.id) {
-        var fd = expedientes[di].fotosData;
-        if(fd && fd[fotoKey] && fd[fotoKey].dataUrl) dataUrlFoto = fd[fotoKey].dataUrl;
-        var df = expedientes[di].driveFiles;
-        if(df && df[fotoKey]) driveUrl = df[fotoKey].url || df[fotoKey].viewUrl;
-        break;
+    // Primero buscar en exp.fotosData (viene directo del expediente actual)
+    if(exp.fotosData && exp.fotosData[fotoKey] && exp.fotosData[fotoKey].dataUrl) {
+      dataUrlFoto = exp.fotosData[fotoKey].dataUrl;
+    }
+    // Si no está en exp, buscar en expedientes[] como fallback
+    if(!dataUrlFoto) {
+      for(var di=0;di<expedientes.length;di++) {
+        if(expedientes[di].id === exp.id) {
+          var fd = expedientes[di].fotosData;
+          if(fd && fd[fotoKey] && fd[fotoKey].dataUrl) dataUrlFoto = fd[fotoKey].dataUrl;
+          var df = expedientes[di].driveFiles;
+          if(df && df[fotoKey]) driveUrl = df[fotoKey].url || df[fotoKey].viewUrl;
+          break;
+        }
       }
     }
+    console.log('[crearBloquefoto] fotoKey:', fotoKey, '| dataUrlFoto:', dataUrlFoto ? dataUrlFoto.length : 'NULL');
     
     // Botón Ver — usa Blob URL para evitar crash en Android
     var btnVer = document.createElement('button');
@@ -2423,18 +2431,24 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
     }; })(_dataUrl, _driveUrl, _fotoNombre);
     btnWrap.appendChild(btnVer);
     
-    // Botón Descargar
+    // Botón Descargar — siempre visible si hay foto completada
+    var btnDl = document.createElement('button');
+    btnDl.className = 'btn btn-sm';
     if(dataUrlFoto || driveUrl) {
-      var btnDl = document.createElement('button');
-      btnDl.className = 'btn btn-sm';
       btnDl.style.cssText = 'background:#0f172a;color:white';
       btnDl.innerHTML = '⬇';
       btnDl.onclick = (function(du, drv, nm) { return function() {
         if(drv) { window.open(drv); return; }
         if(du) { descargarFotoSeguro(du, nm); return; }
+        showToast('Foto no disponible para descarga', 'error');
       }; })(dataUrlFoto, driveUrl, _fotoNombre);
-      btnWrap.appendChild(btnDl);
+    } else {
+      btnDl.style.cssText = 'background:#e5e7eb;color:#9ca3af;cursor:not-allowed';
+      btnDl.innerHTML = '⬇';
+      btnDl.disabled = true;
+      btnDl.title = 'Foto pendiente de sincronizar';
     }
+    btnWrap.appendChild(btnDl);
     
     wrap.appendChild(btnWrap);
     return wrap;
