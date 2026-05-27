@@ -838,66 +838,104 @@ function storeFile(expId, tipoKey, file, callback) {
   var now = new Date();
   var fecha = now.toLocaleDateString('es-PE', {day:'2-digit',month:'2-digit',year:'numeric'});
   var hora = now.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'});
+  var subidoPor = CU ? CU.nombre : '-';
   
   // Guardar en memoria local inmediatamente
   FILE_STORE[expId + '_' + tipoKey] = {
     url: localUrl, name: file.name,
-    subidoPor: CU ? CU.nombre : '-',
-    fecha: fecha, hora: hora
+    subidoPor: subidoPor, fecha: fecha, hora: hora
   };
-  
-  // Persistir en localStorage (fallback)
-  if(file && file.size < 3*1024*1024) {
-    var fr2 = new FileReader();
-    fr2.onload = function(ev2) {
-      try { localStorage.setItem('gm_file_'+expId+'_'+tipoKey, ev2.target.result); } catch(e){}
-    };
-    fr2.readAsDataURL(file);
-  }
   
   // Callback inmediato para no bloquear UI
   if(callback) callback(localUrl, file.name);
-  
-  // Subir a Drive en background
-  var nombreArchivo = expId + '_' + tipoKey + '_' + file.name;
-  subirArchivoADrive(file, nombreArchivo, function(driveData) {
-    if(driveData && driveData.downloadUrl) {
-      // Actualizar con URL de Drive permanente
-      if(FILE_STORE[expId+'_'+tipoKey]) {
-        FILE_STORE[expId+'_'+tipoKey].driveUrl = driveData.downloadUrl;
-        FILE_STORE[expId+'_'+tipoKey].driveId = driveData.id;
-        FILE_STORE[expId+'_'+tipoKey].viewUrl = driveData.viewUrl;
+
+  // Comprimir y guardar foto como base64 en el expediente
+  // Esto garantiza que la foto viaja con el expediente al servidor D1
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var dataUrl = ev.target.result;
+    
+    // Comprimir imagen antes de guardar
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var MAX = 800; // max 800px lado mayor
+      var w = img.width, h = img.height;
+      if(w > MAX || h > MAX) {
+        if(w > h) { h = Math.round(h*MAX/w); w = MAX; }
+        else { w = Math.round(w*MAX/h); h = MAX; }
       }
-      // Actualizar el expediente con la URL de Drive
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      var compressed = canvas.toDataURL('image/jpeg', 0.7);
+      
+      // Guardar en FILE_STORE con base64
+      FILE_STORE[expId+'_'+tipoKey].url = compressed;
+      FILE_STORE[expId+'_'+tipoKey].dataUrl = compressed;
+      
+      // Guardar base64 en localStorage como backup
+      try { localStorage.setItem('gm_file_'+expId+'_'+tipoKey, compressed); } catch(e){}
+      
+      // Guardar dataUrl en el expediente para que viaje con la sync
       for(var i=0;i<expedientes.length;i++) {
         if(expedientes[i].id === expId) {
-          if(!expedientes[i].driveFiles) expedientes[i].driveFiles = {};
-          expedientes[i].driveFiles[tipoKey] = {
-            url: driveData.downloadUrl,
-            viewUrl: driveData.viewUrl,
-            id: driveData.id,
-            nombre: file.name
+          if(!expedientes[i].fotosData) expedientes[i].fotosData = {};
+          expedientes[i].fotosData[tipoKey] = {
+            dataUrl: compressed,
+            nombre: file.name,
+            subidoPor: subidoPor,
+            fecha: fecha, hora: hora
           };
           saveExp();
           break;
         }
       }
-    }
-  });
+    };
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+  
+  // También intentar subir a Drive en background (si tiene OAuth)
+  if(DRIVE_ACCESS_TOKEN && Date.now() < DRIVE_TOKEN_EXPIRY) {
+    var nombreArchivo = expId + '_' + tipoKey + '_' + file.name;
+    subirArchivoADrive(file, nombreArchivo, function(driveData) {
+      if(driveData && driveData.downloadUrl) {
+        for(var i=0;i<expedientes.length;i++) {
+          if(expedientes[i].id === expId) {
+            if(!expedientes[i].driveFiles) expedientes[i].driveFiles = {};
+            expedientes[i].driveFiles[tipoKey] = {
+              url: driveData.downloadUrl,
+              viewUrl: driveData.viewUrl,
+              id: driveData.id, nombre: file.name
+            };
+            saveExp(); break;
+          }
+        }
+      }
+    });
+  }
 }
 function getFileMeta(expId, tipoKey) { return FILE_STORE[expId + '_' + tipoKey] || null; }
 function getFileUrl(expId, tipoKey) {
   var m = getFileMeta(expId, tipoKey);
-  if(m && m.driveUrl) return m.driveUrl; // Drive URL es permanente
+  if(m && m.dataUrl) return m.dataUrl;
+  if(m && m.driveUrl) return m.driveUrl;
+  if(m && m.url && m.url.indexOf('blob:') === -1) return m.url;
   if(m && m.url) return m.url;
   
-  // Buscar en el expediente (Drive URL guardada en D1)
+  // Buscar en expediente — fotosData (base64 comprimido)
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id === expId) {
-      var df = expedientes[i].driveFiles;
-      if(df && df[tipoKey] && df[tipoKey].url) {
-        return df[tipoKey].url;
+      var fd = expedientes[i].fotosData;
+      if(fd && fd[tipoKey] && fd[tipoKey].dataUrl) {
+        if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey]={};
+        FILE_STORE[expId+'_'+tipoKey].url = fd[tipoKey].dataUrl;
+        FILE_STORE[expId+'_'+tipoKey].dataUrl = fd[tipoKey].dataUrl;
+        return fd[tipoKey].dataUrl;
       }
+      var df = expedientes[i].driveFiles;
+      if(df && df[tipoKey] && df[tipoKey].url) return df[tipoKey].url;
       break;
     }
   }
@@ -906,8 +944,9 @@ function getFileUrl(expId, tipoKey) {
   var saved = null;
   try { saved = localStorage.getItem('gm_file_'+expId+'_'+tipoKey); } catch(e){}
   if(saved) {
-    if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey] = {};
+    if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey]={};
     FILE_STORE[expId+'_'+tipoKey].url = saved;
+    FILE_STORE[expId+'_'+tipoKey].dataUrl = saved;
     return saved;
   }
   return null;
@@ -1059,12 +1098,14 @@ function saveExp(){
   }
 }
 function limpiarExpParaSync(exps) {
-  // Quitar archivos base64 grandes — solo guardar metadata
   var clean = [];
   for(var i=0;i<exps.length;i++) {
     var e = JSON.parse(JSON.stringify(exps[i]));
-    // No enviar archivos base64 al servidor
-    if(e.e1&&e.e1.scanfile1) e.e1.scanfile1 = {nombre:e.e1.scanfile1.nombre||'',subidoPor:e.e1.scanfile1.subidoPor||'',fecha:e.e1.scanfile1.fecha||''};
+    // Limpiar solo los archivos grandes de localStorage (PDFs pesados)
+    // MANTENER fotosData (fotos comprimidas del técnico)
+    if(e.e1&&e.e1.scanfile1&&e.e1.scanfile1.dataUrl) delete e.e1.scanfile1.dataUrl;
+    if(e.e2&&e.e2.matrizExcel&&e.e2.matrizExcel.dataUrl) delete e.e2.matrizExcel.dataUrl;
+    // fotosData se mantiene intacto para que las fotos del técnico viajen al servidor
     clean.push(e);
   }
   return clean;
@@ -2353,95 +2394,18 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
 
 // Abrir cámara con MediaDevices API
 function abrirCamaraParaFoto(expId, fotoKey, label) {
-  // Crear modal de cámara
-  var modal = document.createElement('div');
-  modal.id = 'camaraModal_' + fotoKey;
-  modal.style.cssText = 'position:fixed;inset:0;background:black;z-index:9000;display:flex;flex-direction:column';
-
-  var video = document.createElement('video');
-  video.style.cssText = 'flex:1;object-fit:cover;width:100%';
-  video.autoplay = true; video.playsinline = true;
-
-  var controls = document.createElement('div');
-  controls.style.cssText = 'background:#0f172a;padding:20px;display:flex;align-items:center;justify-content:space-between;gap:16px';
-
-  var btnCancel = document.createElement('button');
-  btnCancel.style.cssText = 'background:#374151;color:white;border:none;border-radius:8px;padding:12px 20px;font-size:14px;font-weight:600;cursor:pointer';
-  btnCancel.textContent = '❌ Cancelar';
-
-  // Barra inferior estilo WhatsApp
-  controls.style.cssText = 'background:rgba(0,0,0,.7);padding:24px 20px 36px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px';
-
-  var btnCapture = document.createElement('button');
-  btnCapture.style.cssText = 'width:72px;height:72px;border-radius:50%;background:white;border:4px solid rgba(255,255,255,.5);box-shadow:0 0 0 2px white;cursor:pointer;display:flex;align-items:center;justify-content:center;justify-self:center';
-  btnCapture.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;background:white;border:3px solid #e5e7eb"></div>';
-
-  var btnGaleria = document.createElement('button');
-  btnGaleria.style.cssText = 'background:rgba(255,255,255,.2);border:none;color:white;border-radius:10px;padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;justify-self:end';
-  btnGaleria.textContent = '🖼️ Galería';
-  
-  // Input galería dentro del modal de cámara
-  var inpGalCam = document.createElement('input');
-  inpGalCam.type = 'file'; inpGalCam.accept = 'image/*';
-  inpGalCam.style.cssText = 'display:none';
-  
-  btnGaleria.onclick = function() { inpGalCam.click(); };
-
-  controls.appendChild(btnCancel);
-  controls.appendChild(btnCapture);
-  controls.appendChild(btnGaleria);
-  controls.appendChild(inpGalCam);
-  modal.appendChild(video);
-  modal.appendChild(controls);
-  document.body.appendChild(modal);
-
-  // Iniciar stream de cámara trasera
-  var stream = null;
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'environment', width: {ideal:1920}, height: {ideal:1080} }
-  }).then(function(s) {
-    stream = s;
-    video.srcObject = s;
-  }).catch(function(err) {
-    console.error('Cámara error:', err);
-    document.body.removeChild(modal);
-    showToast('No se pudo acceder a la cámara', 'error');
-    // Fallback: abrir galería
-    var inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
-    inp.onchange = function() {
-      if(this.files[0]) mostrarConfirmacionFoto(expId, fotoKey, this.files[0]);
-    };
-    inp.click();
-  });
-
-  function cerrarCamara() {
-    if(stream) stream.getTracks().forEach(function(t){ t.stop(); });
-    if(modal.parentNode) document.body.removeChild(modal);
-  }
-
-  btnCancel.onclick = cerrarCamara;
-
-  inpGalCam.onchange = function() {
-    if(!this.files[0]) return;
-    cerrarCamara();
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.capture = 'environment';
+  inp.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px';
+  document.body.appendChild(inp);
+  inp.onchange = function() {
+    if(inp.parentNode) document.body.removeChild(inp);
+    if(!this.files || !this.files[0]) return;
     mostrarConfirmacionFoto(expId, fotoKey, this.files[0]);
   };
-
-  btnCapture.onclick = function() {
-    // Capturar frame del video
-    var canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0);
-    cerrarCamara();
-    // Convertir a File
-    canvas.toBlob(function(blob) {
-      var file = new File([blob], 'foto_' + fotoKey + '_' + Date.now() + '.jpg', {type:'image/jpeg'});
-      mostrarConfirmacionFoto(expId, fotoKey, file);
-    }, 'image/jpeg', 0.85);
-  };
+  setTimeout(function() { inp.click(); }, 50);
 }
 
 // Modal de confirmación de foto
