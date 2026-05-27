@@ -2534,63 +2534,89 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
 }
 
 function grabarDatosCilindro(id) {
-  var serie = document.getElementById('cil_serie_' + id);
-  var fecha = document.getElementById('cil_fecha_' + id);
-  if(!serie || !fecha || !serie.value || !fecha.value) {
+  var serieVal = getInputVal('cil_serie_' + id);
+  var fechaVal = getInputVal('cil_fecha_' + id);
+  if(!serieVal || !fechaVal) {
     showToast('Completa Serie y Fecha de Fabricación del cilindro 1', 'error'); return;
   }
-  // Validar formato MM/AAAA
-  var fechaVal = fecha.value;
   if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
     showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
   }
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.serieCilindro = serie.value;
+      expedientes[i].e4.serieCilindro = serieVal.toUpperCase();
       expedientes[i].e4.fechaFabCilindro = fechaVal;
       saveExp(); break;
     }
   }
   showToast('✅ Datos Cilindro 1 grabados', 'success');
+  if(isTecnico() && document.getElementById('tecModalExp') &&
+     document.getElementById('tecModalExp').style.display !== 'none') {
+    abrirVistaTareasTecnico(id);
+  }
 }
 
 function grabarDatosCilindro2(id) {
-  var serie = document.getElementById('cil2_serie_' + id);
-  var fecha = document.getElementById('cil2_fecha_' + id);
-  if(!serie || !fecha || !serie.value || !fecha.value) {
+  var serieVal = getInputVal('cil2_serie_' + id);
+  var fechaVal = getInputVal('cil2_fecha_' + id);
+  if(!serieVal || !fechaVal) {
     showToast('Completa Serie y Fecha de Fabricación del cilindro 2', 'error'); return;
   }
-  var fechaVal = fecha.value;
   if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
     showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
   }
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.serieCilindro2 = serie.value;
+      expedientes[i].e4.serieCilindro2 = serieVal.toUpperCase();
       expedientes[i].e4.fechaFabCilindro2 = fechaVal;
       saveExp(); break;
     }
   }
   showToast('✅ Datos Cilindro 2 grabados', 'success');
+  if(isTecnico() && document.getElementById('tecModalExp') &&
+     document.getElementById('tecModalExp').style.display !== 'none') {
+    abrirVistaTareasTecnico(id);
+  }
+}
+
+function getInputVal(inputId) {
+  // Buscar en tecModalExp primero, luego en el DOM general
+  var tecModal = document.getElementById('tecModalExp');
+  if(tecModal && tecModal.style.display !== 'none') {
+    var el = tecModal.querySelector('#' + inputId);
+    if(el) return el.value;
+  }
+  var expModal = document.getElementById('expModal');
+  if(expModal) {
+    var el2 = expModal.querySelector('#' + inputId);
+    if(el2) return el2.value;
+  }
+  var el3 = document.getElementById(inputId);
+  return el3 ? el3.value : '';
 }
 
 function grabarDatosReductor(id) {
-  var marca = document.getElementById('red_marca_' + id);
-  var serie = document.getElementById('red_serie_' + id);
-  if(!marca || !serie || !marca.value || !serie.value) {
+  var marcaVal = getInputVal('red_marca_' + id);
+  var serieVal = getInputVal('red_serie_' + id);
+  if(!marcaVal || !serieVal) {
     showToast('Completa Marca y Serie del reductor', 'error'); return;
   }
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.marcaReductor = marca.value;
-      expedientes[i].e4.serieReductor = serie.value;
+      expedientes[i].e4.marcaReductor = marcaVal.toUpperCase();
+      expedientes[i].e4.serieReductor = serieVal.toUpperCase();
       saveExp(); break;
     }
   }
   showToast('✅ Datos Reductor grabados', 'success');
+  // Refrescar vista
+  if(isTecnico() && document.getElementById('tecModalExp') &&
+     document.getElementById('tecModalExp').style.display !== 'none') {
+    abrirVistaTareasTecnico(id);
+  }
 }
 
 function grabarFotoCilindro(expId, fotoKey, input) {
