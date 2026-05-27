@@ -2455,22 +2455,81 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
   };
 
   btnUsar.onclick = function() {
-    cerrar();
-    // Guardar la foto
-    storeFile(expId, fotoKey, file, function(url, name) {
-      for(var i=0;i<expedientes.length;i++) {
-        if(expedientes[i].id===expId) {
-          if(!expedientes[i].e4) expedientes[i].e4={};
-          expedientes[i].e4[fotoKey] = {
-            nombre: name, subidoPor: CU?CU.nombre:'-',
-            fecha: nowFecha(), hora: nowHora(), completado: true
-          };
-          saveExp(); break;
+    // NO cerrar modal todavía — mostrar spinner
+    btnUsar.disabled = true;
+    btnUsar.textContent = '⏳ Guardando...';
+    btnRetomar.disabled = true;
+    btnCancelar.disabled = true;
+
+    // Leer el file ANTES de cerrar el modal
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var dataUrl = ev.target.result;
+      
+      // Comprimir imagen
+      var img2 = new Image();
+      img2.onload = function() {
+        var canvas = document.createElement('canvas');
+        var MAX = 1024;
+        var w = img2.width, h = img2.height;
+        if(w > MAX || h > MAX) {
+          if(w > h) { h = Math.round(h*MAX/w); w = MAX; }
+          else { w = Math.round(w*MAX/h); h = MAX; }
         }
-      }
-      showToast('✅ Foto guardada correctamente', 'success');
-      abrirExpediente(expId);
-    });
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img2, 0, 0, w, h);
+        var compressed = canvas.toDataURL('image/jpeg', 0.75);
+        
+        // Guardar en FILE_STORE
+        FILE_STORE[expId+'_'+fotoKey] = {
+          url: compressed, dataUrl: compressed,
+          name: file.name, subidoPor: CU?CU.nombre:'-',
+          fecha: nowFecha(), hora: nowHora()
+        };
+        
+        // Guardar en localStorage
+        try { localStorage.setItem('gm_file_'+expId+'_'+fotoKey, compressed); } catch(e){}
+        
+        // Guardar en el expediente
+        var nombre = file.name;
+        for(var i=0;i<expedientes.length;i++) {
+          if(expedientes[i].id===expId) {
+            if(!expedientes[i].e4) expedientes[i].e4={};
+            expedientes[i].e4[fotoKey] = {
+              nombre: nombre, subidoPor: CU?CU.nombre:'-',
+              fecha: nowFecha(), hora: nowHora(), completado: true
+            };
+            if(!expedientes[i].fotosData) expedientes[i].fotosData={};
+            expedientes[i].fotosData[fotoKey] = {
+              dataUrl: compressed, nombre: nombre,
+              subidoPor: CU?CU.nombre:'-',
+              fecha: nowFecha(), hora: nowHora()
+            };
+            saveExp();
+            break;
+          }
+        }
+        
+        // Ahora sí cerrar modal y refrescar
+        cerrar();
+        showToast('✅ Foto guardada', 'success');
+        
+        // Refrescar vista según contexto
+        if(isTecnico() && document.getElementById('tecModalExp') && 
+           document.getElementById('tecModalExp').style.display !== 'none') {
+          abrirVistaTareasTecnico(expId);
+        } else {
+          abrirExpediente(expId);
+        }
+      };
+      img2.src = dataUrl;
+    };
+    reader.onerror = function() {
+      cerrar();
+      showToast('Error al leer la foto', 'error');
+    };
+    reader.readAsDataURL(file);
   };
 }
 
