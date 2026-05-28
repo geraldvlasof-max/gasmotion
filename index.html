@@ -566,6 +566,51 @@ input,select,textarea{font-size:16px!important}
 // HELPER: abrir foto sin crashear Chrome en Android
 // Convierte base64 a Blob URL antes de abrir
 // ═══════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════
+// SUBIR FOTO A GOOGLE DRIVE VÍA WORKER
+// El Worker usa el Refresh Token guardado para subir
+// ════════════════════════════════════════════════════
+function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
+  if(!GM_CONFIG.workerUrl || !dataUrl) return;
+  console.log('Subiendo foto a Drive:', fotoKey, 'exp:', expId);
+  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      expId: expId,
+      fotoKey: fotoKey,
+      dataUrl: dataUrl,
+      nombre: nombre || (fotoKey + '_' + Date.now() + '.jpg')
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok && d.driveFile) {
+      console.log('✅ Foto en Drive:', d.driveFile.viewUrl);
+      // Actualizar expediente local con URL de Drive
+      for(var i=0; i<expedientes.length; i++){
+        if(expedientes[i].id === expId){
+          if(!expedientes[i].driveFiles) expedientes[i].driveFiles = {};
+          expedientes[i].driveFiles[fotoKey] = d.driveFile;
+          // Eliminar base64 local para ahorrar espacio
+          if(expedientes[i].fotosData && expedientes[i].fotosData[fotoKey]){
+            delete expedientes[i].fotosData[fotoKey].dataUrl;
+          }
+          try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+          break;
+        }
+      }
+      showToast('📁 Foto guardada en Drive', 'success');
+    } else {
+      console.warn('Error subiendo a Drive:', d.error || d);
+    }
+  })
+  .catch(function(e){
+    console.warn('Error Drive upload:', e);
+  });
+}
+
 function abrirFotoSeguro(dataUrl, nombre) {
   if(!dataUrl) { showToast('Foto no disponible', 'error'); return; }
   try {
@@ -2611,13 +2656,15 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
               fecha: nowFecha(), hora: nowHora()
             };
             saveExp();
+            // Subir foto a Google Drive en segundo plano
+            subirFotoADrive(expedientes[i].id, fotoKey, compressed, nombre);
             break;
           }
         }
         
         // Ahora sí cerrar modal y refrescar
         cerrar();
-        showToast('✅ Foto guardada', 'success');
+        showToast('✅ Foto guardada — subiendo a Drive...', 'success');
         
         // Refrescar vista según contexto
         if(isTecnico() && document.getElementById('tecModalExp') && 
