@@ -1764,19 +1764,40 @@ function renderExpedientes() {
 }
 
 function eliminarExp(id) {
-  for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===id){expedientes.splice(i,1);break;}}
-  saveExp();
+  // Bloquear polling durante la eliminación para evitar que recargue antes de terminar
+  PENDING_SYNC = true;
+
+  // 1. Eliminar del array local
+  for(var i=0;i<expedientes.length;i++){
+    if(expedientes[i].id===id){expedientes.splice(i,1);break;}
+  }
+
+  // 2. Actualizar localStorage y UI inmediatamente
+  try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
   renderExpedientes();
-  // Eliminar del servidor D1
+
+  // 3. Eliminar del servidor D1 PRIMERO — luego desbloquear polling
   if(GM_CONFIG.workerUrl) {
     fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
+      cache: 'no-store',
       body: JSON.stringify({action:'deleteExp', id:id})
     })
     .then(function(r){ return r.json(); })
-    .then(function(d){ console.log('Exp eliminado del servidor:', id, d); })
-    .catch(function(e){ console.warn('Error eliminando del servidor:', e); });
+    .then(function(d){
+      console.log('Exp eliminado del servidor:', id, d);
+      showToast('Expediente eliminado', 'success');
+      // Desbloquear polling recién cuando D1 confirmó la eliminación
+      PENDING_SYNC = false;
+    })
+    .catch(function(e){
+      console.warn('Error eliminando del servidor:', e);
+      showToast('Error al eliminar del servidor', 'error');
+      PENDING_SYNC = false;
+    });
+  } else {
+    PENDING_SYNC = false;
   }
 }
 
