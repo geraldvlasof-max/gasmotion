@@ -1119,7 +1119,19 @@ function loadExpFromScript(){
       // PRESERVAR fotosData local si el servidor lo trae vacío.
       // Esto ocurre cuando saveExp falló por tamaño del request.
       // ═══════════════════════════════════════════════════════
-      var mergeado = remote.concat(localOnly);
+      // Leer eliminados ANTES del merge para filtrar del resultado final
+      var eliminadosFinales = [];
+      try { eliminadosFinales = JSON.parse(localStorage.getItem('gm_eliminados') || '[]'); } catch(e) {}
+
+      // Filtrar del remote los IDs que el usuario eliminó localmente
+      var remoteFiltrado = remote.filter(function(e){
+        if(!e || !e.id) return false;
+        if(eliminadosFinales.indexOf(e.id) !== -1) return false; // excluir eliminados
+        return true;
+      });
+
+      var mergeado = remoteFiltrado.concat(localOnly);
+
       for(var m=0;m<mergeado.length;m++){
         var expRemoto = mergeado[m];
         if(!expRemoto || !expRemoto.id) continue;
@@ -1137,7 +1149,6 @@ function loadExpFromScript(){
         if(remotoVacio && localTieneFotos){
           console.log('PRESERVANDO fotosData local para', expRemoto.placa, '— servidor lo tenía vacío');
           mergeado[m].fotosData = fdLocal;
-          // Re-subir este expediente al servidor con las fotos
           saveOneExpConFotos(mergeado[m]);
         }
       }
