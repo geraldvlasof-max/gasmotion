@@ -1082,53 +1082,38 @@ function loadExpFromScript(){
   .then(function(data){
     var remote = data.expedientes || [];
 
-    // Servidor vacío y local tiene datos → subir (solo al inicio)
-    if(remote.length === 0 && expedientes.length > 0) {
-      console.log('Servidor vacío — subiendo datos locales...');
-      sincronizarAhora(null);
-      return;
-    }
+    // ══════════════════════════════════════════════════════
+    // REGLA ABSOLUTA: el servidor es la única fuente de verdad.
+    // El polling SOLO descarga. NUNCA sube. NUNCA.
+    // Si el servidor tiene 0, el cliente muestra 0.
+    // ══════════════════════════════════════════════════════
 
-    if(remote.length > 0) {
-      // ══════════════════════════════════════════════
-      // REGLA FUNDAMENTAL: el servidor es la verdad.
-      // El polling SOLO descarga. Nunca sube.
-      // Excepción única: preservar fotosData local
-      // si el servidor lo trae vacío (fotos de Felix)
-      // ══════════════════════════════════════════════
-
-      // Preservar fotosData local en expedientes que el servidor trae sin fotos
-      for(var m=0; m<remote.length; m++){
-        var expRemoto = remote[m];
-        if(!expRemoto || !expRemoto.id) continue;
-
-        // Buscar en local
-        var expLocal = null;
-        for(var n=0; n<expedientes.length; n++){
-          if(expedientes[n] && expedientes[n].id === expRemoto.id){
-            expLocal = expedientes[n];
-            break;
-          }
-        }
-        if(!expLocal) continue;
-
-        // Si servidor trae fotosData vacío pero local tiene fotos → preservar
-        var fdRemoto = expRemoto.fotosData;
-        var fdLocal  = expLocal.fotosData;
-        var remotoVacio = !fdRemoto || typeof fdRemoto !== 'object' || Object.keys(fdRemoto).length === 0;
-        var localTieneFotos = fdLocal && typeof fdLocal === 'object' && Object.keys(fdLocal).length > 0;
-        if(remotoVacio && localTieneFotos){
-          console.log('Preservando fotosData local para:', expRemoto.placa);
-          remote[m].fotosData = fdLocal;
-          // Subir este expediente con fotos al servidor
-          saveOneExpConFotos(remote[m]);
+    // Preservar fotosData local si el servidor lo trae vacío
+    for(var m=0; m<remote.length; m++){
+      var expRemoto = remote[m];
+      if(!expRemoto || !expRemoto.id) continue;
+      var expLocal = null;
+      for(var n=0; n<expedientes.length; n++){
+        if(expedientes[n] && expedientes[n].id === expRemoto.id){
+          expLocal = expedientes[n];
+          break;
         }
       }
-
-      // El servidor manda — reemplazar expedientes con lo que dice el servidor
-      expedientes = remote;
-      try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(ex){}
+      if(!expLocal) continue;
+      var fdRemoto = expRemoto.fotosData;
+      var fdLocal  = expLocal.fotosData;
+      var remotoVacio = !fdRemoto || typeof fdRemoto !== 'object' || Object.keys(fdRemoto).length === 0;
+      var localTieneFotos = fdLocal && typeof fdLocal === 'object' && Object.keys(fdLocal).length > 0;
+      if(remotoVacio && localTieneFotos){
+        console.log('Preservando fotosData local para:', expRemoto.placa);
+        remote[m].fotosData = fdLocal;
+        saveOneExpConFotos(remote[m]);
+      }
     }
+
+    // Reemplazar expedientes con exactamente lo que dice el servidor
+    expedientes = remote;
+    try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(ex){}
 
     GM_LAST_SYNC = Date.now();
     var app = document.getElementById('app');
