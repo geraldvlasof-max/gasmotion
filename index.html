@@ -1092,7 +1092,16 @@ function loadExpFromScript(){
       var remoteIds = {};
       for(var i=0;i<remote.length;i++) remoteIds[remote[i].id]=true;
       // Agregar expedientes locales que no llegaron al servidor aún
-      var localOnly = expedientes.filter(function(e){ return e && e.id && !remoteIds[e.id]; });
+      // Leer lista de IDs eliminados — NUNCA re-subirlos al servidor
+      var eliminados = [];
+      try { eliminados = JSON.parse(localStorage.getItem('gm_eliminados') || '[]'); } catch(e) {}
+
+      var localOnly = expedientes.filter(function(e){
+        if(!e || !e.id) return false;
+        if(remoteIds[e.id]) return false;
+        if(eliminados.indexOf(e.id) !== -1) return false; // ignorar eliminados
+        return true;
+      });
       if(localOnly.length > 0) {
         console.log('Expedientes locales pendientes de sync:', localOnly.length);
         for(var j=0;j<localOnly.length;j++) {
@@ -1764,19 +1773,22 @@ function renderExpedientes() {
 }
 
 function eliminarExp(id) {
-  // Bloquear polling durante la eliminación para evitar que recargue antes de terminar
-  PENDING_SYNC = true;
+  // 1. Registrar el ID como eliminado — el polling nunca lo re-subirá
+  var eliminados = [];
+  try { eliminados = JSON.parse(localStorage.getItem('gm_eliminados') || '[]'); } catch(e) {}
+  if(eliminados.indexOf(id) === -1) eliminados.push(id);
+  try { localStorage.setItem('gm_eliminados', JSON.stringify(eliminados)); } catch(e) {}
 
-  // 1. Eliminar del array local
+  // 2. Eliminar del array en memoria
   for(var i=0;i<expedientes.length;i++){
     if(expedientes[i].id===id){expedientes.splice(i,1);break;}
   }
 
-  // 2. Actualizar localStorage y UI inmediatamente
+  // 3. Actualizar localStorage y UI
   try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
   renderExpedientes();
 
-  // 3. Eliminar del servidor D1 PRIMERO — luego desbloquear polling
+  // 4. Eliminar del servidor D1
   if(GM_CONFIG.workerUrl) {
     fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
       method: 'POST',
@@ -1788,16 +1800,11 @@ function eliminarExp(id) {
     .then(function(d){
       console.log('Exp eliminado del servidor:', id, d);
       showToast('Expediente eliminado', 'success');
-      // Desbloquear polling recién cuando D1 confirmó la eliminación
-      PENDING_SYNC = false;
     })
     .catch(function(e){
       console.warn('Error eliminando del servidor:', e);
-      showToast('Error al eliminar del servidor', 'error');
-      PENDING_SYNC = false;
+      showToast('Error al eliminar', 'error');
     });
-  } else {
-    PENDING_SYNC = false;
   }
 }
 
