@@ -1615,7 +1615,32 @@ function grabarSf1() {
       e5:{},
       historial:[]
     };
-    expedientes.push(exp); saveExp();
+    expedientes.push(exp);
+    // Guardar en localStorage inmediatamente
+    try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
+    // Bloquear polling mientras se confirma la subida al servidor
+    PENDING_SYNC = true;
+    // Subir expediente nuevo al servidor directamente (saveOneExp es más rápido)
+    if(GM_CONFIG.workerUrl) {
+      var expLimpio = JSON.parse(JSON.stringify(exp));
+      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        cache: 'no-store',
+        body: JSON.stringify({action:'saveOneExp', data: expLimpio})
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        console.log('Expediente nuevo guardado en servidor:', d.id);
+        PENDING_SYNC = false;
+      })
+      .catch(function(e){
+        console.warn('Error guardando nuevo exp:', e);
+        PENDING_SYNC = false;
+      });
+    } else {
+      PENDING_SYNC = false;
+    }
     resetFormNuevo();
     renderBandeja();
     showAlert('alertBandeja','SCANFILE 1 grabado — '+nowFecha()+' '+nowHora()+' — '+( CU?CU.nombre:''),'success');
