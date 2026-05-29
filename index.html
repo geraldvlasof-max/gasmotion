@@ -1243,21 +1243,25 @@ function syncExpUnoAUno(exps, idx) {
 }
 
 function syncSheetsConFeedback(callback){
-  var payload=JSON.stringify({action:'saveExp',expedientes:expedientes});
-  var encoded=encodeURIComponent(payload);
-  var url=GM_CONFIG.workerUrl+'?action=saveExp&data='+encoded;
-  var xhr=new XMLHttpRequest();
-  xhr.open('GET',url,true);
-  xhr.timeout=15000;
-  xhr.onload=function(){
-    try{
-      var r=JSON.parse(xhr.responseText);
-      if(callback) callback(r.ok, r.total||0);
-    }catch(e){if(callback)callback(false,0);}
-  };
-  xhr.ontimeout=function(){if(callback)callback(false,0);};
-  xhr.onerror=function(){if(callback)callback(false,0);};
-  xhr.send();
+  if(!GM_CONFIG.workerUrl){ if(callback) callback(false,0); return; }
+  // Usar saveOneExp por cada expediente modificado — más confiable que saveExp masivo
+  // Para asignación de técnicos, solo guardar el expediente modificado
+  // Usar POST con JSON (no GET con URL gigante)
+  var expsLimpios = limpiarExpParaSync(expedientes);
+  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({action:'saveExp', expedientes: expsLimpios})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(callback) callback(d.ok, d.total||0);
+  })
+  .catch(function(e){
+    console.warn('syncSheetsConFeedback error:', e);
+    if(callback) callback(false, 0);
+  });
 }
 loadExp();
 
