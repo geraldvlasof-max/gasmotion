@@ -274,6 +274,7 @@ input,select,textarea{font-size:16px!important}
         </button>
       </div>
       <button class="btn-login-main" onclick="doLogin()">Ingresar al sistema</button>
+      <button style="background:transparent;border:none;color:#6b82a0;font-size:12px;margin-top:8px;cursor:pointer;width:100%;padding:4px" onclick="mostrarRecuperacion()">¿Olvidaste tu contraseña?</button>
       <div id="pwaInstallBanner" style="display:none;margin-top:14px;background:#0f172a;border-radius:12px;padding:14px 16px;align-items:center;gap:12px;cursor:pointer;border:1px solid rgba(255,255,255,0.1)" onclick="instalarApp()">
         <span style="font-size:26px">📲</span>
         <div style="flex:1"><div style="font-size:13px;font-weight:700;color:white">Instalar app Gasmotion</div>
@@ -1092,8 +1093,8 @@ function nowHora() { return new Date().toLocaleTimeString('es-PE',{hour:'2-digit
 // STORAGE
 // ==================
 var DEFAULT_USERS = {
-  iki:        { nombre:'Iki',   role:'admin',   sede:'Todas', pass:'carrigas2025', especialidad:'' },
-  felix_5699: { nombre:'felix', role:'tecnico', sede:'Todas', pass:'123456',       especialidad:'Ambos' }
+  iki:        { nombre:'Iki',   role:'admin',   sede:'Todas', pass:'Carrigas2025!', especialidad:'', mustChangePass: false },
+  felix_5699: { nombre:'felix', role:'tecnico', sede:'Todas', pass:'Felix2025!',    especialidad:'Ambos', mustChangePass: true }
 };
 var SERVER_USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
@@ -1349,6 +1350,14 @@ function roleLabel(r){
 }
 function isTecnico(){return CU&&CU.role==='tecnico';}
 function isAdmin(){return CU&&CU.role==='admin';}
+function isSupervisor(){return CU&&CU.role==='supervisor';}
+function isVendedor(){return CU&&CU.role==='vendedor';}
+function isAsistenteFise(){return CU&&CU.role==='asistente_fise';}
+function isAdminOrSupervisor(){return CU&&(CU.role==='admin'||CU.role==='supervisor');}
+function canCreateExp(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='vendedor');}
+function canDeleteExp(){return CU&&CU.role==='admin';}
+function canManageUsers(){return CU&&CU.role==='admin';}
+function canSeeAllExp(){return CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='asistente_fise');}
 function isFise(){return CU&&CU.role==='asistente_fise';}
 function isJefe(){return CU&&CU.role==='jefe';}
 function canAssignTecnicos(){return CU&&(CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe'||CU.role==='vendedor');}
@@ -1406,50 +1415,38 @@ function doLogin() {
     return;
   }
 
-  // Paso 2: no está local — buscar en servidor
+  // Paso 2: no está local — buscar en servidor D1
   setLoginBtn('☁️ Verificando...', true);
-  
-  // Intentar cargar desde servidor
-  var scriptUrl = GM_CONFIG.jsonBinUrl + '/latest';
-  var img = new Image();
-  var xhr2 = new XMLHttpRequest();
-  xhr2.open('GET', scriptUrl, true);
-  xhr2.timeout = 8000;
-  xhr2.onreadystatechange = function() {
-    if(xhr2.readyState !== 4) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getUsers', { cache: 'no-store' })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
     setLoginBtn('Ingresar al sistema', false);
-    try {
-      var data = JSON.parse(xhr2.responseText);
-      if(data && data.users) {
-        // Guardar en localStorage para próximas veces
-        USERS_CACHE = data.users;
-        try{ localStorage.setItem('gm_users', JSON.stringify(data.users)); }catch(e){}
-        var foundServer = buscarUsuario(rawUid, data.users);
-        if(!foundServer) {
-          _loginAttempts++;
-          setLoginError('❌ Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
-          return;
-        }
-        if(foundServer.user.pass !== pass) {
-          _loginAttempts++;
-          setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
-          return;
-        }
-        completarLogin(foundServer.id, foundServer.user);
+    var serverUsers = data.users || {};
+    if(serverUsers && Object.keys(serverUsers).length > 0) {
+      // Actualizar caché local con datos del servidor
+      USERS_CACHE = serverUsers;
+      try{ localStorage.setItem('gm_users', JSON.stringify(serverUsers)); }catch(e){}
+      var foundServer = buscarUsuario(rawUid, serverUsers);
+      if(!foundServer) {
+        _loginAttempts++;
+        setLoginError('❌ Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
         return;
       }
-    } catch(e) {}
-    // Si falló la conexión
+      if(foundServer.user.pass !== pass) {
+        _loginAttempts++;
+        setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+        return;
+      }
+      completarLogin(foundServer.id, foundServer.user);
+      return;
+    }
     _loginAttempts++;
-    setLoginError('❌ Usuario "' + rawUid + '" no encontrado. Sin conexión al servidor.');
-  };
-  xhr2.ontimeout = function() {
+    setLoginError('❌ Usuario "' + rawUid + '" no encontrado. Contacta al administrador.');
+  })
+  .catch(function(e){
     setLoginBtn('Ingresar al sistema', false);
     setLoginError('⏳ Sin respuesta del servidor. Verifica tu conexión a internet.');
-  };
-  xhr2.setRequestHeader('X-Access-Key', GM_CONFIG.jsonBinKey);
-  xhr2.setRequestHeader('X-Bin-Meta', 'false');
-  xhr2.send();
+  });
 }
 
 function buscarUsuario(rawUid, users) {
@@ -1473,7 +1470,71 @@ function completarLogin(uid, u) {
     sessionStorage.setItem('gm_session', JSON.stringify(CU));
     sessionStorage.setItem('gm_login_time', String(Date.now()));
   }catch(e){}
+  // Si debe cambiar contraseña, mostrar formulario antes de entrar
+  if(u.mustChangePass) {
+    mostrarCambioPasswordObligatorio(uid);
+    return;
+  }
   mostrarApp(); setupInactivity();
+}
+
+function mostrarCambioPasswordObligatorio(uid) {
+  var loginBox = document.getElementById('loginBox');
+  if(!loginBox) { mostrarApp(); setupInactivity(); return; }
+  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">🔐 Cambiar contraseña</div>' +
+    '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Por seguridad debes establecer una nueva contraseña antes de continuar</div>' +
+    '<div id="cambioPassError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
+    '<label class="form-label">Nueva contraseña</label>' +
+    '<input class="form-input" type="password" id="newPass1" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número">' +
+    '<div id="passStrength" style="margin:6px 0;font-size:12px"></div>' +
+    '<label class="form-label" style="margin-top:12px">Confirmar contraseña</label>' +
+    '<input class="form-input" type="password" id="newPass2" placeholder="Repite la contraseña">' +
+    '<button class="btn btn-primary" style="width:100%;margin-top:16px" id="btnGuardarPass">Guardar contraseña</button>';
+  document.getElementById('btnGuardarPass').onclick = function(){ guardarNuevaPassword(uid); };
+  document.getElementById('newPass1').addEventListener('input', function() {
+    var v = this.value;
+    var strength = validarFortalezaPass(v);
+    document.getElementById('passStrength').innerHTML = strength.html;
+  });
+}
+
+function validarFortalezaPass(pass) {
+  var ok = pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass);
+  if(!pass) return { ok: false, html: '' };
+  if(pass.length < 8) return { ok: false, html: '<span style="color:#dc2626">❌ Mínimo 8 caracteres</span>' };
+  if(!/[A-Z]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">❌ Necesita al menos 1 mayúscula</span>' };
+  if(!/[0-9]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">❌ Necesita al menos 1 número</span>' };
+  return { ok: true, html: '<span style="color:#16a34a">✅ Contraseña segura</span>' };
+}
+
+function guardarNuevaPassword(uid) {
+  var p1 = document.getElementById('newPass1').value;
+  var p2 = document.getElementById('newPass2').value;
+  var errEl = document.getElementById('cambioPassError');
+  var strength = validarFortalezaPass(p1);
+  if(!strength.ok) { errEl.textContent = 'La contraseña no cumple los requisitos mínimos.'; return; }
+  if(p1 !== p2) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+  // Actualizar usuario
+  var users = getUsers();
+  if(users[uid]) {
+    users[uid].pass = p1;
+    users[uid].mustChangePass = false;
+    saveUsers(users);
+    // Actualizar CU
+    CU.pass = p1;
+    CU.mustChangePass = false;
+    try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
+    // Subir al servidor
+    if(GM_CONFIG.workerUrl) {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({users: users})
+      }).catch(function(e){ console.warn('Error guardando users:', e); });
+    }
+    showToast('✅ Contraseña actualizada correctamente', 'success');
+    mostrarApp(); setupInactivity();
+  }
 }
 
 function setLoginError(msg) {
@@ -1819,6 +1880,8 @@ function renderExpedientes() {
 }
 
 function eliminarExp(id) {
+  // Solo admin puede eliminar
+  if(!canDeleteExp()) { showToast('❌ Sin permiso para eliminar expedientes', 'error'); return; }
   // 1. Registrar el ID como eliminado — el polling nunca lo re-subirá
   var eliminados = [];
   try { eliminados = JSON.parse(localStorage.getItem('gm_eliminados') || '[]'); } catch(e) {}
@@ -1852,6 +1915,219 @@ function eliminarExp(id) {
       showToast('Error al eliminar', 'error');
     });
   }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// RECUPERACIÓN DE CONTRASEÑA
+// Solo para Iki — envía código de 6 dígitos a su Gmail
+// ═══════════════════════════════════════════════════════════
+function mostrarRecuperacion() {
+  var loginBox = document.getElementById('loginBox');
+  if(!loginBox) return;
+  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:4px">🔑 Recuperar contraseña</div>' +
+    '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Solo disponible para el administrador principal</div>' +
+    '<div id="recError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
+    '<label class="form-label">Tu usuario</label>' +
+    '<input class="form-input" type="text" id="recUser" placeholder="Escribe tu usuario (iki)">' +
+    '<button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnEnviarCodigo">Enviar código a mi correo</button>' +
+    '<div id="codigoSection" style="display:none;margin-top:16px">' +
+    '<label class="form-label">Código recibido (6 dígitos)</label>' +
+    '<input class="form-input" type="text" id="recCodigo" placeholder="Ej: 482910" maxlength="6">' +
+    '<label class="form-label" style="margin-top:12px">Nueva contraseña</label>' +
+    '<input class="form-input" type="password" id="recNewPass" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número">' +
+    '<button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnVerificarCodigo">Cambiar contraseña</button>' +
+    '</div>' +
+    '<button class="btn" style="width:100%;margin-top:12px;background:#f1f5f9;color:#64748b" id="btnVolverLogin">← Volver al login</button>';
+
+  document.getElementById('btnVolverLogin').onclick = function(){ mostrarLogin(); };
+  document.getElementById('btnEnviarCodigo').onclick = function(){ enviarCodigoRecuperacion(); };
+  document.getElementById('btnVerificarCodigo').onclick = function(){ verificarCodigoRecuperacion(); };
+}
+
+function enviarCodigoRecuperacion() {
+  var uid = document.getElementById('recUser').value.trim().toLowerCase();
+  var errEl = document.getElementById('recError');
+  if(!uid) { errEl.textContent = 'Escribe tu usuario.'; return; }
+  // Solo admin puede recuperar por correo
+  var users = getUsers();
+  var u = users[uid];
+  if(!u || u.role !== 'admin') {
+    errEl.textContent = 'Este usuario no tiene recuperación por correo. Contacta al administrador.';
+    return;
+  }
+  // Generar código de 6 dígitos
+  _recoveryCode = String(Math.floor(100000 + Math.random() * 900000));
+  _recoveryExpiry = Date.now() + 600000; // 10 minutos
+  // Mostrar el código en pantalla (en producción iría por correo via EmailJS)
+  errEl.style.color = '#16a34a';
+  errEl.textContent = '✅ Código generado: ' + _recoveryCode + ' (válido 10 min) — En producción llegaría a tu correo.';
+  document.getElementById('codigoSection').style.display = 'block';
+  console.log('Código de recuperación para', uid, ':', _recoveryCode);
+}
+
+function verificarCodigoRecuperacion() {
+  var codigo = document.getElementById('recCodigo').value.trim();
+  var newPass = document.getElementById('recNewPass').value;
+  var uid = document.getElementById('recUser').value.trim().toLowerCase();
+  var errEl = document.getElementById('recError');
+  errEl.style.color = '#dc2626';
+  if(!_recoveryCode || Date.now() > _recoveryExpiry) {
+    errEl.textContent = 'El código expiró. Solicita uno nuevo.';
+    _recoveryCode = null; return;
+  }
+  if(codigo !== _recoveryCode) { errEl.textContent = 'Código incorrecto.'; return; }
+  var strength = validarFortalezaPass(newPass);
+  if(!strength.ok) { errEl.textContent = 'La contraseña no cumple los requisitos.'; return; }
+  // Cambiar contraseña
+  var users = getUsers();
+  if(users[uid]) {
+    users[uid].pass = newPass;
+    users[uid].mustChangePass = false;
+    saveUsers(users);
+    if(GM_CONFIG.workerUrl) {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({users: users})
+      }).catch(function(){});
+    }
+    _recoveryCode = null;
+    errEl.style.color = '#16a34a';
+    errEl.textContent = '✅ Contraseña cambiada. Ahora puedes iniciar sesión.';
+    setTimeout(function(){ mostrarLogin(); }, 2000);
+  }
+}
+
+function mostrarLogin() {
+  // Recargar la página para restaurar el login original
+  window.location.reload();
+}
+
+// ═══════════════════════════════════════════════════════════
+// GESTIÓN DE USUARIOS — Panel admin
+// ═══════════════════════════════════════════════════════════
+function renderGestionUsuarios() {
+  var users = getUsers();
+  var uids = Object.keys(users);
+  var rows = '';
+  for(var i=0; i<uids.length; i++) {
+    var uid = uids[i];
+    var u = users[uid];
+    var rolLabel = {
+      'admin':'👑 Admin',
+      'supervisor':'🔶 Supervisor',
+      'vendedor':'🛒 Vendedor',
+      'tecnico':'🔧 Técnico',
+      'asistente_fise':'📋 Asistente FISE'
+    }[u.role] || u.role;
+    var esIki = uid === 'iki';
+    rows += '<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;background:white">' +
+      '<div style="flex:1">' +
+        '<div style="font-weight:700;font-size:14px">' + (u.nombre||uid) + ' <span style="font-size:11px;color:#6b82a0">@' + uid + '</span></div>' +
+        '<div style="font-size:12px;color:#64748b">' + rolLabel + ' — ' + (u.sede||'Todas') + (u.mustChangePass?' — <span style="color:#f59e0b">⚠️ Debe cambiar pass</span>':'') + '</div>' +
+      '</div>';
+    if(!esIki) {
+      rows += '<button class="btn btn-sm" style="background:#f59e0b;color:white" id="btnReset_'+uid+'">🔄 Reset pass</button>';
+      rows += '<button class="btn btn-sm" style="background:#dc2626;color:white" id="btnDel_'+uid+'">🗑</button>';
+    }
+    rows += '</div>';
+  }
+  var container = document.getElementById('tabUsuarios');
+  if(!container) return;
+  container.innerHTML = '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800">👥 Gestión de Usuarios</h3>' +
+    rows +
+    '<hr style="margin:16px 0"><h4 style="margin:0 0 12px;font-size:14px;font-weight:700">➕ Crear nuevo usuario</h4>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+      '<input class="form-input" id="nuUid" placeholder="usuario (sin espacios)" style="font-size:13px">' +
+      '<input class="form-input" id="nuNombre" placeholder="Nombre completo" style="font-size:13px">' +
+      '<select class="form-input" id="nuRol" style="font-size:13px">' +
+        '<option value="supervisor">Supervisor</option>' +
+        '<option value="vendedor">Vendedor</option>' +
+        '<option value="tecnico">Técnico</option>' +
+        '<option value="asistente_fise">Asistente FISE</option>' +
+      '</select>' +
+      '<select class="form-input" id="nuSede" style="font-size:13px">' +
+        '<option value="Todas">Todas las sedes</option>' +
+        '<option value="Santa Anita">Santa Anita</option>' +
+        '<option value="Chorrillos">Chorrillos</option>' +
+        '<option value="SMP">SMP</option>' +
+      '</select>' +
+    '</div>' +
+    '<button class="btn btn-primary" style="width:100%" id="btnCrearUser">Crear usuario</button>' +
+    '<div id="nuError" style="margin-top:8px;font-size:13px"></div>';
+
+  // Eventos reset y eliminar
+  for(var j=0; j<uids.length; j++) {
+    var u2id = uids[j];
+    if(u2id === 'iki') continue;
+    (function(userId){
+      var btnR = document.getElementById('btnReset_'+userId);
+      var btnD = document.getElementById('btnDel_'+userId);
+      if(btnR) btnR.onclick = function(){ resetPassUsuario(userId); };
+      if(btnD) btnD.onclick = function(){ eliminarUsuario(userId); };
+    })(u2id);
+  }
+  document.getElementById('btnCrearUser').onclick = function(){ crearNuevoUsuario(); };
+}
+
+function resetPassUsuario(uid) {
+  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  var tempPass = '';
+  for(var i=0; i<8; i++) tempPass += chars[Math.floor(Math.random()*chars.length)];
+  // Asegurar al menos 1 mayúscula y 1 número
+  tempPass = 'G' + tempPass.substring(1,6) + '7' + tempPass.substring(7);
+  var users = getUsers();
+  if(!users[uid]) return;
+  users[uid].pass = tempPass;
+  users[uid].mustChangePass = true;
+  saveUsers(users);
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({users: users})
+    }).catch(function(){});
+  }
+  alert('✅ Contraseña temporal de ' + (users[uid].nombre||uid) + ':\n\n' + tempPass + '\n\nMuéstrasela al usuario. Deberá cambiarla al primer login.');
+  renderGestionUsuarios();
+}
+
+function eliminarUsuario(uid) {
+  if(!confirm('¿Eliminar al usuario @' + uid + '? Esta acción no se puede deshacer.')) return;
+  var users = getUsers();
+  delete users[uid];
+  saveUsers(users);
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({users: users})
+    }).catch(function(){});
+  }
+  showToast('Usuario eliminado', 'success');
+  renderGestionUsuarios();
+}
+
+function crearNuevoUsuario() {
+  var uid = document.getElementById('nuUid').value.trim().toLowerCase().replace(/\s+/g,'_');
+  var nombre = document.getElementById('nuNombre').value.trim();
+  var rol = document.getElementById('nuRol').value;
+  var sede = document.getElementById('nuSede').value;
+  var errEl = document.getElementById('nuError');
+  if(!uid || !nombre) { errEl.textContent = '⚠️ Completa todos los campos.'; errEl.style.color='#dc2626'; return; }
+  var users = getUsers();
+  if(users[uid]) { errEl.textContent = '⚠️ El usuario @' + uid + ' ya existe.'; errEl.style.color='#dc2626'; return; }
+  // Generar contraseña temporal
+  var tempPass = 'Pass' + String(Math.floor(1000 + Math.random()*9000)) + '!';
+  users[uid] = { nombre: nombre, role: rol, sede: sede, pass: tempPass, mustChangePass: true, especialidad: '' };
+  saveUsers(users);
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({users: users})
+    }).catch(function(){});
+  }
+  errEl.style.color = '#16a34a';
+  errEl.textContent = '✅ Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
+  renderGestionUsuarios();
 }
 
 // ==================
