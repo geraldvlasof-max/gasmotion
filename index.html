@@ -805,16 +805,18 @@ var GM_CONFIG={
 var USERS_CACHE = null;
 
 function getUsers() {
-  // Siempre partir de DEFAULT_USERS como base
-  var base = JSON.parse(JSON.stringify(DEFAULT_USERS));
-  // Fusionar con localStorage (usuarios adicionales creados por admin)
+  // Leer del localStorage primero (fuente de verdad para usuarios)
   try {
     var saved = JSON.parse(localStorage.getItem('gm_users')||'null');
-    if(saved && typeof saved === 'object') {
-      var keys = Object.keys(saved);
-      for(var i=0;i<keys.length;i++) base[keys[i]] = saved[keys[i]];
+    if(saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
+      // Asegurar que Iki siempre esté como admin
+      if(!saved['iki']) saved['iki'] = DEFAULT_USERS['iki'];
+      USERS_CACHE = saved;
+      return USERS_CACHE;
     }
   } catch(e){}
+  // Si localStorage vacío → usar DEFAULT_USERS como base
+  var base = JSON.parse(JSON.stringify(DEFAULT_USERS));
   USERS_CACHE = base;
   return USERS_CACHE;
 }
@@ -822,7 +824,17 @@ function getUsers() {
 function saveUsers(u) {
   USERS_CACHE = u;
   try { localStorage.setItem('gm_users', JSON.stringify(u)); } catch(e){}
-  syncUsersToSheets(u, null);
+  // Subir al servidor D1
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({users: u})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ console.log('Usuarios guardados en servidor:', d.ok); })
+    .catch(function(e){ console.warn('Error guardando usuarios:', e); });
+  }
 }
 
 function loadUsersFromSheets(callback) {
@@ -1107,8 +1119,7 @@ function nowHora() { return new Date().toLocaleTimeString('es-PE',{hour:'2-digit
 // STORAGE
 // ==================
 var DEFAULT_USERS = {
-  iki:        { nombre:'Iki',   role:'admin',   sede:'Todas', pass:'Carrigas2025!', especialidad:'', mustChangePass: false },
-  felix_5699: { nombre:'felix', role:'tecnico', sede:'Todas', pass:'Felix2025!',    especialidad:'Ambos', mustChangePass: true }
+  iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'carrigas2025', especialidad:'', mustChangePass: false }
 };
 var SERVER_USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
@@ -2119,18 +2130,26 @@ function resetPassUsuario(uid) {
 }
 
 function eliminarUsuario(uid) {
+  if(uid === 'iki') { showToast('No se puede eliminar al administrador principal', 'error'); return; }
   if(!confirm('¿Eliminar al usuario @' + uid + '? Esta acción no se puede deshacer.')) return;
   var users = getUsers();
   delete users[uid];
-  saveUsers(users);
+  // Guardar en localStorage SIN fusionar con DEFAULT_USERS
+  USERS_CACHE = users;
+  try { localStorage.setItem('gm_users', JSON.stringify(users)); } catch(e){}
+  // Guardar en D1
   if(GM_CONFIG.workerUrl) {
     fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({users: users})
-    }).catch(function(){});
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(){ showToast('Usuario @' + uid + ' eliminado', 'success'); renderGestionUsuarios(); })
+    .catch(function(){ showToast('Error eliminando usuario', 'error'); });
+  } else {
+    showToast('Usuario @' + uid + ' eliminado', 'success');
+    renderGestionUsuarios();
   }
-  showToast('Usuario eliminado', 'success');
-  renderGestionUsuarios();
 }
 
 function crearNuevoUsuario() {
@@ -2196,19 +2215,24 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
 
   if(numEtapa === 1) {
     var sf1 = exp.e1 && exp.e1.scanfile1 ? exp.e1.scanfile1 : {};
+    // Clave correcta: 'sf1' para SCANFILE 1
     var sf1url = getFileUrl(exp.id, 'sf1');
-    var sf1dl = getDownloadUrl(exp.id, 'sf1');
+    var sf1dl  = getDownloadUrl(exp.id, 'sf1');
+    // También buscar en driveFiles directamente
+    var df1 = exp.driveFiles && exp.driveFiles['sf1'];
+    if(df1) { sf1url = df1.viewUrl || sf1url; sf1dl = df1.downloadUrl || sf1dl; }
     docsHtml = renderDocHistorialRow('SCANFILE 1', sf1, sf1url, sf1dl);
   }
 
   if(numEtapa === 2) {
     var e2 = exp.e2 || {};
-    var matUrl = getFileUrl(exp.id, 'matriz');
-    var djUrl  = getFileUrl(exp.id, 'dj');
-    var cronUrl = getFileUrl(exp.id, 'cron');
-    var matDl = getDownloadUrl(exp.id, 'matriz');
-    var djDl  = getDownloadUrl(exp.id, 'dj');
-    var cronDl = getDownloadUrl(exp.id, 'cron');
+    // Claves correctas: 'matriz', 'declaracionJurada', 'cronograma'
+    var matUrl  = getFileUrl(exp.id, 'matriz');
+    var djUrl   = getFileUrl(exp.id, 'declaracionJurada');
+    var cronUrl = getFileUrl(exp.id, 'cronograma');
+    var matDl   = getDownloadUrl(exp.id, 'matriz');
+    var djDl    = getDownloadUrl(exp.id, 'declaracionJurada');
+    var cronDl  = getDownloadUrl(exp.id, 'cronograma');
     docsHtml += renderDocHistorialRow('Matriz Excel', e2.matrizExcel, matUrl, matDl);
     docsHtml += renderDocHistorialRow('Declaración Jurada', e2.declaracionJurada, djUrl, djDl);
     docsHtml += renderDocHistorialRow('Cronograma de Pagos', e2.cronograma, cronUrl, cronDl);
@@ -2217,7 +2241,9 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   if(numEtapa === 3) {
     var e3 = exp.e3 || {};
     var sf2url = getFileUrl(exp.id, 'sf2');
-    var sf2dl = getDownloadUrl(exp.id, 'sf2');
+    var sf2dl  = getDownloadUrl(exp.id, 'sf2');
+    var df3 = exp.driveFiles && exp.driveFiles['sf2'];
+    if(df3) { sf2url = df3.viewUrl || sf2url; sf2dl = df3.downloadUrl || sf2dl; }
     docsHtml = renderDocHistorialRow('SCANFILE 2', e3.scanfile2, sf2url, sf2dl);
   }
 
