@@ -940,117 +940,131 @@ function storeFile(expId, tipoKey, file, callback) {
   var fecha = now.toLocaleDateString('es-PE', {day:'2-digit',month:'2-digit',year:'numeric'});
   var hora = now.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'});
   var subidoPor = CU ? CU.nombre : '-';
-  
-  // Guardar en memoria local inmediatamente
+
+  // Guardar en memoria local inmediatamente para UI rápida
   FILE_STORE[expId + '_' + tipoKey] = {
     url: localUrl, name: file.name,
     subidoPor: subidoPor, fecha: fecha, hora: hora
   };
-  
+
   // Callback inmediato para no bloquear UI
   if(callback) callback(localUrl, file.name);
 
-  // Comprimir y guardar foto como base64 en el expediente
-  // Esto garantiza que la foto viaja con el expediente al servidor D1
+  // Leer archivo como base64 y subir a Drive via Worker
   var reader = new FileReader();
   reader.onload = function(ev) {
     var dataUrl = ev.target.result;
-    
-    // Comprimir imagen antes de guardar
-    var img = new Image();
-    img.onload = function() {
-      var canvas = document.createElement('canvas');
-      var MAX = 800; // max 800px lado mayor
-      var w = img.width, h = img.height;
-      if(w > MAX || h > MAX) {
-        if(w > h) { h = Math.round(h*MAX/w); w = MAX; }
-        else { w = Math.round(w*MAX/h); h = MAX; }
-      }
-      canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      var compressed = canvas.toDataURL('image/jpeg', 0.7);
-      
-      // Guardar en FILE_STORE con base64
-      FILE_STORE[expId+'_'+tipoKey].url = compressed;
-      FILE_STORE[expId+'_'+tipoKey].dataUrl = compressed;
-      
-      // Guardar base64 en localStorage como backup
-      try { localStorage.setItem('gm_file_'+expId+'_'+tipoKey, compressed); } catch(e){}
-      
-      // Guardar dataUrl en el expediente para que viaje con la sync
-      for(var i=0;i<expedientes.length;i++) {
-        if(expedientes[i].id === expId) {
-          if(!expedientes[i].fotosData) expedientes[i].fotosData = {};
-          expedientes[i].fotosData[tipoKey] = {
-            dataUrl: compressed,
-            nombre: file.name,
-            subidoPor: subidoPor,
-            fecha: fecha, hora: hora
-          };
+    var isImage = file.type && file.type.indexOf('image') === 0;
+
+    // Solo comprimir imágenes — PDFs y Excel van directo
+    if(isImage) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var MAX = 1024;
+        var w = img.width, h = img.height;
+        if(w > MAX || h > MAX) {
+          if(w > h) { h = Math.round(h*MAX/w); w = MAX; }
+          else { w = Math.round(w*MAX/h); h = MAX; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        var compressed = canvas.toDataURL('image/jpeg', 0.75);
+        subirArchivoViaDrive(expId, tipoKey, compressed, file.name, subidoPor, fecha, hora);
+      };
+      img.src = dataUrl;
+    } else {
+      // PDF, Excel, video — subir directo a Drive
+      subirArchivoViaDrive(expId, tipoKey, dataUrl, file.name, subidoPor, fecha, hora);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════════════════════════
+// Subir cualquier archivo a Drive via Worker (con Refresh Token)
+// ═══════════════════════════════════════════════════════════
+function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha, hora) {
+  if(!GM_CONFIG.workerUrl) return;
+  showToast('☁️ Subiendo ' + nombre + ' a Drive...', 'info');
+  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      expId: expId,
+      fotoKey: tipoKey,
+      dataUrl: dataUrl,
+      nombre: nombre
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok && d.driveFile) {
+      console.log('✅ Archivo en Drive:', tipoKey, d.driveFile.viewUrl);
+      // Actualizar driveFiles en el expediente local
+      for(var i=0; i<expedientes.length; i++){
+        if(expedientes[i].id === expId){
+          if(!expedientes[i].driveFiles) expedientes[i].driveFiles = {};
+          expedientes[i].driveFiles[tipoKey] = d.driveFile;
+          // Actualizar FILE_STORE con URL de Drive
+          if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey] = {};
+          FILE_STORE[expId+'_'+tipoKey].url = d.driveFile.viewUrl;
+          FILE_STORE[expId+'_'+tipoKey].downloadUrl = d.driveFile.downloadUrl;
           saveExp();
           break;
         }
       }
-    };
-    img.src = dataUrl;
-  };
-  reader.readAsDataURL(file);
-  
-  // También intentar subir a Drive en background (si tiene OAuth)
-  if(DRIVE_ACCESS_TOKEN && Date.now() < DRIVE_TOKEN_EXPIRY) {
-    var nombreArchivo = expId + '_' + tipoKey + '_' + file.name;
-    subirArchivoADrive(file, nombreArchivo, function(driveData) {
-      if(driveData && driveData.downloadUrl) {
-        for(var i=0;i<expedientes.length;i++) {
-          if(expedientes[i].id === expId) {
-            if(!expedientes[i].driveFiles) expedientes[i].driveFiles = {};
-            expedientes[i].driveFiles[tipoKey] = {
-              url: driveData.downloadUrl,
-              viewUrl: driveData.viewUrl,
-              id: driveData.id, nombre: file.name
-            };
-            saveExp(); break;
-          }
-        }
-      }
-    });
-  }
+      showToast('✅ ' + nombre + ' guardado en Drive', 'success');
+    } else {
+      console.warn('Error subiendo a Drive:', d.error);
+      showToast('⚠️ Error subiendo a Drive: ' + (d.error||''), 'error');
+    }
+  })
+  .catch(function(e){
+    console.warn('Error Drive upload:', e);
+    showToast('⚠️ Sin conexión a Drive', 'error');
+  });
 }
 function getFileMeta(expId, tipoKey) { return FILE_STORE[expId + '_' + tipoKey] || null; }
 function getFileUrl(expId, tipoKey) {
-  var m = getFileMeta(expId, tipoKey);
-  if(m && m.dataUrl) return m.dataUrl;
-  if(m && m.driveUrl) return m.driveUrl;
-  if(m && m.url && m.url.indexOf('blob:') === -1) return m.url;
-  if(m && m.url) return m.url;
-  
-  // Buscar en expediente — fotosData (base64 comprimido)
+  // 1. Buscar en driveFiles del expediente (fuente principal)
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id === expId) {
+      var df = expedientes[i].driveFiles;
+      if(df && df[tipoKey]) {
+        // Retornar viewUrl para visualizar, downloadUrl para descargar
+        return df[tipoKey].viewUrl || df[tipoKey].downloadUrl || df[tipoKey].url || null;
+      }
+      // 2. Buscar en fotosData (base64 — fallback para fotos del técnico)
       var fd = expedientes[i].fotosData;
       if(fd && fd[tipoKey] && fd[tipoKey].dataUrl) {
-        if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey]={};
-        FILE_STORE[expId+'_'+tipoKey].url = fd[tipoKey].dataUrl;
-        FILE_STORE[expId+'_'+tipoKey].dataUrl = fd[tipoKey].dataUrl;
         return fd[tipoKey].dataUrl;
       }
-      var df = expedientes[i].driveFiles;
-      if(df && df[tipoKey] && df[tipoKey].url) return df[tipoKey].url;
       break;
     }
   }
-  
-  // Fallback: localStorage
+  // 3. Buscar en FILE_STORE local (sesión actual)
+  var m = FILE_STORE[expId+'_'+tipoKey];
+  if(m && m.url && m.url.indexOf('blob:') === -1) return m.url;
+  if(m && m.url) return m.url;
+  // 4. Fallback localStorage
   var saved = null;
   try { saved = localStorage.getItem('gm_file_'+expId+'_'+tipoKey); } catch(e){}
-  if(saved) {
-    if(!FILE_STORE[expId+'_'+tipoKey]) FILE_STORE[expId+'_'+tipoKey]={};
-    FILE_STORE[expId+'_'+tipoKey].url = saved;
-    FILE_STORE[expId+'_'+tipoKey].dataUrl = saved;
-    return saved;
+  return saved || null;
+}
+
+// Obtener URL de descarga directa (Drive download URL)
+function getDownloadUrl(expId, tipoKey) {
+  for(var i=0;i<expedientes.length;i++) {
+    if(expedientes[i].id === expId) {
+      var df = expedientes[i].driveFiles;
+      if(df && df[tipoKey]) return df[tipoKey].downloadUrl || df[tipoKey].viewUrl || null;
+      var fd = expedientes[i].fotosData;
+      if(fd && fd[tipoKey] && fd[tipoKey].dataUrl) return fd[tipoKey].dataUrl;
+      break;
+    }
   }
-  return null;
+  return getFileUrl(expId, tipoKey);
 }
 function persistirArchivo(expId, tipoKey, file) {
   // Solo persistir archivos pequeños (<3MB) en localStorage
@@ -1474,6 +1488,19 @@ function completarLogin(uid, u) {
   if(u.mustChangePass) {
     mostrarCambioPasswordObligatorio(uid);
     return;
+  }
+  // Sincronizar usuarios al servidor si es admin
+  // Esto asegura que todos los dispositivos tengan los usuarios actualizados
+  if(u.role === 'admin' && GM_CONFIG.workerUrl) {
+    var localUsers = getUsers();
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({users: localUsers})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ console.log('Usuarios sincronizados al servidor:', d.ok); })
+    .catch(function(e){ console.warn('Error sync users:', e); });
   }
   mostrarApp(); setupInactivity();
 }
@@ -2170,7 +2197,8 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   if(numEtapa === 1) {
     var sf1 = exp.e1 && exp.e1.scanfile1 ? exp.e1.scanfile1 : {};
     var sf1url = getFileUrl(exp.id, 'sf1');
-    docsHtml = renderDocHistorialRow('SCANFILE 1', sf1, sf1url);
+    var sf1dl = getDownloadUrl(exp.id, 'sf1');
+    docsHtml = renderDocHistorialRow('SCANFILE 1', sf1, sf1url, sf1dl);
   }
 
   if(numEtapa === 2) {
@@ -2178,15 +2206,19 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     var matUrl = getFileUrl(exp.id, 'matriz');
     var djUrl  = getFileUrl(exp.id, 'dj');
     var cronUrl = getFileUrl(exp.id, 'cron');
-    docsHtml += renderDocHistorialRow('Matriz Excel', e2.matrizExcel, matUrl);
-    docsHtml += renderDocHistorialRow('Declaración Jurada', e2.declaracionJurada, djUrl);
-    docsHtml += renderDocHistorialRow('Cronograma de Pagos', e2.cronograma, cronUrl);
+    var matDl = getDownloadUrl(exp.id, 'matriz');
+    var djDl  = getDownloadUrl(exp.id, 'dj');
+    var cronDl = getDownloadUrl(exp.id, 'cron');
+    docsHtml += renderDocHistorialRow('Matriz Excel', e2.matrizExcel, matUrl, matDl);
+    docsHtml += renderDocHistorialRow('Declaración Jurada', e2.declaracionJurada, djUrl, djDl);
+    docsHtml += renderDocHistorialRow('Cronograma de Pagos', e2.cronograma, cronUrl, cronDl);
   }
 
   if(numEtapa === 3) {
     var e3 = exp.e3 || {};
     var sf2url = getFileUrl(exp.id, 'sf2');
-    docsHtml = renderDocHistorialRow('SCANFILE 2', e3.scanfile2, sf2url);
+    var sf2dl = getDownloadUrl(exp.id, 'sf2');
+    docsHtml = renderDocHistorialRow('SCANFILE 2', e3.scanfile2, sf2url, sf2dl);
   }
 
   if(numEtapa === 4) {
@@ -2211,7 +2243,8 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0">📋 Serie reductor: <strong>' + e4.serieReductor + '</strong></div>';
     // PIT y boletas
     var pitUrl = getFileUrl(exp.id, 'pit');
-    if(e4.capturaPIT) docsHtml += renderDocHistorialRow('Captura PIT', e4.capturaPIT, pitUrl);
+    var pitDl = getDownloadUrl(exp.id, 'pit');
+    if(e4.capturaPIT) docsHtml += renderDocHistorialRow('Captura PIT', e4.capturaPIT, pitUrl, pitDl);
   }
 
   if(!docsHtml) docsHtml = '<div style="font-size:12px;color:#9ca3af;font-style:italic">No hay documentos disponibles en esta etapa.</div>';
@@ -2231,15 +2264,20 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   cont.appendChild(wrap);
 }
 
-function renderDocHistorialRow(label, meta, fileUrl) {
+function renderDocHistorialRow(label, meta, fileUrl, downloadUrl) {
   if(!meta) return '';
   var nombre = meta.nombre || label;
   var fecha = (meta.fecha || '') + ' ' + (meta.hora || '');
+  var viewUrl = fileUrl;
+  var dlUrl = downloadUrl || fileUrl;
   var btnHtml = '';
-  if(fileUrl) {
-    btnHtml = '<a href="' + fileUrl + '" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#0f172a;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇ Descargar</a>';
+  if(viewUrl) {
+    btnHtml = '<div style="display:flex;gap:4px">' +
+      '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
+      '<a href="' + dlUrl + '" target="_blank" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#0f172a;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇</a>' +
+      '</div>';
   } else {
-    btnHtml = '<span style="font-size:11px;color:#9ca3af">No disponible para descarga</span>';
+    btnHtml = '<span style="font-size:11px;color:#9ca3af;font-style:italic">Pendiente de sincronizar</span>';
   }
   return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
     '<div><div style="font-size:12px;font-weight:700;color:#0f172a">' + label + '</div>' +
