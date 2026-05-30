@@ -2130,6 +2130,147 @@ function crearNuevoUsuario() {
   renderGestionUsuarios();
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// HISTORIAL DE ETAPAS — muestra etapas anteriores colapsables
+// con botones de descarga para roles autorizados
+// ═══════════════════════════════════════════════════════════
+function renderEtapaHistorial(cont, exp, numEtapa) {
+  var etapaLabels = {
+    1: 'ETAPA 1 — SCANFILE 1',
+    2: 'ETAPA 2 — DOCUMENTOS FISE',
+    3: 'ETAPA 3 — ESCANEO VEHÍCULO',
+    4: 'ETAPA 4 — FOTOS TÉCNICAS'
+  };
+  var etapaColors = { 1:'#6b82a0', 2:'#eab308', 3:'#f97316', 4:'#8b5cf6' };
+  var color = etapaColors[numEtapa] || '#6b82a0';
+  var label = etapaLabels[numEtapa] || ('ETAPA ' + numEtapa);
+  var sectionId = 'historialEtapa' + numEtapa + '_' + exp.id;
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:12px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden';
+
+  // Header colapsable
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8fafc;cursor:pointer;user-select:none';
+  header.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
+    '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">✓</div>' +
+    '<span style="font-size:13px;font-weight:700;color:#0f172a">' + label + '</span>' +
+    '<span style="font-size:11px;color:#10b981;font-weight:600">✅ Completada</span>' +
+    '</div>' +
+    '<span id="arrow_' + sectionId + '" style="font-size:14px;color:#6b82a0;transition:transform 0.2s">▼</span>';
+
+  var body = document.createElement('div');
+  body.id = sectionId;
+  body.style.cssText = 'display:none;padding:14px;background:white';
+
+  // Contenido según la etapa
+  var docsHtml = '';
+
+  if(numEtapa === 1) {
+    var sf1 = exp.e1 && exp.e1.scanfile1 ? exp.e1.scanfile1 : {};
+    var sf1url = getFileUrl(exp.id, 'sf1');
+    docsHtml = renderDocHistorialRow('SCANFILE 1', sf1, sf1url);
+  }
+
+  if(numEtapa === 2) {
+    var e2 = exp.e2 || {};
+    var matUrl = getFileUrl(exp.id, 'matriz');
+    var djUrl  = getFileUrl(exp.id, 'dj');
+    var cronUrl = getFileUrl(exp.id, 'cron');
+    docsHtml += renderDocHistorialRow('Matriz Excel', e2.matrizExcel, matUrl);
+    docsHtml += renderDocHistorialRow('Declaración Jurada', e2.declaracionJurada, djUrl);
+    docsHtml += renderDocHistorialRow('Cronograma de Pagos', e2.cronograma, cronUrl);
+  }
+
+  if(numEtapa === 3) {
+    var e3 = exp.e3 || {};
+    var sf2url = getFileUrl(exp.id, 'sf2');
+    docsHtml = renderDocHistorialRow('SCANFILE 2', e3.scanfile2, sf2url);
+  }
+
+  if(numEtapa === 4) {
+    var e4 = exp.e4 || {};
+    var df = exp.driveFiles || {};
+    var fd = exp.fotosData || {};
+    // Fotos técnicas
+    var fotos = ['fotoReductor','fotoCilindro1','fotoCilindro2'];
+    var fotosLabels = {'fotoReductor':'Foto Reductor','fotoCilindro1':'Foto Cilindro 1','fotoCilindro2':'Foto Cilindro 2'};
+    for(var f=0; f<fotos.length; f++) {
+      var fk = fotos[f];
+      var meta = e4[fk];
+      if(!meta || !meta.completado) continue;
+      var driveInfo = df[fk];
+      var dataUrlInfo = fd[fk];
+      var fotoUrl = driveInfo ? driveInfo.viewUrl : (dataUrlInfo ? dataUrlInfo.dataUrl : null);
+      docsHtml += renderFotoHistorialRow(fotosLabels[fk], meta, fotoUrl, driveInfo);
+    }
+    // Datos técnicos
+    if(e4.serieCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0;border-bottom:1px solid #f1f5f9">📋 Serie cilindro: <strong>' + e4.serieCilindro + '</strong></div>';
+    if(e4.marcaReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0;border-bottom:1px solid #f1f5f9">📋 Marca reductor: <strong>' + e4.marcaReductor + '</strong></div>';
+    if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0">📋 Serie reductor: <strong>' + e4.serieReductor + '</strong></div>';
+    // PIT y boletas
+    var pitUrl = getFileUrl(exp.id, 'pit');
+    if(e4.capturaPIT) docsHtml += renderDocHistorialRow('Captura PIT', e4.capturaPIT, pitUrl);
+  }
+
+  if(!docsHtml) docsHtml = '<div style="font-size:12px;color:#9ca3af;font-style:italic">No hay documentos disponibles en esta etapa.</div>';
+
+  body.innerHTML = docsHtml;
+  wrap.appendChild(header);
+  wrap.appendChild(body);
+
+  // Toggle colapsar/expandir
+  header.onclick = function() {
+    var isOpen = body.style.display !== 'none';
+    body.style.display = isOpen ? 'none' : 'block';
+    var arrow = document.getElementById('arrow_' + sectionId);
+    if(arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+  };
+
+  cont.appendChild(wrap);
+}
+
+function renderDocHistorialRow(label, meta, fileUrl) {
+  if(!meta) return '';
+  var nombre = meta.nombre || label;
+  var fecha = (meta.fecha || '') + ' ' + (meta.hora || '');
+  var btnHtml = '';
+  if(fileUrl) {
+    btnHtml = '<a href="' + fileUrl + '" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#0f172a;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇ Descargar</a>';
+  } else {
+    btnHtml = '<span style="font-size:11px;color:#9ca3af">No disponible para descarga</span>';
+  }
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+    '<div><div style="font-size:12px;font-weight:700;color:#0f172a">' + label + '</div>' +
+    '<div style="font-size:11px;color:#6b82a0">' + nombre + ' — ' + fecha.trim() + '</div></div>' +
+    btnHtml + '</div>';
+}
+
+function renderFotoHistorialRow(label, meta, fotoUrl, driveInfo) {
+  if(!meta) return '';
+  var btnHtml = '';
+  if(driveInfo && driveInfo.viewUrl) {
+    btnHtml = '<a href="' + driveInfo.viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
+      '<a href="' + driveInfo.downloadUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#0f172a;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;margin-left:4px">⬇ Descargar</a>';
+  } else if(fotoUrl) {
+    btnHtml = '<button id="btnVerFoto_' + label.replace(/ /g,'') + '" style="padding:4px 10px;background:#059669;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁 Ver</button>';
+    (function(url, nm){ 
+      setTimeout(function(){
+        var b = document.getElementById('btnVerFoto_' + label.replace(/ /g,''));
+        if(b) b.onclick = function(){ abrirFotoSeguro(url, nm); };
+      }, 50);
+    })(fotoUrl, meta.nombre||'foto');
+  } else {
+    btnHtml = '<span style="font-size:11px;color:#9ca3af">No disponible</span>';
+  }
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+    '<div><div style="font-size:12px;font-weight:700;color:#0f172a">' + label + '</div>' +
+    '<div style="font-size:11px;color:#6b82a0">Subido por ' + (meta.subidoPor||'') + ' — ' + (meta.fecha||'') + '</div></div>' +
+    '<div>' + btnHtml + '</div></div>';
+}
+
+
 // ==================
 // PANEL DE CONTROL
 // ==================
@@ -2198,12 +2339,37 @@ function renderModalExp(exp) {
   }
   var content=document.getElementById('emContent');
   content.innerHTML='';
+
+  // Roles que pueden ver etapas anteriores para descargar
+  var puedeVerHistorial = CU && (
+    CU.role==='admin' ||
+    CU.role==='supervisor' ||
+    CU.role==='vendedor' ||
+    CU.role==='asistente_fise'
+  );
+
   try{
-    if(exp.etapa===1) renderEtapa1(content,exp);
-    else if(exp.etapa===2) renderEtapa2(content,exp);
-    else if(exp.etapa===3) renderEtapa3(content,exp);
-    else if(exp.etapa===4) renderEtapa4(content,exp);
-    else renderEtapa5(content,exp);
+    // Si el expediente está en etapa avanzada y el usuario tiene permiso,
+    // mostrar TODAS las etapas anteriores como pestañas clicables
+    if(puedeVerHistorial && exp.etapa > 1) {
+      // Renderizar etapa actual primero
+      if(exp.etapa===2) renderEtapa2(content,exp);
+      else if(exp.etapa===3) renderEtapa3(content,exp);
+      else if(exp.etapa===4) renderEtapa4(content,exp);
+      else if(exp.etapa===5) renderEtapa5(content,exp);
+
+      // Agregar sección colapsable para etapas anteriores
+      for(var etapaAnterior=exp.etapa-1; etapaAnterior>=1; etapaAnterior--) {
+        renderEtapaHistorial(content, exp, etapaAnterior);
+      }
+    } else {
+      // Vista normal — solo etapa actual
+      if(exp.etapa===1) renderEtapa1(content,exp);
+      else if(exp.etapa===2) renderEtapa2(content,exp);
+      else if(exp.etapa===3) renderEtapa3(content,exp);
+      else if(exp.etapa===4) renderEtapa4(content,exp);
+      else renderEtapa5(content,exp);
+    }
     renderComentariosSection(exp.id,content);
   }catch(err){
     content.innerHTML='<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:#991b1b;font-size:13px"><strong>Error:</strong> '+err.message+'</div>';
