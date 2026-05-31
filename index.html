@@ -2745,26 +2745,30 @@ function renderEtapa4(cont, exp) {
   else{dlSf2.className='btn btn-sm';dlSf2.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlSf2.textContent='Re-subir para descargar';}
   sf2box.appendChild(dlSf2);sec.appendChild(sf2box);
 
-  // 2. Video compresiones
-  sec.appendChild(crearDocCard(exp.id,'videoComp','2. Video de Compresiones — Resp: Vendedor de Sede',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
+  // 1. Video compresiones
+  sec.appendChild(crearDocCard(exp.id,'videoComp','1. Video de Compresiones — Resp: Vendedor de Sede',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
 
-  // 3. Foto cilindro (con campos extra)
+  // 2. Cilindros (fotos + datos)
   sec.appendChild(crearFotoCilindroCard(exp,canSub));
 
-  // 4. Foto reductor (con campos extra)
+  // 3. Reductor (fotos + datos)
   sec.appendChild(crearFotoReductorCard(exp,canSub));
 
-  // 5-7
-  sec.appendChild(crearDocCard(exp.id,'capturaPIT','5. Captura PIT — Resp: Asistente FISE',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
-  sec.appendChild(crearDocCard(exp.id,'boletaInfo','6. Boleta Informativa — Resp: Asistente FISE',e4.boletaInformativa||null,canSub,'e4bi','.pdf'));
-  sec.appendChild(crearDocCard(exp.id,'boletaVenta','7. Boleta de Venta — Resp: Asistente FISE',e4.boletaVenta||null,canSub,'e4bv','.pdf'));
+  // 4. Boleta Informativa
+  sec.appendChild(crearDocCard(exp.id,'boletaInfo','4. Boleta Informativa — Resp: Asistente FISE',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
 
-  // Item 8: DNI Técnico Acreditado
-  sec.appendChild(crearDocCard(exp.id,'dniTecnico','8. DNI Tecnico Acreditado — Resp: Asistente FISE',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
+  // 5. Boleta de Venta
+  sec.appendChild(crearDocCard(exp.id,'boletaVenta','5. Boleta de Venta — Resp: Asistente FISE',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
 
-  // BONO GLP
+  // 6. Captura PIT
+  sec.appendChild(crearDocCard(exp.id,'capturaPIT','6. Captura PIT — Resp: Asistente FISE',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
+
+  // 7. DNI Técnico Responsable (nuevo campo)
+  sec.appendChild(crearDocCard(exp.id,'dniTecnico','7. DNI Técnico Responsable — Resp: Asistente FISE',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
+
+  // 8. BONO GLP (opcional)
   var bonoDiv=document.createElement('div');bonoDiv.style.cssText='background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;margin-top:12px';
-  bonoDiv.innerHTML='<div style="font-size:13px;font-weight:700;color:#1e2d4a;margin-bottom:12px">La conversion lleva BONO GLP?</div>';
+  bonoDiv.innerHTML='<div style="font-size:13px;font-weight:700;color:#1e2d4a;margin-bottom:12px">¿La conversión lleva BONO GLP?</div>';
   var bonoOpts=document.createElement('div');bonoOpts.style.cssText='display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px';
   var labSi=document.createElement('label');labSi.style.cssText='display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;background:#d1fae5;border:2px solid #6ee7b7;border-radius:8px;padding:10px 16px';
   var radSi=document.createElement('input');radSi.type='radio';radSi.name='dc_bono'+exp.id;radSi.value='si';
@@ -2783,18 +2787,19 @@ function renderEtapa4(cont, exp) {
   bonoOpts.appendChild(labSi);bonoOpts.appendChild(labNo);
   bonoDiv.appendChild(bonoOpts);
   if(e4.llevaBono===true){
-    var bonoCard=crearDocCard(exp.id,'informeBono','9. Informe BONO GLP — Resp: Asistente FISE',e4.informeBono||null,canSub,'e4ib','.pdf');
+    var bonoCard=crearDocCard(exp.id,'informeBono','8. Informe BONO GLP (Opcional) — Resp: Asistente FISE',e4.informeBono||null,canSub,'e4ib','.pdf');
     bonoDiv.appendChild(bonoCard);
   }
   sec.appendChild(bonoDiv);
 
   // Validación y avance
-  var items=['videoCompresiones','fotoCilindro1','fotoReductor','capturaPIT','boletaInformativa','boletaVenta','dniTecnico'];
-  var done4=0,tot4=8;
+  // Validación: video + foto cilindro1 + foto reductor + boletaInfo + boletaVenta + capturaPIT + dniTecnico
+  var items=['videoCompresiones','fotoCilindro1','fotoReductor','boletaInformativa','boletaVenta','capturaPIT','dniTecnico'];
+  var done4=0,tot4=8; // 7 docs + 1 decisión bono
   for(var ii=0;ii<items.length;ii++){if(e4[items[ii]]&&e4[items[ii]].completado)done4++;}
-  if(e4.llevaBono!==null){done4++;} 
+  if(e4.llevaBono!==null&&e4.llevaBono!==undefined){done4++;}
   if(e4.llevaBono===true){tot4=9;if(e4.informeBono&&e4.informeBono.completado)done4++;}
-  else if(e4.llevaBono===false){tot4=7;}
+  else if(e4.llevaBono===false){tot4=8;}
   var pct4=Math.round(done4/tot4*100);
   var prog4=document.createElement('div');prog4.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-top:14px';
   prog4.innerHTML='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span>Documentos completados</span><span>'+done4+'/'+tot4+'</span></div>'+
@@ -3228,15 +3233,36 @@ function grabarDatosCilindro(id) {
   if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
     showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
   }
+  var expTarget = null;
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
       expedientes[i].e4.serieCilindro = serieVal.toUpperCase();
       expedientes[i].e4.fechaFabCilindro = fechaVal;
-      saveExp(); break;
+      expTarget = expedientes[i];
+      break;
     }
   }
-  showToast('✅ Datos Cilindro 1 grabados', 'success');
+  if(!expTarget) return;
+  // Guardar en localStorage inmediatamente
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+  // Bloquear polling y subir al servidor con saveOneExp
+  PENDING_SYNC = true;
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({action:'saveOneExp', data: expTarget})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    PENDING_SYNC = false;
+    showToast('✅ Datos Cilindro 1 guardados en servidor', 'success');
+  })
+  .catch(function(e){
+    PENDING_SYNC = false;
+    showToast('⚠️ Error guardando en servidor', 'error');
+  });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
     abrirVistaTareasTecnico(id);
@@ -3252,15 +3278,34 @@ function grabarDatosCilindro2(id) {
   if(!/^(0[1-9]|1[0-2])\/\d{4}$/.test(fechaVal)) {
     showToast('Formato de fecha debe ser MM/AAAA (ej: 03/2022)', 'error'); return;
   }
+  var expTarget = null;
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
       expedientes[i].e4.serieCilindro2 = serieVal.toUpperCase();
       expedientes[i].e4.fechaFabCilindro2 = fechaVal;
-      saveExp(); break;
+      expTarget = expedientes[i];
+      break;
     }
   }
-  showToast('✅ Datos Cilindro 2 grabados', 'success');
+  if(!expTarget) return;
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+  PENDING_SYNC = true;
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({action:'saveOneExp', data: expTarget})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    PENDING_SYNC = false;
+    showToast('✅ Datos Cilindro 2 guardados en servidor', 'success');
+  })
+  .catch(function(e){
+    PENDING_SYNC = false;
+    showToast('⚠️ Error guardando en servidor', 'error');
+  });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
     abrirVistaTareasTecnico(id);
@@ -3289,16 +3334,34 @@ function grabarDatosReductor(id) {
   if(!marcaVal || !serieVal) {
     showToast('Completa Marca y Serie del reductor', 'error'); return;
   }
+  var expTarget = null;
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
       expedientes[i].e4.marcaReductor = marcaVal.toUpperCase();
       expedientes[i].e4.serieReductor = serieVal.toUpperCase();
-      saveExp(); break;
+      expTarget = expedientes[i];
+      break;
     }
   }
-  showToast('✅ Datos Reductor grabados', 'success');
-  // Refrescar vista
+  if(!expTarget) return;
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+  PENDING_SYNC = true;
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({action:'saveOneExp', data: expTarget})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    PENDING_SYNC = false;
+    showToast('✅ Datos Reductor guardados en servidor', 'success');
+  })
+  .catch(function(e){
+    PENDING_SYNC = false;
+    showToast('⚠️ Error guardando en servidor', 'error');
+  });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
     abrirVistaTareasTecnico(id);
@@ -3420,13 +3483,336 @@ function guardarBono(expId, val) {
 
 // ── ETAPA 5 ──
 function renderEtapa5(cont, exp) {
-  var sec=document.createElement('div');
-  sec.innerHTML='<div class="etapa-header"><div class="etapa-num" style="background:#8b5cf6">5</div><div><div class="etapa-title">ETAPA 5 — SOLICITUD DE CERTIFICACION</div><div class="etapa-sub">Pendiente de desarrollar</div></div></div>';
-  var ph=document.createElement('div');ph.style.cssText='background:#f3f0ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:28px;text-align:center;margin-top:16px';
-  ph.innerHTML='<div style="font-size:40px;margin-bottom:12px">&#128196;</div><div style="font-size:15px;font-weight:700;color:#6d28d9">Etapa 5 — Solicitud de Certificacion</div><div style="font-size:13px;color:#7c3aed;margin-top:6px">Proxim­amente disponible</div>';
-  sec.appendChild(ph);
+  var sec = document.createElement('div');
+  sec.innerHTML = '<div class="etapa-header"><div class="etapa-num" style="background:#8b5cf6">5</div><div><div class="etapa-title">ETAPA 5 — SOLICITUD DE CERTIFICACIÓN</div><div class="etapa-sub">Organiza y ordena los documentos para la certificadora</div></div></div>';
+
+  // ── GRUPO 1: ARCHIVOS PARA CERTIFICADORA ──
+  var g1 = document.createElement('div');
+  g1.style.cssText = 'margin-top:16px';
+  g1.innerHTML = '<div style="font-size:14px;font-weight:800;color:#6d28d9;margin-bottom:4px;display:flex;align-items:center;gap:8px">' +
+    '<span style="background:#6d28d9;color:white;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 1</span>' +
+    'ARCHIVOS PARA CERTIFICADORA</div>' +
+    '<div style="font-size:12px;color:#7c3aed;margin-bottom:14px">Ordena las páginas arrastrándolas. El orden se guarda automáticamente.</div>';
+
+  // Contenedor de miniaturas ordenables
+  var mosaico = document.createElement('div');
+  mosaico.id = 'mosaico_' + exp.id;
+  mosaico.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;min-height:80px;padding:12px;background:#faf5ff;border:2px dashed #c4b5fd;border-radius:12px;margin-bottom:12px';
+  mosaico.innerHTML = '<div style="color:#a78bfa;font-size:13px;font-style:italic;width:100%;text-align:center;padding:20px 0">⏳ Cargando páginas...</div>';
+
+  g1.appendChild(mosaico);
+
+  // Botón guardar orden
+  var canManage = CU && (CU.role==='admin'||CU.role==='supervisor'||CU.role==='asistente_fise');
+  if(canManage) {
+    var btnGuardar = document.createElement('button');
+    btnGuardar.className = 'btn btn-primary';
+    btnGuardar.style.cssText = 'width:100%;justify-content:center;margin-bottom:12px';
+    btnGuardar.innerHTML = '💾 Guardar orden en servidor';
+    btnGuardar.id = 'btnGuardarOrden_' + exp.id;
+    btnGuardar.onclick = (function(eid){ return function(){ guardarOrdenEtapa5(eid); }; })(exp.id);
+    g1.appendChild(btnGuardar);
+  }
+
+  // Avanzar a Etapa 6 (placeholder)
+  if(canManage) {
+    var av5 = document.createElement('button');
+    av5.className = 'btn btn-navy';
+    av5.style.cssText = 'width:100%;justify-content:center';
+    av5.textContent = 'Avanzar a Etapa 6 — Generación de PDF →';
+    av5.onclick = (function(eid){ return function(){
+      showToast('Etapa 6 — Generación de PDF próximamente disponible', 'info');
+    }; })(exp.id);
+    g1.appendChild(av5);
+  }
+
+  sec.appendChild(g1);
+
+  // ── GRUPO 2: ARCHIVOS PARA FISE (pendiente) ──
+  var g2 = document.createElement('div');
+  g2.style.cssText = 'margin-top:20px;background:#f8fafc;border:1.5px dashed #e2e8f0;border-radius:12px;padding:20px;text-align:center';
+  g2.innerHTML = '<div style="font-size:14px;font-weight:800;color:#94a3b8;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">' +
+    '<span style="background:#e2e8f0;color:#94a3b8;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 2</span>' +
+    'ARCHIVOS PARA FISE</div>' +
+    '<div style="font-size:12px;color:#94a3b8">🚧 Pendiente de desarrollo</div>';
+  sec.appendChild(g2);
+
   cont.appendChild(sec);
+
+  // Cargar páginas después de renderizar
+  setTimeout(function(){ cargarPaginasEtapa5(exp); }, 100);
 }
+
+// ═══════════════════════════════════════════════════════════
+// ETAPA 5 — Lógica de miniaturas y ordenamiento
+// ═══════════════════════════════════════════════════════════
+
+// Definición de documentos que van en el expediente para certificadora
+function getDocsParaCertificadora(exp) {
+  var e4 = exp.e4 || {};
+  var df = exp.driveFiles || {};
+  var docs = [];
+
+  // 1. Boleta Informativa
+  if(e4.boletaInformativa && e4.boletaInformativa.completado) {
+    docs.push({
+      key: 'boletaInformativa',
+      label: 'Boleta Informativa',
+      driveFile: df['boletaInfo'] || null,
+      meta: e4.boletaInformativa
+    });
+  }
+
+  // 2. Boleta de Venta
+  if(e4.boletaVenta && e4.boletaVenta.completado) {
+    docs.push({
+      key: 'boletaVenta',
+      label: 'Boleta de Venta',
+      driveFile: df['boletaVenta'] || null,
+      meta: e4.boletaVenta
+    });
+  }
+
+  // 3. SCANFILE 1 (sin última página — manejado en renderizado)
+  if(exp.e1 && exp.e1.scanfile1 && exp.e1.scanfile1.completado) {
+    docs.push({
+      key: 'scanfile1',
+      label: 'SCANFILE 1',
+      driveFile: df['sf1'] || null,
+      meta: exp.e1.scanfile1,
+      omitirUltimaPagina: true // regla fija
+    });
+  }
+
+  // 4. Captura PIT
+  if(e4.capturaPIT && e4.capturaPIT.completado) {
+    docs.push({
+      key: 'capturaPIT',
+      label: 'Captura PIT',
+      driveFile: df['capturaPIT'] || null,
+      meta: e4.capturaPIT
+    });
+  }
+
+  // 5. DNI Técnico Responsable
+  if(e4.dniTecnico && e4.dniTecnico.completado) {
+    docs.push({
+      key: 'dniTecnico',
+      label: 'DNI Técnico Responsable',
+      driveFile: df['dniTecnico'] || null,
+      meta: e4.dniTecnico
+    });
+  }
+
+  return docs;
+}
+
+function cargarPaginasEtapa5(exp) {
+  var mosaico = document.getElementById('mosaico_' + exp.id);
+  if(!mosaico) return;
+
+  var docs = getDocsParaCertificadora(exp);
+
+  if(docs.length === 0) {
+    mosaico.innerHTML = '<div style="color:#f59e0b;font-size:13px;width:100%;text-align:center;padding:20px 0">' +
+      '⚠️ Completa los documentos de la Etapa 4 para ver las páginas aquí.</div>';
+    return;
+  }
+
+  // Cargar orden guardado del servidor
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var ordenGuardado = d.orden || null;
+      renderMosaicoPaginas(exp, docs, ordenGuardado);
+    })
+    .catch(function(){
+      renderMosaicoPaginas(exp, docs, null);
+    });
+  } else {
+    renderMosaicoPaginas(exp, docs, null);
+  }
+}
+
+function renderMosaicoPaginas(exp, docs, ordenGuardado) {
+  var mosaico = document.getElementById('mosaico_' + exp.id);
+  if(!mosaico) return;
+  mosaico.innerHTML = '';
+
+  // Construir lista de páginas (una card por documento)
+  // En Etapa 6 se expandirá para mostrar páginas individuales con PDF.js
+  var paginas = [];
+  for(var i=0; i<docs.length; i++) {
+    var doc = docs[i];
+    var nota = doc.omitirUltimaPagina ? ' (sin última pág.)' : '';
+    paginas.push({
+      id: doc.key + '_p1',
+      docKey: doc.key,
+      label: doc.label + nota,
+      driveFile: doc.driveFile,
+      meta: doc.meta,
+      orden: i
+    });
+  }
+
+  // Aplicar orden guardado si existe
+  if(ordenGuardado && ordenGuardado.length > 0) {
+    var ordenMap = {};
+    for(var j=0; j<ordenGuardado.length; j++) {
+      ordenMap[ordenGuardado[j].pageKey] = ordenGuardado[j].orden;
+    }
+    paginas.sort(function(a,b){
+      var oa = (ordenMap[a.id] !== undefined) ? ordenMap[a.id] : 999;
+      var ob = (ordenMap[b.id] !== undefined) ? ordenMap[b.id] : 999;
+      return oa - ob;
+    });
+  }
+
+  // Renderizar cada página como card draggable
+  for(var k=0; k<paginas.length; k++) {
+    var pg = paginas[k];
+    var card = document.createElement('div');
+    card.className = 'pagina-card';
+    card.setAttribute('data-pageid', pg.id);
+    card.draggable = true;
+    card.style.cssText = 'background:white;border:2px solid #e2e8f0;border-radius:10px;padding:10px;width:120px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0';
+
+    var icono = '📄';
+    if(pg.docKey==='boletaInformativa') icono = '📋';
+    if(pg.docKey==='boletaVenta') icono = '🧾';
+    if(pg.docKey==='scanfile1') icono = '📁';
+    if(pg.docKey==='capturaPIT') icono = '💻';
+    if(pg.docKey==='dniTecnico') icono = '🪪';
+
+    card.innerHTML = '<div style="font-size:28px;margin-bottom:6px">' + icono + '</div>' +
+      '<div style="font-size:10px;font-weight:700;color:#0f172a;line-height:1.3">' + pg.label + '</div>' +
+      '<div style="font-size:9px;color:#94a3b8;margin-top:4px"># ' + (k+1) + '</div>';
+
+    // Botones subir/bajar como alternativa al drag
+    var btnWrap = document.createElement('div');
+    btnWrap.style.cssText = 'display:flex;gap:4px;justify-content:center;margin-top:8px';
+    var btnUp = document.createElement('button');
+    btnUp.textContent = '↑';
+    btnUp.style.cssText = 'padding:2px 8px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer;font-size:12px';
+    var btnDn = document.createElement('button');
+    btnDn.textContent = '↓';
+    btnDn.style.cssText = 'padding:2px 8px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer;font-size:12px';
+
+    (function(cardEl, mosaicoEl){
+      btnUp.onclick = function(e){
+        e.stopPropagation();
+        var prev = cardEl.previousElementSibling;
+        if(prev) mosaicoEl.insertBefore(cardEl, prev);
+        actualizarNumerosPaginas(mosaicoEl);
+      };
+      btnDn.onclick = function(e){
+        e.stopPropagation();
+        var next = cardEl.nextElementSibling;
+        if(next) mosaicoEl.insertBefore(next, cardEl);
+        actualizarNumerosPaginas(mosaicoEl);
+      };
+    })(card, mosaico);
+
+    btnWrap.appendChild(btnUp);
+    btnWrap.appendChild(btnDn);
+    card.appendChild(btnWrap);
+
+    // Ver archivo
+    if(pg.driveFile && pg.driveFile.viewUrl) {
+      var btnVer = document.createElement('a');
+      btnVer.href = pg.driveFile.viewUrl;
+      btnVer.target = '_blank';
+      btnVer.style.cssText = 'display:block;margin-top:6px;font-size:9px;color:#0d9488;text-decoration:none';
+      btnVer.textContent = '👁 Ver';
+      card.appendChild(btnVer);
+    }
+
+    mosaico.appendChild(card);
+  }
+
+  // Activar drag & drop
+  activarDragDropMosaico(mosaico);
+}
+
+function actualizarNumerosPaginas(mosaico) {
+  var cards = mosaico.querySelectorAll('.pagina-card');
+  for(var i=0; i<cards.length; i++) {
+    var numEl = cards[i].querySelector('div[style*="color:#94a3b8"]');
+    if(numEl) numEl.textContent = '# ' + (i+1);
+  }
+}
+
+function activarDragDropMosaico(mosaico) {
+  var dragSrc = null;
+  var cards = mosaico.querySelectorAll('.pagina-card');
+  for(var i=0; i<cards.length; i++) {
+    (function(card){
+      card.addEventListener('dragstart', function(e){
+        dragSrc = card;
+        card.style.opacity = '0.4';
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', function(){
+        card.style.opacity = '1';
+        actualizarNumerosPaginas(mosaico);
+      });
+      card.addEventListener('dragover', function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        card.style.borderColor = '#8b5cf6';
+      });
+      card.addEventListener('dragleave', function(){
+        card.style.borderColor = '#e2e8f0';
+      });
+      card.addEventListener('drop', function(e){
+        e.preventDefault();
+        card.style.borderColor = '#e2e8f0';
+        if(dragSrc !== card) {
+          var allCards = Array.from(mosaico.querySelectorAll('.pagina-card'));
+          var srcIdx = allCards.indexOf(dragSrc);
+          var tgtIdx = allCards.indexOf(card);
+          if(srcIdx < tgtIdx) mosaico.insertBefore(dragSrc, card.nextSibling);
+          else mosaico.insertBefore(dragSrc, card);
+          actualizarNumerosPaginas(mosaico);
+        }
+      });
+    })(cards[i]);
+  }
+}
+
+function guardarOrdenEtapa5(expId) {
+  var mosaico = document.getElementById('mosaico_' + expId);
+  if(!mosaico) return;
+  var cards = mosaico.querySelectorAll('.pagina-card');
+  var orden = [];
+  for(var i=0; i<cards.length; i++) {
+    orden.push({
+      pageKey: cards[i].getAttribute('data-pageid'),
+      orden: i
+    });
+  }
+  if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
+  var btn = document.getElementById('btnGuardarOrden_' + expId);
+  if(btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  fetch(GM_CONFIG.workerUrl + '?action=saveOrdenExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({ expId: expId, orden: orden })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar orden en servidor'; }
+    if(d.ok) showToast('✅ Orden guardado correctamente', 'success');
+    else showToast('⚠️ Error guardando orden', 'error');
+  })
+  .catch(function(){
+    if(btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar orden en servidor'; }
+    showToast('⚠️ Error de conexión', 'error');
+  });
+}
+
 
 // ── HELPERS DE CARDS ──
 function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, acceptFmt) {
