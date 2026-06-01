@@ -3373,14 +3373,14 @@ function crearFotoCilindroCard(exp, canSub) {
     c1.appendChild(f1div);
   }
 
-  // Auto-guardar al salir del campo (blur)
+  // Botón grabar cilindro 1
   if(canSub) {
-    (function(eid){
-      var s1 = document.getElementById('cil_serie_' + eid);
-      var f1 = document.getElementById('cil_fecha_' + eid);
-      if(s1) s1.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-      if(f1) f1.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-    })(exp.id);
+    var btn1 = document.createElement('button');
+    btn1.className = 'btn btn-teal btn-sm';
+    btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+    btn1.textContent = '💾 Grabar datos Cilindro 1';
+    btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
+    c1.appendChild(btn1);
   }
 
   card.appendChild(c1);
@@ -3467,12 +3467,12 @@ function crearFotoCilindroCard(exp, canSub) {
     }
 
     if(canSub) {
-      (function(eid){
-        var s2 = document.getElementById('cil2_serie_' + eid);
-        var f2 = document.getElementById('cil2_fecha_' + eid);
-        if(s2) s2.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-        if(f2) f2.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-      })(exp.id);
+      var btn2 = document.createElement('button');
+      btn2.className = 'btn btn-teal btn-sm';
+      btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+      btn2.textContent = '💾 Grabar datos Cilindro 2';
+      btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
+      c2.appendChild(btn2);
     }
   } else {
     c2.innerHTML += '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:8px">No aplica para este vehículo</div>';
@@ -4038,13 +4038,12 @@ function crearFotoReductorCard(exp, canSub) {
   if(canSub) {
     var gBtn = document.createElement('button');
     gBtn.className = 'btn btn-teal btn-sm';
-    // Auto-guardar al salir del campo
-    (function(eid){
-      var rm = document.getElementById('red_marca_' + eid);
-      var rs = document.getElementById('red_serie_' + eid);
-      if(rm) rm.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-      if(rs) rs.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
-    })(exp.id);
+    var gBtn = document.createElement('button');
+    gBtn.className = 'btn btn-teal btn-sm';
+    gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+    gBtn.textContent = '💾 Grabar datos Reductor';
+    gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
+    rWrap.appendChild(gBtn);
   }
 
   card.appendChild(rWrap);
