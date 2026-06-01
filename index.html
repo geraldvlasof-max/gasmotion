@@ -3247,6 +3247,17 @@ function renderEtapa4(cont, exp) {
   // 7. DNI Técnico Responsable (nuevo campo)
   sec.appendChild(crearDocCard(exp.id,'dniTecnico','7. DNI Técnico Responsable — Resp: Asistente FISE',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
 
+  // ── BOTÓN ÚNICO GUARDAR TODOS LOS DATOS TÉCNICOS ──
+  if(canSub) {
+    var btnGuardarTodo = document.createElement('button');
+    btnGuardarTodo.id = 'btnGuardarTecnico_' + exp.id;
+    btnGuardarTodo.className = 'btn btn-primary';
+    btnGuardarTodo.style.cssText = 'width:100%;justify-content:center;margin:12px 0;font-size:15px;padding:14px;background:#0d9488;border-color:#0d9488';
+    btnGuardarTodo.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS';
+    btnGuardarTodo.onclick = (function(eid){ return function(){ guardarTodosDatosTecnicos(eid); }; })(exp.id);
+    sec.appendChild(btnGuardarTodo);
+  }
+
   // 8. BONO GLP (opcional)
   var bonoDiv=document.createElement('div');bonoDiv.style.cssText='background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;margin-top:12px';
   bonoDiv.innerHTML='<div style="font-size:13px;font-weight:700;color:#1e2d4a;margin-bottom:12px">¿La conversión lleva BONO GLP?</div>';
@@ -3362,14 +3373,14 @@ function crearFotoCilindroCard(exp, canSub) {
     c1.appendChild(f1div);
   }
 
-  // Botón grabar cilindro 1
+  // Auto-guardar al salir del campo (blur)
   if(canSub) {
-    var btn1 = document.createElement('button');
-    btn1.className = 'btn btn-teal btn-sm';
-    btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    btn1.textContent = '💾 Grabar datos Cilindro 1';
-    btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
-    c1.appendChild(btn1);
+    (function(eid){
+      var s1 = document.getElementById('cil_serie_' + eid);
+      var f1 = document.getElementById('cil_fecha_' + eid);
+      if(s1) s1.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+      if(f1) f1.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+    })(exp.id);
   }
 
   card.appendChild(c1);
@@ -3456,12 +3467,12 @@ function crearFotoCilindroCard(exp, canSub) {
     }
 
     if(canSub) {
-      var btn2 = document.createElement('button');
-      btn2.className = 'btn btn-teal btn-sm';
-      btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-      btn2.textContent = '💾 Grabar datos Cilindro 2';
-      btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
-      c2.appendChild(btn2);
+      (function(eid){
+        var s2 = document.getElementById('cil2_serie_' + eid);
+        var f2 = document.getElementById('cil2_fecha_' + eid);
+        if(s2) s2.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+        if(f2) f2.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+      })(exp.id);
     }
   } else {
     c2.innerHTML += '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:8px">No aplica para este vehículo</div>';
@@ -3729,6 +3740,76 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════
+// AUTO-GUARDAR — se llama al salir de cada campo (blur)
+// Guarda todos los campos de texto técnicos en un solo saveOneExp
+// ═══════════════════════════════════════════════════════════
+var _autoGuardarTimer = {};
+
+function autoGuardarDatosTecnicos(expId) {
+  // Debounce: esperar 800ms para evitar múltiples llamadas
+  if(_autoGuardarTimer[expId]) clearTimeout(_autoGuardarTimer[expId]);
+  _autoGuardarTimer[expId] = setTimeout(function(){
+    guardarTodosDatosTecnicos(expId, true);
+  }, 800);
+}
+
+function guardarTodosDatosTecnicos(expId, silencioso) {
+  var expTarget = null;
+  for(var i=0; i<expedientes.length; i++) {
+    if(expedientes[i].id === expId) { expTarget = expedientes[i]; break; }
+  }
+  if(!expTarget) return;
+  if(!expTarget.e4) expTarget.e4 = {};
+
+  // Leer TODOS los campos de texto técnicos del DOM
+  var serieCil1   = getInputVal('cil_serie_' + expId);
+  var fechaCil1   = getInputVal('cil_fecha_' + expId);
+  var serieCil2   = getInputVal('cil2_serie_' + expId);
+  var fechaCil2   = getInputVal('cil2_fecha_' + expId);
+  var marcaRed    = getInputVal('red_marca_' + expId);
+  var serieRed    = getInputVal('red_serie_' + expId);
+
+  var hayDatos = serieCil1 || fechaCil1 || serieCil2 || fechaCil2 || marcaRed || serieRed;
+  if(!hayDatos && silencioso) return;
+
+  // Actualizar expediente local
+  if(serieCil1) expTarget.e4.serieCilindro     = serieCil1.toUpperCase();
+  if(fechaCil1) expTarget.e4.fechaFabCilindro   = fechaCil1;
+  if(serieCil2) expTarget.e4.serieCilindro2     = serieCil2.toUpperCase();
+  if(fechaCil2) expTarget.e4.fechaFabCilindro2  = fechaCil2;
+  if(marcaRed)  expTarget.e4.marcaReductor       = marcaRed.toUpperCase();
+  if(serieRed)  expTarget.e4.serieReductor       = serieRed.toUpperCase();
+
+  // Guardar en localStorage
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+
+  // Subir al servidor con saveOneExp
+  if(!GM_CONFIG.workerUrl) return;
+  PENDING_SYNC = true;
+  var btn = document.getElementById('btnGuardarTecnico_' + expId);
+  if(btn && !silencioso) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({action:'saveOneExp', data: expTarget})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    PENDING_SYNC = false;
+    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS'; }
+    if(!silencioso) showToast('✅ Datos técnicos guardados correctamente', 'success');
+    else showToast('✅ Auto-guardado', 'success');
+  })
+  .catch(function(e){
+    PENDING_SYNC = false;
+    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS'; }
+    showToast('⚠️ Error guardando datos técnicos', 'error');
+  });
+}
+
 function grabarDatosCilindro(id) {
   var serieVal = getInputVal('cil_serie_' + id);
   var fechaVal = getInputVal('cil_fecha_' + id);
@@ -3957,10 +4038,13 @@ function crearFotoReductorCard(exp, canSub) {
   if(canSub) {
     var gBtn = document.createElement('button');
     gBtn.className = 'btn btn-teal btn-sm';
-    gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    gBtn.textContent = '💾 Grabar datos Reductor';
-    gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
-    rWrap.appendChild(gBtn);
+    // Auto-guardar al salir del campo
+    (function(eid){
+      var rm = document.getElementById('red_marca_' + eid);
+      var rs = document.getElementById('red_serie_' + eid);
+      if(rm) rm.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+      if(rs) rs.addEventListener('blur', function(){ autoGuardarDatosTecnicos(eid); });
+    })(exp.id);
   }
 
   card.appendChild(rWrap);
