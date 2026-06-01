@@ -2465,6 +2465,353 @@ function renderFotoHistorialRow(label, meta, fotoUrl, driveInfo) {
 }
 
 
+// ═══════════════════════════════════════════════════════════
+// ETAPA 6 — CORREO PARA CERTIFICADORA
+// Genera PDF consolidado y envía por correo via Resend
+// ═══════════════════════════════════════════════════════════
+
+var PLANTILLA_DEFAULT_CORREO = 'Estimados señores,\n\nPor medio de la presente, Carrigas Perú E.I.R.L. remite el expediente técnico correspondiente a la conversión vehicular a GLP del vehículo indicado, para su revisión y proceso de certificación.\n\nAdjuntamos la documentación completa requerida:\n- Boleta informativa\n- Boleta / factura de venta\n- SCANFILE 1 (documentos del vehículo)\n- Captura PIT\n- DNI del técnico responsable\n- Video de compresiones\n\nQuedamos a su disposición ante cualquier consulta.\n\nAtentamente,\nCarrigas Perú E.I.R.L.\nTelf: 971 065 262';
+
+function renderEtapa6(cont, exp) {
+  var sec = document.createElement('div');
+  sec.innerHTML = '<div class="etapa-header"><div class="etapa-num" style="background:#0ea5e9">6</div><div><div class="etapa-title">ETAPA 6 — CORREO PARA CERTIFICADORA</div><div class="etapa-sub">Genera el expediente consolidado y envía el correo a la certificadora</div></div></div>';
+
+  var canManage = CU && (CU.role==='admin'||CU.role==='supervisor'||CU.role==='asistente_fise');
+
+  // ── Sección PDF Consolidado ──
+  var pdfSec = document.createElement('div');
+  pdfSec.style.cssText = 'background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:16px;margin-top:16px';
+  pdfSec.innerHTML = '<div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">📄 Documentos del Expediente</div>' +
+    '<div style="font-size:12px;color:#64748b;margin-bottom:12px">Basado en el orden definido en Etapa 5</div>';
+
+  // Listar documentos del Grupo 1
+  var docs = getDocsParaCertificadora(exp);
+  if(docs.length === 0) {
+    pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:10px;background:#fef9c3;border-radius:8px">⚠️ No hay documentos en Etapa 5. Completa primero las etapas anteriores.</div>';
+  } else {
+    var docList = '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">';
+    for(var d=0; d<docs.length; d++) {
+      var doc = docs[d];
+      var hasFile = doc.driveFile && doc.driveFile.viewUrl;
+      var nota = doc.omitirUltimaPagina ? ' (sin última pág.)' : '';
+      docList += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:white;border-radius:8px;border:1px solid #e2e8f0">' +
+        '<span style="font-size:16px">' + (hasFile ? '✅' : '⚠️') + '</span>' +
+        '<span style="font-size:12px;font-weight:600;color:#0f172a;flex:1">' + doc.label + nota + '</span>' +
+        (hasFile ? '<a href="' + doc.driveFile.viewUrl + '" target="_blank" style="font-size:11px;color:#0ea5e9">Ver</a>' : '<span style="font-size:11px;color:#f59e0b">Sin archivo</span>') +
+        '</div>';
+    }
+    docList += '</div>';
+    pdfSec.innerHTML += docList;
+
+    // Video de compresiones
+    var e4video = exp.e4 && exp.e4.videoCompresiones ? exp.e4.videoCompresiones : null;
+    var dfVideo = exp.driveFiles && exp.driveFiles['videoComp'] ? exp.driveFiles['videoComp'] : null;
+    pdfSec.innerHTML += '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px">🎥 Video de compresiones (adjunto por separado)</div>';
+    if(dfVideo && dfVideo.viewUrl) {
+      pdfSec.innerHTML += '<div style="font-size:12px;color:#22c55e;padding:6px 10px;background:#f0fdf4;border-radius:6px">✅ ' + (e4video ? e4video.nombre : 'Video') + ' — disponible en Drive</div>';
+    } else {
+      pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:6px 10px;background:#fef9c3;border-radius:6px">⚠️ Video no subido aún (Etapa 4)</div>';
+    }
+  }
+  sec.appendChild(pdfSec);
+
+  // ── Compositor de correo ──
+  var mailSec = document.createElement('div');
+  mailSec.style.cssText = 'margin-top:16px;background:white;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden';
+  mailSec.innerHTML = '<div style="background:#0f172a;padding:12px 16px;font-size:13px;font-weight:700;color:white">✉️ Compositor de Correo</div>';
+
+  var mailBody = document.createElement('div');
+  mailBody.style.cssText = 'padding:16px;display:flex;flex-direction:column;gap:12px';
+
+  // Para (destinatario con autocomplete)
+  var paraDiv = document.createElement('div');
+  paraDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Para <span style="color:#cc2200">*</span></label>';
+  var paraInp = document.createElement('input');
+  paraInp.type = 'email';
+  paraInp.id = 'e6_para_' + exp.id;
+  paraInp.placeholder = 'correo@certificadora.com';
+  paraInp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box';
+  paraInp.setAttribute('list', 'e6_correos_' + exp.id);
+  // Datalist para autocomplete de correos frecuentes
+  var dataList = document.createElement('datalist');
+  dataList.id = 'e6_correos_' + exp.id;
+  cargarCorreosFrecuentes(dataList);
+  paraInp.addEventListener('blur', function() {
+    if(this.value) guardarCorreoFrecuente(this.value);
+  });
+  paraDiv.appendChild(paraInp);
+  paraDiv.appendChild(dataList);
+  mailBody.appendChild(paraDiv);
+
+  // Asunto
+  var asuntoDiv = document.createElement('div');
+  asuntoDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Asunto</label>';
+  var asuntoInp = document.createElement('input');
+  asuntoInp.type = 'text';
+  asuntoInp.id = 'e6_asunto_' + exp.id;
+  asuntoInp.value = 'Expediente de Conversión GLP — Placa ' + (exp.placa||'') + ' — ' + (exp.nombre||'');
+  asuntoInp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box';
+  asuntoDiv.appendChild(asuntoInp);
+  mailBody.appendChild(asuntoDiv);
+
+  // Plantillas
+  var plantillaDiv = document.createElement('div');
+  plantillaDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Plantilla</label>';
+  var plantillaRow = document.createElement('div');
+  plantillaRow.style.cssText = 'display:flex;gap:8px';
+  var plantillaSel = document.createElement('select');
+  plantillaSel.id = 'e6_plantilla_' + exp.id;
+  plantillaSel.style.cssText = 'flex:1;border:2px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px';
+  plantillaSel.innerHTML = '<option value="default">Plantilla por defecto</option>';
+  cargarPlantillasEnSelect(plantillaSel, exp.id);
+  plantillaSel.onchange = function() { aplicarPlantilla(this.value, exp.id); };
+  var btnNuevaPlantilla = document.createElement('button');
+  btnNuevaPlantilla.className = 'btn btn-sm';
+  btnNuevaPlantilla.style.cssText = 'background:#8b5cf6;color:white;white-space:nowrap';
+  btnNuevaPlantilla.textContent = '+ Guardar como plantilla';
+  btnNuevaPlantilla.onclick = (function(eid){ return function(){ guardarComoPlantilla(eid); }; })(exp.id);
+  plantillaRow.appendChild(plantillaSel);
+  plantillaRow.appendChild(btnNuevaPlantilla);
+  plantillaDiv.appendChild(plantillaRow);
+  mailBody.appendChild(plantillaDiv);
+
+  // Cuerpo del correo
+  var cuerpoDiv = document.createElement('div');
+  cuerpoDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Mensaje</label>';
+  var cuerpoTa = document.createElement('textarea');
+  cuerpoTa.id = 'e6_cuerpo_' + exp.id;
+  cuerpoTa.rows = 10;
+  cuerpoTa.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:13px;width:100%;box-sizing:border-box;font-family:inherit;resize:vertical;line-height:1.6';
+  cuerpoTa.value = PLANTILLA_DEFAULT_CORREO;
+  cuerpoDiv.appendChild(cuerpoTa);
+  mailBody.appendChild(cuerpoDiv);
+
+  // Adjuntos adicionales
+  var adjDiv = document.createElement('div');
+  adjDiv.style.cssText = 'background:#f8fafc;border-radius:8px;padding:12px';
+  adjDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">📎 Adjuntos adicionales (opcional)</div>';
+  var adjInp = document.createElement('input');
+  adjInp.type = 'file';
+  adjInp.id = 'e6_adjuntos_' + exp.id;
+  adjInp.multiple = true;
+  adjInp.style.cssText = 'font-size:12px;width:100%';
+  adjDiv.appendChild(adjInp);
+  mailBody.appendChild(adjDiv);
+
+  // Botón enviar
+  if(canManage) {
+    var btnEnviar = document.createElement('button');
+    btnEnviar.id = 'btn_enviar_e6_' + exp.id;
+    btnEnviar.className = 'btn btn-primary';
+    btnEnviar.style.cssText = 'width:100%;justify-content:center;font-size:15px;padding:14px';
+    btnEnviar.innerHTML = '📨 Enviar correo a certificadora';
+    btnEnviar.onclick = (function(eid){ return function(){ enviarCorreoCertificadora(eid); }; })(exp.id);
+    mailBody.appendChild(btnEnviar);
+  }
+
+  // Historial de envíos
+  var histDiv = document.createElement('div');
+  histDiv.id = 'e6_historial_' + exp.id;
+  histDiv.style.cssText = 'font-size:12px;color:#64748b;margin-top:8px';
+  if(exp.e6 && exp.e6.envios && exp.e6.envios.length > 0) {
+    var last = exp.e6.envios[exp.e6.envios.length-1];
+    histDiv.innerHTML = '✅ Último envío: ' + last.fecha + ' ' + last.hora + ' → ' + last.para;
+  }
+  mailBody.appendChild(histDiv);
+
+  mailSec.appendChild(mailBody);
+  sec.appendChild(mailSec);
+  cont.appendChild(sec);
+}
+
+// ── Funciones de plantillas ──
+function cargarPlantillasEnSelect(sel, expId) {
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var plantillas = d.value || [];
+    for(var i=0; i<plantillas.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = 'custom_' + i;
+      opt.textContent = plantillas[i].nombre;
+      sel.appendChild(opt);
+    }
+  })
+  .catch(function(){});
+}
+
+function aplicarPlantilla(val, expId) {
+  var ta = document.getElementById('e6_cuerpo_' + expId);
+  if(!ta) return;
+  if(val === 'default') {
+    ta.value = PLANTILLA_DEFAULT_CORREO;
+    return;
+  }
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var plantillas = d.value || [];
+    var idx = parseInt(val.replace('custom_',''));
+    if(plantillas[idx]) ta.value = plantillas[idx].cuerpo;
+  })
+  .catch(function(){});
+}
+
+function guardarComoPlantilla(expId) {
+  var nombre = prompt('Nombre de la plantilla:');
+  if(!nombre) return;
+  var ta = document.getElementById('e6_cuerpo_' + expId);
+  var cuerpo = ta ? ta.value : '';
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var plantillas = d.value || [];
+    plantillas.push({nombre: nombre, cuerpo: cuerpo});
+    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({configKey:'email_plantillas', configValue: plantillas})
+    });
+  })
+  .then(function(){ showToast('✅ Plantilla guardada', 'success'); })
+  .catch(function(){ showToast('Error guardando plantilla', 'error'); });
+}
+
+// ── Correos frecuentes ──
+function cargarCorreosFrecuentes(dataList) {
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var correos = d.value || [];
+    for(var i=0; i<correos.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = correos[i];
+      dataList.appendChild(opt);
+    }
+  })
+  .catch(function(){});
+}
+
+function guardarCorreoFrecuente(email) {
+  if(!email || email.indexOf('@') === -1) return;
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var correos = d.value || [];
+    if(correos.indexOf(email) !== -1) return;
+    correos.unshift(email);
+    if(correos.length > 20) correos = correos.slice(0,20);
+    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({configKey:'correos_frecuentes', configValue: correos})
+    });
+  })
+  .catch(function(){});
+}
+
+// ── Enviar correo ──
+function enviarCorreoCertificadora(expId) {
+  var paraEl = document.getElementById('e6_para_' + expId);
+  var asuntoEl = document.getElementById('e6_asunto_' + expId);
+  var cuerpoEl = document.getElementById('e6_cuerpo_' + expId);
+  var btnEl = document.getElementById('btn_enviar_e6_' + expId);
+
+  if(!paraEl || !paraEl.value) { showToast('Escribe el correo de la certificadora', 'error'); return; }
+  if(!asuntoEl || !asuntoEl.value) { showToast('Escribe el asunto', 'error'); return; }
+  if(!cuerpoEl || !cuerpoEl.value) { showToast('Escribe el mensaje', 'error'); return; }
+
+  var para = paraEl.value.trim();
+  var asunto = asuntoEl.value.trim();
+  var cuerpo = cuerpoEl.value.trim();
+
+  // Obtener exp
+  var exp = null;
+  for(var i=0; i<expedientes.length; i++) {
+    if(expedientes[i].id === expId){ exp = expedientes[i]; break; }
+  }
+  if(!exp) return;
+
+  // Construir HTML del correo
+  var htmlCuerpo = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">' +
+    '<div style="background:#0f172a;padding:20px;text-align:center">' +
+    '<div style="color:white;font-size:20px;font-weight:800">Carrigas Perú E.I.R.L.</div>' +
+    '<div style="color:#94a3b8;font-size:13px;margin-top:4px">Sistema de Conversión GLP/GNV</div></div>' +
+    '<div style="padding:24px;background:#f8fafc">' +
+    '<div style="background:#dbeafe;border-left:4px solid #2563eb;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:16px">' +
+    '<div style="font-size:13px;font-weight:700;color:#1e40af">Expediente: ' + (exp.placa||'') + '</div>' +
+    '<div style="font-size:12px;color:#3b82f6">Cliente: ' + (exp.nombre||'') + ' | DNI: ' + (exp.dni||'') + '</div>' +
+    '<div style="font-size:12px;color:#3b82f6">Vehículo: ' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' | Conversión: ' + (exp.conversion||'GLP') + '</div></div>' +
+    '<div style="font-size:14px;color:#374151;line-height:1.8;white-space:pre-line">' + cuerpo + '</div>' +
+    '</div>' +
+    '<div style="background:#0f172a;padding:12px;text-align:center;font-size:11px;color:#94a3b8">' +
+    'Carrigas Perú E.I.R.L. | Telf: 971 065 262 | carrigasperu.com</div></div>';
+
+  // Armar links de Drive en el cuerpo
+  var docs = getDocsParaCertificadora(exp);
+  var linksHtml = '<br><br><strong>Documentos adjuntos en Drive:</strong><ul>';
+  for(var d=0; d<docs.length; d++) {
+    if(docs[d].driveFile && docs[d].driveFile.viewUrl) {
+      linksHtml += '<li><a href="' + docs[d].driveFile.viewUrl + '">' + docs[d].label + '</a></li>';
+    }
+  }
+  var dfVideo = exp.driveFiles && exp.driveFiles['videoComp'] ? exp.driveFiles['videoComp'] : null;
+  if(dfVideo && dfVideo.viewUrl) {
+    linksHtml += '<li><a href="' + dfVideo.viewUrl + '">Video de Compresiones</a></li>';
+  }
+  linksHtml += '</ul>';
+  htmlCuerpo = htmlCuerpo.replace('</div></div><div style="background:#0f172a', linksHtml + '</div></div><div style="background:#0f172a');
+
+  if(btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Enviando...'; }
+
+  if(!GM_CONFIG.workerUrl) {
+    showToast('Sin conexión al servidor', 'error');
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
+    return;
+  }
+
+  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({ to: para, subject: asunto, html: htmlCuerpo })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
+    if(d.ok) {
+      showToast('✅ Correo enviado correctamente', 'success');
+      guardarCorreoFrecuente(para);
+      // Registrar envío en historial del expediente
+      for(var i=0; i<expedientes.length; i++) {
+        if(expedientes[i].id === expId) {
+          if(!expedientes[i].e6) expedientes[i].e6 = {};
+          if(!expedientes[i].e6.envios) expedientes[i].e6.envios = [];
+          expedientes[i].e6.envios.push({
+            para: para, asunto: asunto,
+            fecha: nowFecha(), hora: nowHora(),
+            enviadoPor: CU ? CU.nombre : '-'
+          });
+          saveExp(); break;
+        }
+      }
+      var histDiv = document.getElementById('e6_historial_' + expId);
+      if(histDiv) histDiv.innerHTML = '✅ Enviado ahora → ' + para;
+    } else {
+      showToast('❌ Error: ' + (d.error||'No se pudo enviar'), 'error');
+    }
+  })
+  .catch(function(e) {
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
+    showToast('❌ Error de conexión', 'error');
+  });
+}
+
 // ==================
 // PANEL DE CONTROL
 // ==================
@@ -2551,6 +2898,7 @@ function renderModalExp(exp) {
       else if(exp.etapa===3) renderEtapa3(content,exp);
       else if(exp.etapa===4) renderEtapa4(content,exp);
       else if(exp.etapa===5) renderEtapa5(content,exp);
+      else if(exp.etapa===6) renderEtapa6(content,exp);
 
       // Agregar sección colapsable para etapas anteriores
       for(var etapaAnterior=exp.etapa-1; etapaAnterior>=1; etapaAnterior--) {
@@ -3722,9 +4070,9 @@ function renderEtapa5(cont, exp) {
     var av5 = document.createElement('button');
     av5.className = 'btn btn-navy';
     av5.style.cssText = 'width:100%;justify-content:center;margin-top:12px';
-    av5.textContent = 'Avanzar a Etapa 6 — Generación de PDF →';
+    av5.textContent = 'Avanzar a Etapa 6 — Correo Certificadora →';
     av5.onclick = (function(eid){ return function(){
-      showToast('Etapa 6 — Generación de PDF próximamente disponible', 'info');
+      avanzarEtapaNum(eid, 6);
     }; })(exp.id);
     g1.appendChild(av5);
   }
@@ -3854,18 +4202,21 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
   if(!mosaico) return;
   mosaico.innerHTML = '';
 
-  // Construir lista de páginas (una card por documento)
-  // En Etapa 6 se expandirá para mostrar páginas individuales con PDF.js
+  // Construir lista de páginas — una card por página real del PDF
+  // Se usa PDF.js via Worker proxy para contar páginas
   var paginas = [];
+  // Primero agregar con 1 página por defecto, luego expandir con PDF.js
   for(var i=0; i<docs.length; i++) {
     var doc = docs[i];
-    var nota = doc.omitirUltimaPagina ? ' (sin última pág.)' : '';
     paginas.push({
       id: doc.key + '_p1',
       docKey: doc.key,
-      label: doc.label + nota,
+      pageNum: 1,
+      totalPages: 1, // se actualiza con PDF.js
+      label: doc.label,
       driveFile: doc.driveFile,
       meta: doc.meta,
+      omitirUltimaPagina: doc.omitirUltimaPagina || false,
       orden: i
     });
   }
@@ -3984,6 +4335,192 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
 
   // Activar drag & drop
   activarDragDropMosaico(mosaico);
+
+  // Expandir páginas con PDF.js via Worker proxy
+  expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado);
+}
+
+// ═══════════════════════════════════════════════════════════
+// EXPANDIR PÁGINAS — PDF.js via Worker proxy
+// Para cada doc con driveFile, cuenta las páginas reales
+// y agrega cards individuales para cada página
+// ═══════════════════════════════════════════════════════════
+function expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado) {
+  if(typeof pdfjsLib === 'undefined') return;
+  if(!GM_CONFIG.workerUrl) return;
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // Procesar cada documento que tenga un PDF en Drive
+  var promesas = [];
+  for(var i=0; i<docs.length; i++) {
+    (function(doc) {
+      if(!doc.driveFile || !doc.driveFile.id) return;
+      // Solo expandir PDFs — no imágenes
+      var nombre = (doc.meta && doc.meta.nombre) ? doc.meta.nombre.toLowerCase() : '';
+      var esPDF = nombre.indexOf('.pdf') !== -1 || nombre === '';
+      if(!esPDF) return;
+
+      var proxyUrl = GM_CONFIG.workerUrl + '?action=proxyFile&fileId=' + doc.driveFile.id;
+      var loadTask = pdfjsLib.getDocument(proxyUrl);
+      var p = loadTask.promise.then(function(pdf) {
+        var totalPages = pdf.numPages;
+        // Si omitirUltimaPagina, excluir la última
+        var pagesToShow = doc.omitirUltimaPagina ? totalPages - 1 : totalPages;
+        if(pagesToShow < 1) pagesToShow = 1;
+        return { doc: doc, pdf: pdf, pagesToShow: pagesToShow, totalPages: totalPages };
+      }).catch(function() {
+        return { doc: doc, pdf: null, pagesToShow: 1, totalPages: 1 };
+      });
+      promesas.push(p);
+    })(docs[i]);
+  }
+
+  if(promesas.length === 0) return;
+
+  Promise.all(promesas).then(function(resultados) {
+    // Reconstruir el mosaico con páginas expandidas
+    mosaico.innerHTML = '<div style="color:#a78bfa;font-size:12px;width:100%;text-align:center;padding:10px">⏳ Cargando miniaturas...</div>';
+
+    var todasPaginas = [];
+    for(var r=0; r<resultados.length; r++) {
+      var res = resultados[r];
+      for(var p=1; p<=res.pagesToShow; p++) {
+        todasPaginas.push({
+          id: res.doc.key + '_p' + p,
+          docKey: res.doc.key,
+          pageNum: p,
+          totalPages: res.pagesToShow,
+          label: res.doc.label,
+          driveFile: res.doc.driveFile,
+          meta: res.doc.meta,
+          pdf: res.pdf,
+          orden: todasPaginas.length
+        });
+      }
+    }
+
+    // Aplicar orden guardado si existe
+    if(ordenGuardado && ordenGuardado.length > 0) {
+      var ordenMap = {};
+      for(var j=0; j<ordenGuardado.length; j++) {
+        ordenMap[ordenGuardado[j].pageKey] = ordenGuardado[j].orden;
+      }
+      todasPaginas.sort(function(a,b) {
+        var oa = (ordenMap[a.id] !== undefined) ? ordenMap[a.id] : 999;
+        var ob = (ordenMap[b.id] !== undefined) ? ordenMap[b.id] : 999;
+        return oa - ob;
+      });
+    }
+
+    // Limpiar mosaico y renderizar cards
+    mosaico.innerHTML = '';
+    for(var k=0; k<todasPaginas.length; k++) {
+      var pg = todasPaginas[k];
+      var card = crearCardPagina(pg, k+1, mosaico);
+      mosaico.appendChild(card);
+    }
+    activarDragDropMosaico(mosaico);
+  });
+}
+
+function crearCardPagina(pg, numOrden, mosaico) {
+  var card = document.createElement('div');
+  card.className = 'pagina-card';
+  card.setAttribute('data-pageid', pg.id);
+  card.draggable = true;
+  card.style.cssText = 'background:white;border:2px solid #e2e8f0;border-radius:10px;padding:8px;width:130px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0;position:relative';
+
+  var iconos = {
+    boletaInformativa:'📋', boletaVenta:'🧾',
+    scanfile1:'📁', scanfile2:'📂',
+    capturaPIT:'💻', dniTecnico:'🪪'
+  };
+  var icono = iconos[pg.docKey] || '📄';
+
+  // Canvas para renderizar la página del PDF
+  var canvasId = 'pdfp_' + pg.id.replace(/[^a-z0-9]/gi,'_');
+  card.innerHTML =
+    '<canvas id="' + canvasId + '" style="width:100%;max-height:100px;border-radius:4px;background:#f1f5f9;display:block;margin-bottom:4px"></canvas>' +
+    '<div style="font-size:9px;font-weight:700;color:#0f172a;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + pg.label + '">' + pg.label + '</div>' +
+    '<div style="font-size:9px;color:#94a3b8;margin-top:2px">Pág ' + pg.pageNum + '/' + pg.totalPages + ' • #' + numOrden + '</div>';
+
+  // Renderizar página con PDF.js
+  if(pg.pdf) {
+    (function(pdfObj, pageN, cId, ico) {
+      setTimeout(function() {
+        var canvas = document.getElementById(cId);
+        if(!canvas) return;
+        pdfObj.getPage(pageN).then(function(page) {
+          var viewport = page.getViewport({scale: 0.35});
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = '100%';
+          canvas.style.maxHeight = '100px';
+          page.render({canvasContext: canvas.getContext('2d'), viewport: viewport})
+          .promise.catch(function() {
+            canvas.style.display = 'none';
+          });
+        }).catch(function() {
+          canvas.style.display = 'none';
+          var f = document.createElement('div');
+          f.style.cssText = 'font-size:32px;margin-bottom:4px';
+          f.textContent = ico;
+          canvas.parentNode.insertBefore(f, canvas);
+        });
+      }, 100);
+    })(pg.pdf, pg.pageNum, canvasId, icono);
+  } else {
+    // Sin PDF: mostrar ícono
+    setTimeout(function() {
+      var canvas = document.getElementById(canvasId);
+      if(!canvas) return;
+      canvas.style.display = 'none';
+      var f = document.createElement('div');
+      f.style.cssText = 'font-size:32px;margin:8px 0';
+      f.textContent = icono;
+      canvas.parentNode.insertBefore(f, canvas);
+    }, 50);
+  }
+
+  // Botones ↑↓
+  var btnWrap = document.createElement('div');
+  btnWrap.style.cssText = 'display:flex;gap:4px;justify-content:center;margin-top:6px';
+  var btnUp = document.createElement('button');
+  btnUp.textContent = '↑';
+  btnUp.style.cssText = 'padding:2px 8px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer;font-size:12px';
+  var btnDn = document.createElement('button');
+  btnDn.textContent = '↓';
+  btnDn.style.cssText = 'padding:2px 8px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;cursor:pointer;font-size:12px';
+  (function(cardEl, mosaicoEl) {
+    btnUp.onclick = function(e) {
+      e.stopPropagation();
+      var prev = cardEl.previousElementSibling;
+      if(prev) mosaicoEl.insertBefore(cardEl, prev);
+      actualizarNumerosPaginas(mosaicoEl);
+    };
+    btnDn.onclick = function(e) {
+      e.stopPropagation();
+      var next = cardEl.nextElementSibling;
+      if(next) mosaicoEl.insertBefore(next, cardEl);
+      actualizarNumerosPaginas(mosaicoEl);
+    };
+  })(card, mosaico);
+  btnWrap.appendChild(btnUp);
+  btnWrap.appendChild(btnDn);
+  card.appendChild(btnWrap);
+
+  // Enlace ver en Drive
+  if(pg.driveFile && pg.driveFile.viewUrl) {
+    var lnk = document.createElement('a');
+    lnk.href = pg.driveFile.viewUrl;
+    lnk.target = '_blank';
+    lnk.style.cssText = 'display:block;margin-top:4px;font-size:9px;color:#0d9488;text-decoration:none';
+    lnk.textContent = '👁 Ver doc';
+    card.appendChild(lnk);
+  }
+
+  return card;
 }
 
 function actualizarNumerosPaginas(mosaico) {
