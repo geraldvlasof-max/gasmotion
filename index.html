@@ -2328,26 +2328,79 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     var e4 = exp.e4 || {};
     var df = exp.driveFiles || {};
     var fd = exp.fotosData || {};
-    // Fotos técnicas
+
+    // ── Fotos técnicas ──
     var fotos = ['fotoReductor','fotoCilindro1','fotoCilindro2'];
     var fotosLabels = {'fotoReductor':'Foto Reductor','fotoCilindro1':'Foto Cilindro 1','fotoCilindro2':'Foto Cilindro 2'};
     for(var f=0; f<fotos.length; f++) {
       var fk = fotos[f];
       var meta = e4[fk];
       if(!meta || !meta.completado) continue;
-      var driveInfo = df[fk];
-      var dataUrlInfo = fd[fk];
+      var driveInfo = df[fk] || null;
+      var dataUrlInfo = fd[fk] || null;
       var fotoUrl = driveInfo ? driveInfo.viewUrl : (dataUrlInfo ? dataUrlInfo.dataUrl : null);
       docsHtml += renderFotoHistorialRow(fotosLabels[fk], meta, fotoUrl, driveInfo);
     }
-    // Datos técnicos
-    if(e4.serieCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0;border-bottom:1px solid #f1f5f9">📋 Serie cilindro: <strong>' + e4.serieCilindro + '</strong></div>';
-    if(e4.marcaReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0;border-bottom:1px solid #f1f5f9">📋 Marca reductor: <strong>' + e4.marcaReductor + '</strong></div>';
-    if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:6px 0">📋 Serie reductor: <strong>' + e4.serieReductor + '</strong></div>';
-    // PIT y boletas
-    var pitUrl = getFileUrl(exp.id, 'pit');
-    var pitDl = getDownloadUrl(exp.id, 'pit');
+
+    // ── Datos Cilindro 1 ──
+    var hayDatosCil1 = e4.serieCilindro || e4.fechaFabCilindro;
+    if(hayDatosCil1) {
+      docsHtml += '<div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #0ea5e9">';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">🔵 CILINDRO 1</div>';
+      if(e4.serieCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieCilindro + '</strong></div>';
+      if(e4.fechaFabCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📅 Fecha fabricación: <strong>' + e4.fechaFabCilindro + '</strong></div>';
+      docsHtml += '</div>';
+    }
+
+    // ── Datos Cilindro 2 ──
+    var hayDatosCil2 = e4.serieCilindro2 || e4.fechaFabCilindro2;
+    if(hayDatosCil2 && !e4.cilindro2NoAplica) {
+      docsHtml += '<div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #0ea5e9">';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">🔵 CILINDRO 2</div>';
+      if(e4.serieCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieCilindro2 + '</strong></div>';
+      if(e4.fechaFabCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📅 Fecha fabricación: <strong>' + e4.fechaFabCilindro2 + '</strong></div>';
+      docsHtml += '</div>';
+    }
+    if(e4.cilindro2NoAplica) {
+      docsHtml += '<div style="font-size:12px;color:#94a3b8;padding:4px 0;font-style:italic">🔵 Cilindro 2: No aplica</div>';
+    }
+
+    // ── Datos Reductor ──
+    var hayDatosRed = e4.marcaReductor || e4.serieReductor;
+    if(hayDatosRed) {
+      docsHtml += '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #22c55e">';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px">🔧 REDUCTOR</div>';
+      if(e4.marcaReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">🏷️ Marca: <strong>' + e4.marcaReductor + '</strong></div>';
+      if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieReductor + '</strong></div>';
+      docsHtml += '</div>';
+    }
+
+    // ── Documentos administrativos ──
+    // CLAVE CORRECTA: usar el mismo tipoKey que se usa en storeFile/driveFiles
+    var boletaInfoUrl = getFileUrl(exp.id, 'boletaInfo');
+    var boletaInfoDl  = getDownloadUrl(exp.id, 'boletaInfo');
+    if(e4.boletaInformativa) docsHtml += renderDocHistorialRow('Boleta Informativa', e4.boletaInformativa, boletaInfoUrl, boletaInfoDl);
+
+    var boletaVentaUrl = getFileUrl(exp.id, 'boletaVenta');
+    var boletaVentaDl  = getDownloadUrl(exp.id, 'boletaVenta');
+    if(e4.boletaVenta) docsHtml += renderDocHistorialRow('Boleta de Venta', e4.boletaVenta, boletaVentaUrl, boletaVentaDl);
+
+    // Captura PIT — clave correcta es 'capturaPIT'
+    var pitUrl = getFileUrl(exp.id, 'capturaPIT');
+    var pitDl  = getDownloadUrl(exp.id, 'capturaPIT');
     if(e4.capturaPIT) docsHtml += renderDocHistorialRow('Captura PIT', e4.capturaPIT, pitUrl, pitDl);
+
+    // DNI Técnico — clave correcta es 'dniTecnico'
+    var dniUrl = getFileUrl(exp.id, 'dniTecnico');
+    var dniDl  = getDownloadUrl(exp.id, 'dniTecnico');
+    if(e4.dniTecnico) docsHtml += renderDocHistorialRow('DNI Técnico Responsable', e4.dniTecnico, dniUrl, dniDl);
+
+    // Bono GLP
+    if(e4.llevaBono === true) {
+      var bonoUrl = getFileUrl(exp.id, 'informeBono');
+      var bonoDl  = getDownloadUrl(exp.id, 'informeBono');
+      if(e4.informeBono) docsHtml += renderDocHistorialRow('Informe Bono GLP', e4.informeBono, bonoUrl, bonoDl);
+    }
   }
 
   if(!docsHtml) docsHtml = '<div style="font-size:12px;color:#9ca3af;font-style:italic">No hay documentos disponibles en esta etapa.</div>';
@@ -3853,42 +3906,38 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
       '<div style="font-size:10px;font-weight:700;color:#0f172a;line-height:1.3">' + pg.label + '</div>' +
       '<div style="font-size:9px;color:#94a3b8;margin-top:4px"># ' + (k+1) + '</div>';
 
-    // Cargar miniatura con PDF.js si hay URL de Drive
+    // Vista previa usando Google Drive viewer (iframe)
+    // PDF.js requiere CORS — Drive Viewer funciona sin restricciones
     (function(pageData, cId, icoFallback){
       setTimeout(function(){
         var canvas = document.getElementById(cId);
         if(!canvas) return;
-        var driveUrl = pageData.driveFile && pageData.driveFile.directUrl ? pageData.driveFile.directUrl : null;
-        if(!driveUrl && pageData.driveFile && pageData.driveFile.downloadUrl) driveUrl = pageData.driveFile.downloadUrl;
-        if(!driveUrl) {
-          // Sin URL: mostrar ícono
+
+        var driveFileId = pageData.driveFile && pageData.driveFile.id ? pageData.driveFile.id : null;
+
+        if(!driveFileId) {
+          // Sin archivo en Drive: mostrar ícono y mensaje
           canvas.style.display = 'none';
           var ico = document.createElement('div');
-          ico.style.cssText = 'font-size:40px;margin-bottom:6px';
+          ico.style.cssText = 'font-size:36px;margin-bottom:4px';
           ico.textContent = icoFallback;
-          canvas.parentNode.insertBefore(ico, canvas);
+          var msg = document.createElement('div');
+          msg.style.cssText = 'font-size:9px;color:#f59e0b;margin-top:2px';
+          msg.textContent = 'Sin preview';
+          canvas.parentNode.insertBefore(msg, canvas);
+          canvas.parentNode.insertBefore(ico, msg);
           return;
         }
-        // Cargar PDF con PDF.js
-        if(typeof pdfjsLib === 'undefined') {
-          canvas.style.display = 'none';
-          return;
-        }
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        var loadingTask = pdfjsLib.getDocument(driveUrl);
-        loadingTask.promise.then(function(pdf){
-          pdf.getPage(1).then(function(page){
-            var viewport = page.getViewport({scale: 0.5});
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            canvas.style.width = '100%';
-            canvas.style.maxHeight = '120px';
-            page.render({canvasContext: canvas.getContext('2d'), viewport: viewport});
-          });
-        }).catch(function(){
-          canvas.style.display = 'none';
-        });
-      }, 200);
+
+        // Usar iframe con Google Drive Preview (funciona con archivos públicos)
+        canvas.style.display = 'none';
+        var iframe = document.createElement('iframe');
+        iframe.src = 'https://drive.google.com/file/d/' + driveFileId + '/preview';
+        iframe.style.cssText = 'width:100%;height:120px;border:none;border-radius:4px;background:#f8fafc;display:block;margin:0 auto 6px';
+        iframe.setAttribute('allow', 'autoplay');
+        iframe.loading = 'lazy';
+        canvas.parentNode.insertBefore(iframe, canvas);
+      }, 300);
     })(pg, canvasId, icono);
 
     // Botones subir/bajar como alternativa al drag
