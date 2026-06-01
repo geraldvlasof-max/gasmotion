@@ -217,7 +217,84 @@ input,select,textarea{font-size:16px!important}
 @media(min-width:769px){
   input,select,textarea{font-size:14px!important}
 }
+
+/* ═══════════════════════════════════════════════
+   MÓVIL — Etapa 4 y 5
+   ═══════════════════════════════════════════════ */
+@media(max-width:768px){
+  /* Modal expediente full screen en móvil */
+  #expModal .modal-box{
+    width:100%!important;
+    max-width:100%!important;
+    height:100%!important;
+    max-height:100%!important;
+    border-radius:0!important;
+    margin:0!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  /* Cards de documentos — full width */
+  .doc-box{
+    margin-left:0!important;
+    margin-right:0!important;
+    border-radius:10px!important;
+  }
+  /* Botones de foto — más grandes en táctil */
+  .btn-foto-cam, .btn-foto-gal{
+    padding:14px!important;
+    font-size:15px!important;
+    min-height:52px!important;
+  }
+  /* Inputs de texto — tamaño cómodo */
+  #expModal input[type="text"],
+  #expModal input[type="email"],
+  #expModal select{
+    font-size:16px!important;
+    padding:12px!important;
+    min-height:48px!important;
+  }
+  /* Etapa 4 — grids de 1 columna */
+  .grid2, .grid3{
+    grid-template-columns:1fr!important;
+  }
+  /* Etapa 5 — mosaico en columna */
+  [id^="mosaico_"]{
+    flex-direction:column!important;
+    align-items:stretch!important;
+  }
+  [id^="mosaico_"] .pagina-card{
+    width:100%!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:12px!important;
+    text-align:left!important;
+    padding:12px!important;
+  }
+  [id^="mosaico_"] .pagina-card > div:first-child{
+    font-size:36px!important;
+    margin-bottom:0!important;
+    flex-shrink:0!important;
+  }
+  /* Pipeline etapas — scroll horizontal */
+  .pipeline-etapas, .etapas-header{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    flex-wrap:nowrap!important;
+    padding-bottom:8px!important;
+  }
+  /* Botones de acción — full width */
+  #expModal .btn-navy,
+  #expModal .btn-primary{
+    width:100%!important;
+    justify-content:center!important;
+    min-height:48px!important;
+  }
+  /* Header etapa — texto más pequeño */
+  .etapa-title{ font-size:14px!important; }
+  .etapa-sub{ font-size:11px!important; }
+}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 <div id="gmLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:9999;align-items:center;justify-content:center">
@@ -2730,7 +2807,10 @@ function renderEtapa3(cont, exp) {
 // ── ETAPA 4 ──
 function renderEtapa4(cont, exp) {
   var e4=exp.e4||{};
-  var canSub=CU&&(CU.role==='admin'||CU.role==='tecnico'||CU.role==='jefe');
+  // canSub: puede subir archivos y editar campos
+  var canSub=CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='tecnico'||CU.role==='jefe'||CU.role==='asistente_fise');
+  // canVer: puede ver todos los datos (todos los roles)
+  var canVer=true;
   var sec=document.createElement('div');
   sec.innerHTML='<div class="etapa-header"><div class="etapa-num" style="background:#0d9488">4</div><div><div class="etapa-title">ETAPA 4 — DOCUMENTOS TECNICOS</div><div class="etapa-sub">Adjunta y graba todos los documentos tecnicos de la conversion</div></div></div>';
 
@@ -2836,14 +2916,20 @@ function crearFotoCilindroCard(exp, canSub) {
     var s1div = document.createElement('div');
     s1div.style.cssText = 'margin-top:10px';
     s1div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Cilindro 1 <span style="color:#cc2200">*</span></label>';
-    var s1inp = document.createElement('input');
-    s1inp.type = 'text'; s1inp.id = 'cil_serie_' + exp.id;
-    s1inp.value = e4.serieCilindro || '';
-    s1inp.disabled = !canSub;
-    s1inp.placeholder = 'Ej: ABC123456';
-    s1inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-    s1inp.oninput = function() { this.value = this.value.toUpperCase(); };
-    s1div.appendChild(s1inp);
+    if(canSub) {
+      var s1inp = document.createElement('input');
+      s1inp.type = 'text'; s1inp.id = 'cil_serie_' + exp.id;
+      s1inp.value = e4.serieCilindro || '';
+      s1inp.placeholder = 'Ej: ABC123456';
+      s1inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+      s1inp.oninput = function() { this.value = this.value.toUpperCase(); };
+      s1div.appendChild(s1inp);
+    } else {
+      var s1val = document.createElement('div');
+      s1val.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+      s1val.textContent = e4.serieCilindro || '—';
+      s1div.appendChild(s1val);
+    }
     c1.appendChild(s1div);
   }
 
@@ -2852,20 +2938,26 @@ function crearFotoCilindroCard(exp, canSub) {
     var f1div = document.createElement('div');
     f1div.style.cssText = 'margin-top:10px';
     f1div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Fecha Fabricación <span style="color:#cc2200">*</span> <span style="font-size:10px;color:#94a3b8;font-weight:400">(MM/AAAA)</span></label>';
-    var f1inp = document.createElement('input');
-    f1inp.type = 'text'; f1inp.id = 'cil_fecha_' + exp.id;
-    f1inp.value = e4.fechaFabCilindro || '';
-    f1inp.disabled = !canSub;
-    f1inp.placeholder = 'MM/AAAA';
-    f1inp.inputMode = 'numeric';
-    f1inp.maxLength = 7;
-    f1inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-    f1inp.oninput = function() {
-      var v = this.value.replace(/\D/g,'');
-      if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
-      this.value = v;
-    };
-    f1div.appendChild(f1inp);
+    if(canSub) {
+      var f1inp = document.createElement('input');
+      f1inp.type = 'text'; f1inp.id = 'cil_fecha_' + exp.id;
+      f1inp.value = e4.fechaFabCilindro || '';
+      f1inp.placeholder = 'MM/AAAA';
+      f1inp.inputMode = 'numeric';
+      f1inp.maxLength = 7;
+      f1inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+      f1inp.oninput = function() {
+        var v = this.value.replace(/\D/g,'');
+        if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
+        this.value = v;
+      };
+      f1div.appendChild(f1inp);
+    } else {
+      var f1val = document.createElement('div');
+      f1val.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+      f1val.textContent = e4.fechaFabCilindro || '—';
+      f1div.appendChild(f1val);
+    }
     c1.appendChild(f1div);
   }
 
@@ -2918,14 +3010,20 @@ function crearFotoCilindroCard(exp, canSub) {
       var s2div = document.createElement('div');
       s2div.style.cssText = 'margin-top:10px';
       s2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Cilindro 2 <span style="color:#cc2200">*</span></label>';
-      var s2inp = document.createElement('input');
-      s2inp.type = 'text'; s2inp.id = 'cil2_serie_' + exp.id;
-      s2inp.value = e4.serieCilindro2 || '';
-      s2inp.disabled = !canSub;
-      s2inp.placeholder = 'Ej: ABC789012';
-      s2inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-      s2inp.oninput = function() { this.value = this.value.toUpperCase(); };
-      s2div.appendChild(s2inp);
+      if(canSub) {
+        var s2inp = document.createElement('input');
+        s2inp.type = 'text'; s2inp.id = 'cil2_serie_' + exp.id;
+        s2inp.value = e4.serieCilindro2 || '';
+        s2inp.placeholder = 'Ej: ABC789012';
+        s2inp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+        s2inp.oninput = function() { this.value = this.value.toUpperCase(); };
+        s2div.appendChild(s2inp);
+      } else {
+        var s2val = document.createElement('div');
+        s2val.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+        s2val.textContent = e4.serieCilindro2 || '—';
+        s2div.appendChild(s2val);
+      }
       c2.appendChild(s2div);
     }
 
@@ -2933,20 +3031,26 @@ function crearFotoCilindroCard(exp, canSub) {
       var f2div = document.createElement('div');
       f2div.style.cssText = 'margin-top:10px';
       f2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Fecha Fabricación Cil. 2 <span style="color:#cc2200">*</span> <span style="font-size:10px;color:#94a3b8;font-weight:400">(MM/AAAA)</span></label>';
-      var f2inp = document.createElement('input');
-      f2inp.type = 'text'; f2inp.id = 'cil2_fecha_' + exp.id;
-      f2inp.value = e4.fechaFabCilindro2 || '';
-      f2inp.disabled = !canSub;
-      f2inp.placeholder = 'MM/AAAA';
-      f2inp.inputMode = 'numeric';
-      f2inp.maxLength = 7;
-      f2inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-      f2inp.oninput = function() {
-        var v = this.value.replace(/\D/g,'');
-        if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
-        this.value = v;
-      };
-      f2div.appendChild(f2inp);
+      if(canSub) {
+        var f2inp = document.createElement('input');
+        f2inp.type = 'text'; f2inp.id = 'cil2_fecha_' + exp.id;
+        f2inp.value = e4.fechaFabCilindro2 || '';
+        f2inp.placeholder = 'MM/AAAA';
+        f2inp.inputMode = 'numeric';
+        f2inp.maxLength = 7;
+        f2inp.style.cssText = 'border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+        f2inp.oninput = function() {
+          var v = this.value.replace(/\D/g,'');
+          if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
+          this.value = v;
+        };
+        f2div.appendChild(f2inp);
+      } else {
+        var f2val = document.createElement('div');
+        f2val.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+        f2val.textContent = e4.fechaFabCilindro2 || '—';
+        f2div.appendChild(f2val);
+      }
       c2.appendChild(f2div);
     }
 
@@ -3409,14 +3513,20 @@ function crearFotoReductorCard(exp, canSub) {
     var mDiv = document.createElement('div');
     mDiv.style.cssText = 'margin-top:10px';
     mDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Marca Reductor <span style="color:#cc2200">*</span></label>';
-    var mInp = document.createElement('input');
-    mInp.type = 'text'; mInp.id = 'red_marca_' + exp.id;
-    mInp.value = e4.marcaReductor || '';
-    mInp.disabled = !canSub;
-    mInp.placeholder = 'Ej: TARTARINI';
-    mInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-    mInp.oninput = function() { this.value = this.value.toUpperCase(); };
-    mDiv.appendChild(mInp);
+    if(canSub) {
+      var mInp = document.createElement('input');
+      mInp.type = 'text'; mInp.id = 'red_marca_' + exp.id;
+      mInp.value = e4.marcaReductor || '';
+      mInp.placeholder = 'Ej: TARTARINI';
+      mInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+      mInp.oninput = function() { this.value = this.value.toUpperCase(); };
+      mDiv.appendChild(mInp);
+    } else {
+      var mVal = document.createElement('div');
+      mVal.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+      mVal.textContent = e4.marcaReductor || '—';
+      mDiv.appendChild(mVal);
+    }
     rWrap.appendChild(mDiv);
   }
 
@@ -3425,14 +3535,20 @@ function crearFotoReductorCard(exp, canSub) {
     var sDiv = document.createElement('div');
     sDiv.style.cssText = 'margin-top:10px';
     sDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">Serie Reductor <span style="color:#cc2200">*</span></label>';
-    var sInp = document.createElement('input');
-    sInp.type = 'text'; sInp.id = 'red_serie_' + exp.id;
-    sInp.value = e4.serieReductor || '';
-    sInp.disabled = !canSub;
-    sInp.placeholder = 'Ej: RED789012';
-    sInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;' + (canSub ? 'background:white' : 'background:#f1f5f9;color:#64748b');
-    sInp.oninput = function() { this.value = this.value.toUpperCase(); };
-    sDiv.appendChild(sInp);
+    if(canSub) {
+      var sInp = document.createElement('input');
+      sInp.type = 'text'; sInp.id = 'red_serie_' + exp.id;
+      sInp.value = e4.serieReductor || '';
+      sInp.placeholder = 'Ej: RED789012';
+      sInp.style.cssText = 'text-transform:uppercase;border:2px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+      sInp.oninput = function() { this.value = this.value.toUpperCase(); };
+      sDiv.appendChild(sInp);
+    } else {
+      var sVal = document.createElement('div');
+      sVal.style.cssText = 'padding:10px 12px;background:#f1f5f9;border-radius:8px;font-size:14px;font-weight:600;color:#374151;border:2px solid #e2e8f0';
+      sVal.textContent = e4.serieReductor || '—';
+      sDiv.appendChild(sVal);
+    }
     rWrap.appendChild(sDiv);
   }
 
@@ -3514,11 +3630,45 @@ function renderEtapa5(cont, exp) {
     g1.appendChild(btnGuardar);
   }
 
+  // ── VIDEO DE COMPRESIONES (separado del mosaico, mismo grupo) ──
+  var videoSec = document.createElement('div');
+  videoSec.style.cssText = 'margin-top:16px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px';
+  var e4video = exp.e4 && exp.e4.videoCompresiones ? exp.e4.videoCompresiones : null;
+  var dfVideo = exp.driveFiles && exp.driveFiles['videoComp'] ? exp.driveFiles['videoComp'] : null;
+  videoSec.innerHTML = '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px">🎥 Video de Compresiones</div>';
+  if(e4video && e4video.completado) {
+    var videoMeta = document.createElement('div');
+    videoMeta.style.cssText = 'font-size:12px;color:#64748b;margin-bottom:10px';
+    videoMeta.innerHTML = '📎 ' + (e4video.nombre||'Video') + ' — subido por ' + (e4video.subidoPor||'') + ' el ' + (e4video.fecha||'');
+    videoSec.appendChild(videoMeta);
+    if(dfVideo && dfVideo.viewUrl) {
+      var btnVerVideo = document.createElement('a');
+      btnVerVideo.href = dfVideo.viewUrl;
+      btnVerVideo.target = '_blank';
+      btnVerVideo.className = 'btn btn-teal btn-sm';
+      btnVerVideo.style.cssText = 'margin-right:8px';
+      btnVerVideo.innerHTML = '▶ Ver video';
+      videoSec.appendChild(btnVerVideo);
+      var btnDlVideo = document.createElement('a');
+      btnDlVideo.href = dfVideo.downloadUrl || dfVideo.viewUrl;
+      btnDlVideo.target = '_blank';
+      btnDlVideo.className = 'btn btn-sm';
+      btnDlVideo.style.cssText = 'background:#0f172a;color:white';
+      btnDlVideo.innerHTML = '⬇ Descargar';
+      videoSec.appendChild(btnDlVideo);
+    } else {
+      videoSec.innerHTML += '<span style="font-size:12px;color:#f59e0b">⚠️ Video pendiente de sincronizar a Drive</span>';
+    }
+  } else {
+    videoSec.innerHTML += '<div style="font-size:12px;color:#94a3b8;font-style:italic">Video de compresiones no subido aún (Etapa 4)</div>';
+  }
+  g1.appendChild(videoSec);
+
   // Avanzar a Etapa 6 (placeholder)
   if(canManage) {
     var av5 = document.createElement('button');
     av5.className = 'btn btn-navy';
-    av5.style.cssText = 'width:100%;justify-content:center';
+    av5.style.cssText = 'width:100%;justify-content:center;margin-top:12px';
     av5.textContent = 'Avanzar a Etapa 6 — Generación de PDF →';
     av5.onclick = (function(eid){ return function(){
       showToast('Etapa 6 — Generación de PDF próximamente disponible', 'info');
@@ -3604,6 +3754,17 @@ function getDocsParaCertificadora(exp) {
     });
   }
 
+  // 6. SCANFILE 2 (viene de Etapa 3)
+  if(exp.e3 && exp.e3.scanfile2 && exp.e3.scanfile2.completado) {
+    docs.push({
+      key: 'scanfile2',
+      label: 'SCANFILE 2',
+      driveFile: df['sf2'] || null,
+      meta: exp.e3.scanfile2,
+      omitirUltimaPagina: false
+    });
+  }
+
   return docs;
 }
 
@@ -3669,25 +3830,66 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
     });
   }
 
-  // Renderizar cada página como card draggable
+  // Renderizar cada página como card draggable con miniatura PDF.js
   for(var k=0; k<paginas.length; k++) {
     var pg = paginas[k];
     var card = document.createElement('div');
     card.className = 'pagina-card';
     card.setAttribute('data-pageid', pg.id);
     card.draggable = true;
-    card.style.cssText = 'background:white;border:2px solid #e2e8f0;border-radius:10px;padding:10px;width:120px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0';
+    card.style.cssText = 'background:white;border:2px solid #e2e8f0;border-radius:10px;padding:10px;width:140px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0';
 
     var icono = '📄';
     if(pg.docKey==='boletaInformativa') icono = '📋';
     if(pg.docKey==='boletaVenta') icono = '🧾';
     if(pg.docKey==='scanfile1') icono = '📁';
+    if(pg.docKey==='scanfile2') icono = '📂';
     if(pg.docKey==='capturaPIT') icono = '💻';
     if(pg.docKey==='dniTecnico') icono = '🪪';
 
-    card.innerHTML = '<div style="font-size:28px;margin-bottom:6px">' + icono + '</div>' +
+    // Canvas para miniatura PDF.js
+    var canvasId = 'pdfcanvas_' + pg.id;
+    card.innerHTML = '<canvas id="' + canvasId + '" style="width:100%;max-height:120px;object-fit:contain;border-radius:4px;background:#f8fafc;display:block;margin:0 auto 6px"></canvas>' +
       '<div style="font-size:10px;font-weight:700;color:#0f172a;line-height:1.3">' + pg.label + '</div>' +
       '<div style="font-size:9px;color:#94a3b8;margin-top:4px"># ' + (k+1) + '</div>';
+
+    // Cargar miniatura con PDF.js si hay URL de Drive
+    (function(pageData, cId, icoFallback){
+      setTimeout(function(){
+        var canvas = document.getElementById(cId);
+        if(!canvas) return;
+        var driveUrl = pageData.driveFile && pageData.driveFile.directUrl ? pageData.driveFile.directUrl : null;
+        if(!driveUrl && pageData.driveFile && pageData.driveFile.downloadUrl) driveUrl = pageData.driveFile.downloadUrl;
+        if(!driveUrl) {
+          // Sin URL: mostrar ícono
+          canvas.style.display = 'none';
+          var ico = document.createElement('div');
+          ico.style.cssText = 'font-size:40px;margin-bottom:6px';
+          ico.textContent = icoFallback;
+          canvas.parentNode.insertBefore(ico, canvas);
+          return;
+        }
+        // Cargar PDF con PDF.js
+        if(typeof pdfjsLib === 'undefined') {
+          canvas.style.display = 'none';
+          return;
+        }
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        var loadingTask = pdfjsLib.getDocument(driveUrl);
+        loadingTask.promise.then(function(pdf){
+          pdf.getPage(1).then(function(page){
+            var viewport = page.getViewport({scale: 0.5});
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = '100%';
+            canvas.style.maxHeight = '120px';
+            page.render({canvasContext: canvas.getContext('2d'), viewport: viewport});
+          });
+        }).catch(function(){
+          canvas.style.display = 'none';
+        });
+      }, 200);
+    })(pg, canvasId, icono);
 
     // Botones subir/bajar como alternativa al drag
     var btnWrap = document.createElement('div');
