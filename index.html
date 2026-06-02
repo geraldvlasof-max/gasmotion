@@ -5,7 +5,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Gasmotion — Software Automotriz</title>
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
@@ -27,6 +27,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 :root{
   --teal:#0ea5e9;--teal2:#0284c7;--teal-dim:rgba(14,165,233,0.1);
   --red:#ef4444;--red2:#dc2626;--red-dim:rgba(239,68,68,0.1);
@@ -397,6 +400,7 @@ input,select,textarea{font-size:16px!important}
             <div class="edit-hint">✎ clic para editar</div>
           </div>
         </div>
+        <button style="width:100%;margin-bottom:6px;padding:8px;background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-weight:600" onclick="mostrarCambiarMiPassword()">🔒 Cambiar contraseña</button>
         <button class="btn-logout" onclick="doLogout()">Cerrar sesion</button>
       </div>
     </aside>
@@ -2186,13 +2190,12 @@ function renderGestionUsuarios() {
 }
 
 function resetPassUsuario(uid) {
-  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
-  var tempPass = '';
-  for(var i=0; i<8; i++) tempPass += chars[Math.floor(Math.random()*chars.length)];
-  // Asegurar al menos 1 mayúscula y 1 número
-  tempPass = 'G' + tempPass.substring(1,6) + '7' + tempPass.substring(7);
   var users = getUsers();
   if(!users[uid]) return;
+  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  var tempPass = '';
+  for(var i=0; i<8; i++) tempPass += chars[Math.floor(Math.random()*chars.length)];
+  tempPass = 'G' + tempPass.substring(1,6) + '7' + tempPass.substring(7);
   users[uid].pass = tempPass;
   users[uid].mustChangePass = true;
   saveUsers(users);
@@ -2202,8 +2205,109 @@ function resetPassUsuario(uid) {
       body: JSON.stringify({users: users})
     }).catch(function(){});
   }
-  alert('✅ Contraseña temporal de ' + (users[uid].nombre||uid) + ':\n\n' + tempPass + '\n\nMuéstrasela al usuario. Deberá cambiarla al primer login.');
+  // Modal profesional en lugar de alert
+  mostrarModalContrasenaReset(users[uid].nombre || uid, uid, tempPass);
   renderGestionUsuarios();
+}
+
+function mostrarModalContrasenaReset(nombre, uid, tempPass) {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">' +
+    '<div style="width:44px;height:44px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">🔐</div>' +
+    '<div><div style="font-size:16px;font-weight:800;color:#0f172a">Contraseña Restablecida</div>' +
+    '<div style="font-size:12px;color:#64748b">Usuario: ' + nombre + ' (@' + uid + ')</div></div></div>' +
+    '<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px">' +
+    '<div style="font-size:11px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Contraseña temporal generada</div>' +
+    '<div style="font-size:22px;font-weight:800;color:#0f172a;font-family:monospace;letter-spacing:2px;text-align:center;padding:10px;background:white;border-radius:8px;border:2px dashed #bae6fd" id="tempPassDisplay">' + tempPass + '</div>' +
+    '</div>' +
+    '<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:12px;color:#92400e;margin-bottom:16px">' +
+    '⚠️ Comparte esta contraseña con el usuario. Deberá cambiarla en su próximo ingreso.' +
+    '</div>' +
+    '<div style="display:flex;gap:8px">' +
+    '<button id="btnCopiarPass" style="flex:1;padding:10px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">📋 Copiar contraseña</button>' +
+    '<button id="btnCerrarReset" style="flex:1;padding:10px;background:#f1f5f9;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Cerrar</button>' +
+    '</div></div>';
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('btnCopiarPass').onclick = function() {
+    var txt = document.getElementById('tempPassDisplay').textContent;
+    if(navigator.clipboard) {
+      navigator.clipboard.writeText(txt).then(function(){
+        document.getElementById('btnCopiarPass').textContent = '✅ Copiado';
+        setTimeout(function(){ document.getElementById('btnCopiarPass').textContent = '📋 Copiar contraseña'; }, 2000);
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      document.getElementById('btnCopiarPass').textContent = '✅ Copiado';
+    }
+  };
+  document.getElementById('btnCerrarReset').onclick = function() {
+    document.body.removeChild(overlay);
+  };
+}
+
+// ── Cambio de contraseña para el usuario actual (perfil) ──
+function mostrarCambiarMiPassword() {
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:28px;max-width:380px;width:100%">' +
+    '<div style="font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px">🔒 Cambiar mi contraseña</div>' +
+    '<div style="font-size:12px;color:#64748b;margin-bottom:20px">Usuario: ' + (CU ? CU.nombre : '') + '</div>' +
+    '<div id="cambioPassMsg" style="font-size:12px;margin-bottom:12px"></div>' +
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Contraseña actual</label>' +
+    '<input type="password" id="cpActual" style="width:100%;border:2px solid #e2e8f0;border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:12px" placeholder="Tu contraseña actual">' +
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Nueva contraseña</label>' +
+    '<input type="password" id="cpNueva" style="width:100%;border:2px solid #e2e8f0;border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:4px" placeholder="Mínimo 6 caracteres">' +
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;margin-top:12px">Confirmar contraseña</label>' +
+    '<input type="password" id="cpConfirm" style="width:100%;border:2px solid #e2e8f0;border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:16px" placeholder="Repite la nueva contraseña">' +
+    '<div style="display:flex;gap:8px">' +
+    '<button id="btnGuardarCP" style="flex:1;padding:12px;background:#0f172a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Guardar</button>' +
+    '<button id="btnCancelCP" style="flex:1;padding:12px;background:#f1f5f9;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Cancelar</button>' +
+    '</div></div>';
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('btnCancelCP').onclick = function() { document.body.removeChild(overlay); };
+  document.getElementById('btnGuardarCP').onclick = function() {
+    var actual   = document.getElementById('cpActual').value;
+    var nueva    = document.getElementById('cpNueva').value;
+    var confirm  = document.getElementById('cpConfirm').value;
+    var msgEl    = document.getElementById('cambioPassMsg');
+
+    if(!actual || !nueva || !confirm) { msgEl.style.color='#dc2626'; msgEl.textContent='Completa todos los campos.'; return; }
+
+    var users = getUsers();
+    var uid = CU ? CU.id : null;
+    if(!uid || !users[uid]) { msgEl.style.color='#dc2626'; msgEl.textContent='Error de sesión.'; return; }
+    if(users[uid].pass !== actual) { msgEl.style.color='#dc2626'; msgEl.textContent='La contraseña actual es incorrecta.'; return; }
+    if(nueva.length < 6) { msgEl.style.color='#dc2626'; msgEl.textContent='La nueva contraseña debe tener al menos 6 caracteres.'; return; }
+    if(nueva !== confirm) { msgEl.style.color='#dc2626'; msgEl.textContent='Las contraseñas no coinciden.'; return; }
+
+    users[uid].pass = nueva;
+    users[uid].mustChangePass = false;
+    CU.pass = nueva;
+    try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
+    saveUsers(users);
+    if(GM_CONFIG.workerUrl) {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({users: users})
+      }).catch(function(){});
+    }
+    msgEl.style.color = '#16a34a';
+    msgEl.textContent = '✅ Contraseña cambiada correctamente.';
+    setTimeout(function(){ document.body.removeChild(overlay); }, 1500);
+  };
 }
 
 function eliminarUsuario(uid) {
@@ -4861,11 +4965,21 @@ function eliminarUsuario(id){
 // ==================
 // VENDEDORES
 // ==================
+function getVendedores() {
+  var users = getUsers();
+  var uids = Object.keys(users);
+  var vendedores = [];
+  for(var i=0; i<uids.length; i++) {
+    if(users[uids[i]].role === 'vendedor') vendedores.push(users[uids[i]].nombre || uids[i]);
+  }
+  return vendedores;
+}
+
 function renderVendedoresList(){
   var v=getVendedores(),el=document.getElementById('vendedoresList');if(!el)return;
   el.innerHTML='';
   if(!v.length){el.innerHTML='<span style="font-size:12px;color:#6b82a0">Sin vendedores registrados.</span>';return;}
-  for(var i=0;i<v.length;i++){var tag=document.createElement('div');tag.className='file-tag';tag.textContent=v[i]+' ';var x=mkBtn('file-tag-remove','','eliminarVendedor',String(i),'x');tag.appendChild(x);el.appendChild(tag);}
+  for(var i=0;i<v.length;i++){var tag=document.createElement('div');tag.className='file-tag';tag.textContent=v[i];el.appendChild(tag);}
 }
 function agregarVendedor(){
   var input=document.getElementById('nuevoVendedor'),nombre=input.value.trim();
