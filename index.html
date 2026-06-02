@@ -976,20 +976,23 @@ function forzarSyncUsuarios() {
   var users = getUsers();
   var total = Object.keys(users).length;
   showToast('Subiendo ' + total + ' usuarios al servidor...', 'info');
-  syncUsersToSheets(users, function(ok) {
-    if(ok) {
-      showToast('✅ ' + total + ' usuarios sincronizados', 'success');
-      // Verificar que llegaron
-      setTimeout(function() {
-        loadUsersFromSheets(function(loaded) {
-          var cnt = Object.keys(loaded).length;
-          if(cnt > 1) showToast('✓ Verificado: ' + cnt + ' usuarios en servidor', 'success');
-        });
-      }, 2000);
+  if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({users: users})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      showToast('✅ ' + total + ' usuarios guardados en servidor', 'success');
+      renderUsuarios();
     } else {
-      showToast('❌ Error de conexión con el servidor', 'error');
+      showToast('❌ Error guardando usuarios', 'error');
     }
-  });
+  })
+  .catch(function(){ showToast('❌ Error de conexión', 'error'); });
 }
 
 function exportarUsuariosJSON() {
@@ -6238,12 +6241,13 @@ function crearUsuario(){
   var id=normStr(nombre).replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'')+'_'+String(Date.now()).slice(-4);
   users[id]={nombre:nombre,role:rol,sede:sede,pass:pass,especialidad:esp};
   saveUsers(users);
-  toggleNewUserForm();renderUsuarios();poblarUserSelects();poblarConfigFise();
-  showAlert('alertUsuarios',
-    '✓ Usuario '+nombre+' creado. Sincronizando...','success');
-  // Sync inmediato con feedback
-  forzarSyncUsuarios();
-  setTimeout(function(){renderUsuarios();},500);
+  toggleNewUserForm();
+  showAlert('alertUsuarios','✓ Usuario '+nombre+' creado correctamente.','success');
+  setTimeout(function(){
+    renderUsuarios();
+    poblarUserSelects();
+    poblarConfigFise();
+  }, 300);
 }
 
 function toggleEspecialidadField(){
