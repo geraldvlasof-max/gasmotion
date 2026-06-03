@@ -4889,6 +4889,7 @@ function avanzarEtapaNum(id, num) {
 // ==================
 function renderUsuarios() {
   var users=getUsers(), grid=document.getElementById('usersGrid');
+  if(!grid) return; // seguridad: si el tab no está activo
   grid.innerHTML='';
   var entries=Object.entries(users);
   if(!entries.length){
@@ -4931,7 +4932,7 @@ function renderUsuarios() {
     var cb=document.createElement('button');
     cb.style.cssText='background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
     cb.textContent='🔑 Cambiar clave';
-    cb.onclick=(function(uid){return function(){mostrarCambioPass(uid);};})(id);
+    cb.onclick=(function(uid){return function(){resetPassUsuario(uid);};})(id);
     btns.appendChild(cb);
 
     if(id!=='iki'){
@@ -6231,23 +6232,37 @@ function crearUsuario(){
   var pass=document.getElementById('nu_pass').value.trim();
   var rol=document.getElementById('nu_rol').value;
   var sede=document.getElementById('nu_sede').value||'Todas';
+  console.log('crearUsuario: nombre='+nombre+' pass='+pass+' rol='+rol);
   if(!nombre||!pass||!rol){showAlert('alertUsuarios','Completa nombre, contraseña y rol.','error');return;}
   if(pass.length<6){showAlert('alertUsuarios','Mínimo 6 caracteres en la contraseña.','error');return;}
   var esp='';
   if(rol==='tecnico'){var es=document.getElementById('nu_especialidad');if(es)esp=es.value;}
   var users=getUsers();
   var id=normStr(nombre).replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'')+'_'+String(Date.now()).slice(-4);
+  console.log('crearUsuario: id generado='+id+' usuarios antes='+JSON.stringify(Object.keys(users)));
   users[id]={nombre:nombre,role:rol,sede:sede,pass:pass,especialidad:esp};
+  console.log('crearUsuario: usuarios después='+JSON.stringify(Object.keys(users)));
   saveUsers(users);
+  console.log('crearUsuario: localStorage después de saveUsers='+JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('gm_users')||'{}'))));
   toggleNewUserForm();
   showAlert('alertUsuarios','✓ Usuario '+nombre+' creado correctamente.','success');
+  // Forzar navegación al tab usuarios para garantizar render
   setTimeout(function(){
+    // Activar tab usuarios directamente
+    var tabContent = document.getElementById('tab-usuarios');
+    var allTabs = document.querySelectorAll('.tab-content');
+    var allNavs = document.querySelectorAll('.nav-item');
+    for(var t=0; t<allTabs.length; t++) allTabs[t].classList.remove('active');
+    for(var n=0; n<allNavs.length; n++) allNavs[n].classList.remove('active');
+    if(tabContent) tabContent.classList.add('active');
+    // Re-renderizar panel de usuarios
     renderUsuarios();
-    // Refrescar también el panel nuevo si está visible
-    if(document.getElementById('tabUsuarios')) renderGestionUsuarios();
     poblarUserSelects();
     poblarConfigFise();
-  }, 300);
+    // Actualizar título
+    var titleEl = document.getElementById('topbarTitle');
+    if(titleEl) titleEl.textContent = 'Gestión de Usuarios';
+  }, 200);
 }
 
 function toggleEspecialidadField(){
