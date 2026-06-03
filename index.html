@@ -1210,11 +1210,7 @@ var SERVER_USERS_CACHE = null;
 // USUARIOS EN SHEETS + localStorage (cache local)
 // ═══════════════════════════════════════════════════════════
 
-function saveUsers(u) {
-  USERS_CACHE = u;
-  try { localStorage.setItem('gm_users', JSON.stringify(u)); } catch(e){}
-  if(GM_SYNC) syncUsersToSheets(u);
-}
+// [saveUsers vieja eliminada — usar la definición con Worker D1]
 
 
 
@@ -2358,6 +2354,8 @@ function crearNuevoUsuario() {
   errEl.style.color = '#16a34a';
   errEl.textContent = '✅ Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
   renderGestionUsuarios();
+  renderUsuarios();
+  poblarUserSelects();
 }
 
 
@@ -6245,6 +6243,8 @@ function crearUsuario(){
   showAlert('alertUsuarios','✓ Usuario '+nombre+' creado correctamente.','success');
   setTimeout(function(){
     renderUsuarios();
+    // Refrescar también el panel nuevo si está visible
+    if(document.getElementById('tabUsuarios')) renderGestionUsuarios();
     poblarUserSelects();
     poblarConfigFise();
   }, 300);
