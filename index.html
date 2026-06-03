@@ -390,7 +390,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" onclick="switchTab('usuarios',this)" id="navUsuarios"><span class="nav-icon">👤</span> Usuarios</button>
         <button class="nav-item" id="navTecnico" onclick="switchTab('tecnico',this)" style="display:none"><span>🔧</span><span>Mis Tareas</span></button>
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon">⚙</span> Configuracion</button>
-        <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon">🎯</span> Radar</button>
+        <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon">🎯</span> Radar de Conversiones</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-user">
@@ -623,6 +623,13 @@ input,select,textarea{font-size:16px!important}
           <div class="card" style="border-color:rgba(239,68,68,0.3)">
             <div class="card-header"><div class="card-icon" style="background:#fef2f2">⚠</div><div><div class="card-title" style="color:#ef4444">Zona de Peligro</div></div></div>
             <button class="btn btn-danger" onclick="confirmarBorrado()">Borrar todos los expedientes</button>
+          </div>
+        </div>
+
+        <!-- RADAR DE CONVERSIONES -->
+        <div class="tab-content" id="tab-radar">
+          <div style="padding:16px 0">
+            <div id="radarContainer"></div>
           </div>
         </div>
 
@@ -1759,7 +1766,8 @@ var TAB_TITLES={
   expedientes:['Mis Expedientes','Todos los expedientes registrados'],
   fise:['Panel FISE','Expedientes pendientes de procesar — Etapa 2'],
   usuarios:['Usuarios','Administra accesos al sistema'],
-  config:['Configuracion','Ajustes del sistema']
+  config:['Configuracion','Ajustes del sistema'],
+  radar:['Radar de Conversiones','Vehículos en proceso activo de conversión']
 ,tecnico:['Mis Tareas','Tareas asignadas']};
 
 function switchTab(name, el) {
