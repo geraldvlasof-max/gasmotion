@@ -890,21 +890,62 @@ function getUsers() {
   try {
     var saved = JSON.parse(localStorage.getItem('gm_users')||'null');
     if(saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
-      // Asegurar que Iki siempre esté como admin
       if(!saved['iki']) saved['iki'] = DEFAULT_USERS['iki'];
+      // Si USERS_CACHE tiene más usuarios que localStorage (saveUsers falló),
+      // priorizar USERS_CACHE
+      if(USERS_CACHE && Object.keys(USERS_CACHE).length > Object.keys(saved).length) {
+        return USERS_CACHE;
+      }
       USERS_CACHE = saved;
       return USERS_CACHE;
     }
   } catch(e){}
-  // Si localStorage vacío → usar DEFAULT_USERS como base
+  // Si localStorage vacío → usar USERS_CACHE si existe
+  if(USERS_CACHE && Object.keys(USERS_CACHE).length > 0) {
+    return USERS_CACHE;
+  }
+  // Último fallback: DEFAULT_USERS
   var base = JSON.parse(JSON.stringify(DEFAULT_USERS));
   USERS_CACHE = base;
   return USERS_CACHE;
 }
 
+function limpiarLocalStoragePesado() {
+  // Eliminar base64 de fotos y expedientes grandes para liberar espacio
+  var keys = [];
+  for(var i=0; i<localStorage.length; i++) {
+    var k = localStorage.key(i);
+    if(k && (k.indexOf('gm_file_') === 0)) keys.push(k);
+  }
+  for(var j=0; j<keys.length; j++) {
+    try{ localStorage.removeItem(keys[j]); }catch(e){}
+  }
+  // También limpiar gm_exp si tiene base64 embebido
+  try {
+    var expStr = localStorage.getItem('gm_exp');
+    if(expStr && expStr.length > 500000) {
+      var exps = JSON.parse(expStr);
+      for(var e=0; e<exps.length; e++) {
+        if(exps[e].fotosData) delete exps[e].fotosData;
+      }
+      localStorage.setItem('gm_exp', JSON.stringify(exps));
+    }
+  } catch(ex){}
+}
+
 function saveUsers(u) {
+  // Siempre actualizar memoria — getUsers y renderUsuarios usan esto
   USERS_CACHE = u;
-  try { localStorage.setItem('gm_users', JSON.stringify(u)); } catch(e){}
+  // Intentar localStorage — puede fallar si está lleno por fotos base64
+  try {
+    localStorage.setItem('gm_users', JSON.stringify(u));
+  } catch(e) {
+    console.warn('localStorage lleno, liberando espacio...', e.name);
+    limpiarLocalStoragePesado();
+    try { localStorage.setItem('gm_users', JSON.stringify(u)); } catch(e2) {
+      console.error('localStorage sigue lleno:', e2.name);
+    }
+  }
   // Subir al servidor D1
   if(GM_CONFIG.workerUrl) {
     fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
@@ -6244,6 +6285,7 @@ function crearUsuario(){
   console.log('crearUsuario: usuarios después='+JSON.stringify(Object.keys(users)));
   saveUsers(users);
   console.log('crearUsuario: localStorage después de saveUsers='+JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('gm_users')||'{}'))));
+  console.log('crearUsuario: USERS_CACHE tiene='+JSON.stringify(Object.keys(USERS_CACHE)));
   toggleNewUserForm();
   showAlert('alertUsuarios','✓ Usuario '+nombre+' creado correctamente.','success');
   // Forzar navegación al tab usuarios para garantizar render
