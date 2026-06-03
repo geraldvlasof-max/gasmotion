@@ -390,6 +390,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" onclick="switchTab('usuarios',this)" id="navUsuarios"><span class="nav-icon">👤</span> Usuarios</button>
         <button class="nav-item" id="navTecnico" onclick="switchTab('tecnico',this)" style="display:none"><span>🔧</span><span>Mis Tareas</span></button>
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon">⚙</span> Configuracion</button>
+        <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon">🎯</span> Radar</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-user">
@@ -433,23 +434,7 @@ input,select,textarea{font-size:16px!important}
             </div>
           </div>
 
-          <!-- RADAR DE CONVERSIONES -->
-          <div class="card" id="radarCard" style="margin-top:16px">
-            <div class="card-header" style="cursor:pointer" onclick="toggleRadar()">
-              <div class="card-icon" style="background:#4f46e5;color:white;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🎯</div>
-              <div style="flex:1">
-                <div class="card-title">Radar de Conversiones</div>
-                <div class="card-sub">Vehículos en proceso activo de conversión</div>
-              </div>
-              <span id="radarToggleIcon" style="font-size:18px;color:#6b82a0">▼</span>
-            </div>
-            <div id="radarBody" style="padding:0 16px 16px">
-              <!-- Stats rápidos del radar -->
-              <div id="radarStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;margin-top:12px"></div>
-              <!-- Lista de vehículos -->
-              <div id="radarLista"></div>
-            </div>
-          </div>
+
         </div>
 
         <!-- BANDEJA SCANFILE 1 -->
@@ -1789,6 +1774,7 @@ function switchTab(name, el) {
   if(name==='expedientes') renderExpedientes();
   if(name==='panel') renderPanel();
   if(name==='usuarios') renderUsuarios();
+  if(name==='radar') renderRadar();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
   if(name==='fise') renderPanelFise();
@@ -3094,9 +3080,9 @@ function colorRadar(diasHabiles) {
 }
 
 function renderRadar() {
-  var statsEl = document.getElementById('radarStats');
-  var listaEl = document.getElementById('radarLista');
-  if(!statsEl || !listaEl) return;
+  var container = document.getElementById('radarContainer');
+  if(!container) return;
+  container.innerHTML = '';
 
   // Filtrar expedientes en conversión activa (Etapa 4 con actividad técnica)
   var enRadar = [];
@@ -3114,6 +3100,7 @@ function renderRadar() {
   // ── Estadísticas ──
   var totalRadar = enRadar.length;
   var alertaRoja = enRadar.filter(function(r){ return r.dias >= 2; }).length;
+  var alertaAmarilla = enRadar.filter(function(r){ return r.dias >= 1 && r.dias < 2; }).length;
   var sedes = {};
   var tiempoTotal = 0;
   for(var r=0; r<enRadar.length; r++) {
@@ -3124,46 +3111,65 @@ function renderRadar() {
     sedes[sede].horas += enRadar[r].horas;
   }
   var promedioGeneral = totalRadar > 0 ? Math.round(tiempoTotal / totalRadar) : 0;
-
-  statsEl.innerHTML =
-    '<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px;text-align:center">' +
-    '<div style="font-size:22px;font-weight:800;color:#1e40af">' + totalRadar + '</div>' +
-    '<div style="font-size:11px;color:#3b82f6;font-weight:600">En conversión</div></div>' +
-    '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;text-align:center">' +
-    '<div style="font-size:22px;font-weight:800;color:#dc2626">' + alertaRoja + '</div>' +
-    '<div style="font-size:11px;color:#ef4444;font-weight:600">⚠️ En alerta</div></div>' +
-    '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;text-align:center">' +
-    '<div style="font-size:22px;font-weight:800;color:#16a34a">' + promedioGeneral + 'h</div>' +
-    '<div style="font-size:11px;color:#22c55e;font-weight:600">Promedio general</div></div>' +
-    '<div style="background:#faf5ff;border:1.5px solid #d8b4fe;border-radius:10px;padding:12px;text-align:center">' +
-    '<div style="font-size:13px;font-weight:800;color:#7c3aed">' + Object.keys(sedes).length + '</div>' +
-    '<div style="font-size:11px;color:#8b5cf6;font-weight:600">Sedes activas</div></div>';
-
-  // ── Promedio por sede ──
   var sedeKeys = Object.keys(sedes);
+
+  // ── Construir HTML completo de una sola vez ──
+  var html = '';
+
+  // Header
+  html += '<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border-radius:16px;padding:24px;margin-bottom:20px">' +
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">' +
+    '<div style="width:48px;height:48px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(79,70,229,0.4)">🎯</div>' +
+    '<div><div style="font-size:20px;font-weight:800;color:white;letter-spacing:-.5px">Radar de Conversiones</div>' +
+    '<div style="font-size:12px;color:#94a3b8;margin-top:2px">Actualizado en tiempo real · Solo días hábiles (excluye domingos)</div></div>' +
+    '<button onclick="renderRadar()" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600">↻ Actualizar</button>' +
+    '</div>' +
+    // KPIs
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' +
+    '<div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;text-align:center">' +
+    '<div style="font-size:32px;font-weight:900;color:white;line-height:1">' + totalRadar + '</div>' +
+    '<div style="font-size:11px;color:#64748b;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">En conversión</div></div>' +
+    '<div style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:12px;padding:16px;text-align:center">' +
+    '<div style="font-size:32px;font-weight:900;color:#ef4444;line-height:1">' + alertaRoja + '</div>' +
+    '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">⚠ En alerta</div></div>' +
+    '<div style="background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);border-radius:12px;padding:16px;text-align:center">' +
+    '<div style="font-size:32px;font-weight:900;color:#fbbf24;line-height:1">' + alertaAmarilla + '</div>' +
+    '<div style="font-size:11px;color:#fbbf24;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">⏳ Advertencia</div></div>' +
+    '<div style="background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);border-radius:12px;padding:16px;text-align:center">' +
+    '<div style="font-size:28px;font-weight:900;color:#4ade80;line-height:1">' + promedioGeneral + '<span style="font-size:16px">h</span></div>' +
+    '<div style="font-size:11px;color:#4ade80;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Prom. general</div></div>' +
+    '</div></div>';
+
+  // ── Promedios por sede (UNA SOLA VEZ) ──
   if(sedeKeys.length > 0) {
-    var sedeHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">';
     for(var s=0; s<sedeKeys.length; s++) {
       var sd = sedes[sedeKeys[s]];
       var prom = Math.round(sd.horas / sd.count);
-      sedeHtml += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:12px">' +
-        '<span style="font-weight:700;color:#0f172a">🏢 ' + sedeKeys[s] + '</span> ' +
-        '<span style="color:#64748b">' + sd.count + ' veh. · Prom: ' + prom + 'h</span></div>';
+      var sedeColor = ['#0ea5e9','#f97316','#8b5cf6','#10b981'][s % 4];
+      html += '<div style="background:white;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px;border-left:4px solid ' + sedeColor + '">' +
+        '<div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🏢 ' + sedeKeys[s] + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
+        '<div><span style="font-size:24px;font-weight:800;color:#0f172a">' + sd.count + '</span><span style="font-size:12px;color:#94a3b8"> vehículos</span></div>' +
+        '<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:' + sedeColor + '">' + prom + 'h</div><div style="font-size:10px;color:#94a3b8">promedio</div></div>' +
+        '</div></div>';
     }
-    sedeHtml += '</div>';
-    statsEl.insertAdjacentHTML('afterend', sedeHtml);
+    html += '</div>';
   }
 
   // ── Lista de vehículos ──
   if(enRadar.length === 0) {
-    listaEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">✅ Sin vehículos en conversión activa</div>';
+    container.innerHTML = html + '<div style="background:#f0fdf4;border:2px dashed #86efac;border-radius:16px;padding:40px;text-align:center">' +
+      '<div style="font-size:48px;margin-bottom:12px">✅</div>' +
+      '<div style="font-size:16px;font-weight:700;color:#16a34a">Sin vehículos en conversión activa</div>' +
+      '<div style="font-size:13px;color:#64748b;margin-top:4px">Todos los expedientes están al día</div></div>';
     return;
   }
 
   // Ordenar: alertas primero
   enRadar.sort(function(a,b){ return b.dias - a.dias; });
 
-  var html = '';
+  html += '<div style="display:flex;flex-direction:column;gap:12px">';
   for(var k=0; k<enRadar.length; k++) {
     var item = enRadar[k];
     var exp = item.exp;
@@ -3175,47 +3181,53 @@ function renderRadar() {
     if(!tecnico) tecnico = 'Sin asignar';
 
     var divId = 'radarItem_' + exp.id;
-    html += '<div id="' + divId + '" style="background:' + col.bg + ';border:1.5px solid ' + col.border + ';border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer">' +
-      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-      // Semáforo + Placa
-      '<div style="font-size:20px">' + col.icon + '</div>' +
-      '<div style="background:' + col.badge + ';color:white;font-size:13px;font-weight:800;padding:4px 10px;border-radius:6px">' + (exp.placa||'S/P') + '</div>' +
-      // Info vehículo
-      '<div style="flex:1;min-width:120px">' +
-      '<div style="font-size:13px;font-weight:700;color:#0f172a">' + (exp.nombre||'(sin nombre)') + '</div>' +
-      '<div style="font-size:11px;color:#64748b">' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' · ' + (exp.conversion||'GLP') + '</div>' +
+    html += '<div id="' + divId + '" style="background:white;border:1.5px solid ' + col.border + ';border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .2s;box-shadow:0 2px 8px rgba(0,0,0,0.06)">' +
+      // Barra superior de color
+      '<div style="height:4px;background:' + col.badge + '"></div>' +
+      '<div style="padding:16px">' +
+      // Fila 1: Placa + Badge estado + Tiempo grande
+      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
+      '<div style="background:' + col.badge + ';color:white;font-size:15px;font-weight:900;padding:6px 14px;border-radius:8px;letter-spacing:1px">' + (exp.placa||'S/P') + '</div>' +
+      '<div style="background:' + col.bg + ';color:' + col.badge + ';font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid ' + col.border + '">' + col.texto + '</div>' +
+      '<div style="margin-left:auto;text-align:right">' +
+      '<div style="font-size:28px;font-weight:900;color:' + col.badge + ';line-height:1">' + tiempoStr + '</div>' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:600">en conversión</div>' +
+      '</div></div>' +
+      // Fila 2: Info + Técnico + Sede
+      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">' +
+      '<div style="flex:2;min-width:150px">' +
+      '<div style="font-size:14px;font-weight:700;color:#0f172a">' + (exp.nombre||'Sin nombre') + '</div>' +
+      '<div style="font-size:12px;color:#64748b;margin-top:2px">' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' &nbsp;·&nbsp; 🔧 ' + (exp.conversion||'GLP') + '</div>' +
       '</div>' +
-      // Técnico
-      '<div style="text-align:center;min-width:80px">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Técnico</div>' +
-      '<div style="font-size:12px;font-weight:700;color:#374151">' + tecnico + '</div>' +
+      '<div style="text-align:center;padding:0 12px;border-left:1px solid #f1f5f9">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Técnico</div>' +
+      '<div style="font-size:12px;font-weight:700;color:#374151;margin-top:3px">' + tecnico + '</div>' +
       '</div>' +
-      // Sede
-      '<div style="text-align:center;min-width:80px">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Sede</div>' +
-      '<div style="font-size:12px;font-weight:700;color:#374151">🏢 ' + (exp.sede||'—') + '</div>' +
-      '</div>' +
-      // Tiempo
-      '<div style="text-align:center;min-width:70px">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Tiempo</div>' +
-      '<div style="font-size:15px;font-weight:800;color:' + col.badge + '">' + tiempoStr + '</div>' +
-      '</div>' +
-      // Progreso
-      '<div style="min-width:100px">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Progreso E4</div>' +
-      '<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden">' +
-      '<div style="background:' + col.badge + ';height:100%;width:' + item.progreso + '%;border-radius:99px;transition:width .3s"></div>' +
-      '</div>' +
-      '<div style="font-size:10px;color:#64748b;margin-top:2px;text-align:right">' + item.progreso + '%</div>' +
-      '</div>' +
+      '<div style="text-align:center;padding:0 12px;border-left:1px solid #f1f5f9">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Sede</div>' +
+      '<div style="font-size:12px;font-weight:700;color:#374151;margin-top:3px">🏢 ' + (exp.sede||'—') + '</div>' +
+      '</div></div>' +
+      // Barra de progreso
+      '<div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+      '<span style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Progreso Etapa 4</span>' +
+      '<span style="font-size:12px;font-weight:800;color:' + col.badge + '">' + item.progreso + '%</span></div>' +
+      '<div style="background:#f1f5f9;border-radius:99px;height:10px;overflow:hidden">' +
+      '<div style="background:linear-gradient(90deg,' + col.badge + ',' + col.badge + 'aa);height:100%;width:' + item.progreso + '%;border-radius:99px;transition:width .5s"></div>' +
+      '</div></div>' +
       '</div></div>';
   }
-  listaEl.innerHTML = html;
+  html += '</div>'; // cierre lista
+  container.innerHTML = html;
   // Agregar eventos onclick a cada card
   for(var ev=0; ev<enRadar.length; ev++) {
     (function(eid){
       var el = document.getElementById('radarItem_' + eid);
-      if(el) el.onclick = function(){ abrirExpediente(eid); };
+      if(el) {
+        el.onclick = function(){ abrirExpediente(eid); };
+        el.onmouseenter = function(){ this.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; this.style.transform = 'translateY(-2px)'; };
+        el.onmouseleave = function(){ this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; this.style.transform = ''; };
+      }
     })(enRadar[ev].exp.id);
   }
 }
@@ -3252,8 +3264,6 @@ function renderPanel() {
     tr.querySelector('#rpl_'+ri).appendChild(mkSpan('td-placa','abrirExpediente',e.id,e.placa||'(sin placa)'));
     tr.querySelector('#ret_'+ri).appendChild(etapaBadge(e.etapa));
   }
-  // Renderizar Radar de Conversiones
-  renderRadar();
 }
 
 // ==================
