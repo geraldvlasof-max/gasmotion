@@ -5975,6 +5975,73 @@ function renderVistaTecnico() {
       card.appendChild(grpDiv);
     });
     
+    // ── BOTONES DE CULMINACIÓN según rol del técnico ──
+    var expObj = null;
+    for(var ei=0; ei<expedientes.length; ei++){ if(expedientes[ei].id===placa.expId){ expObj=expedientes[ei]; break; } }
+    if(expObj) {
+      var e4t = expObj.e4 || {};
+      var nombreT = CU ? CU.nombre : '';
+      var esTecTanque = expObj.tecnicoTanque === nombreT;
+      var esTecDelantera = expObj.tecnicoDelantera === nombreT;
+      var cilOk = !!e4t.cilindroCulminado;
+      var elecOk = !!e4t.electronicaCulminado;
+
+      var culminBox = document.createElement('div');
+      culminBox.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:8px';
+
+      // Técnico de tanque/cilindros
+      if(esTecTanque) {
+        if(cilOk) {
+          var okCil = document.createElement('div');
+          okCil.style.cssText = 'background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#15803d';
+          okCil.innerHTML = '✅ Montaje cilindro culminado';
+          culminBox.appendChild(okCil);
+        } else {
+          var btnCil = document.createElement('button');
+          btnCil.style.cssText = 'width:100%;background:#16a34a;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
+          btnCil.innerHTML = '🔧 Marcar montaje de CILINDRO culminado';
+          btnCil.onclick = (function(eid){ return function(){
+            if(confirm('¿Confirmas que terminaste el montaje del cilindro?')) marcarCulminadoTecnico(eid, 'cilindro');
+          }; })(placa.expId);
+          culminBox.appendChild(btnCil);
+        }
+      }
+
+      // Técnico delantero/electrónica
+      if(esTecDelantera) {
+        if(elecOk) {
+          var okElec = document.createElement('div');
+          okElec.style.cssText = 'background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#2563eb';
+          okElec.innerHTML = '✅ Montaje electrónica culminado';
+          culminBox.appendChild(okElec);
+        } else {
+          var btnElec = document.createElement('button');
+          btnElec.style.cssText = 'width:100%;background:#2563eb;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
+          btnElec.innerHTML = '⚡ Marcar montaje de ELECTRÓNICA culminado';
+          btnElec.onclick = (function(eid){ return function(){
+            if(confirm('¿Confirmas que terminaste el montaje de la electrónica?')) marcarCulminadoTecnico(eid, 'electronica');
+          }; })(placa.expId);
+          culminBox.appendChild(btnElec);
+        }
+      }
+
+      // Estado de la otra parte (informativo)
+      if(esTecTanque && elecOk) {
+        var infoE = document.createElement('div');
+        infoE.style.cssText = 'font-size:11px;color:#64748b;text-align:center';
+        infoE.innerHTML = '⚡ Electrónica ya culminada por el otro técnico';
+        culminBox.appendChild(infoE);
+      }
+      if(esTecDelantera && cilOk) {
+        var infoC = document.createElement('div');
+        infoC.style.cssText = 'font-size:11px;color:#64748b;text-align:center';
+        infoC.innerHTML = '🔧 Cilindro ya culminado por el otro técnico';
+        culminBox.appendChild(infoC);
+      }
+
+      if(culminBox.children.length > 0) card.appendChild(culminBox);
+    }
+
     // Botón para ir al expediente
     var btn = document.createElement('button');
     btn.style.cssText = 'width:100%;background:#0f172a;color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;';
@@ -5986,6 +6053,12 @@ function renderVistaTecnico() {
     
     cont.appendChild(card);
   });
+}
+
+// Culminación desde la vista del técnico — refresca su vista en lugar del radar
+function marcarCulminadoTecnico(expId, tipo) {
+  marcarCulminado(expId, tipo);
+  setTimeout(function(){ renderVistaTecnico(); }, 400);
 }
 
 function cerrarTecModal(){
