@@ -432,6 +432,24 @@ input,select,textarea{font-size:16px!important}
               <div class="empty-state" id="recentEmpty" style="display:none;padding:24px"><p>Sin expedientes.</p></div>
             </div>
           </div>
+
+          <!-- RADAR DE CONVERSIONES -->
+          <div class="card" id="radarCard" style="margin-top:16px">
+            <div class="card-header" style="cursor:pointer" onclick="toggleRadar()">
+              <div class="card-icon" style="background:#4f46e5;color:white;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">🎯</div>
+              <div style="flex:1">
+                <div class="card-title">Radar de Conversiones</div>
+                <div class="card-sub">Vehículos en proceso activo de conversión</div>
+              </div>
+              <span id="radarToggleIcon" style="font-size:18px;color:#6b82a0">▼</span>
+            </div>
+            <div id="radarBody" style="padding:0 16px 16px">
+              <!-- Stats rápidos del radar -->
+              <div id="radarStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;margin-top:12px"></div>
+              <!-- Lista de vehículos -->
+              <div id="radarLista"></div>
+            </div>
+          </div>
         </div>
 
         <!-- BANDEJA SCANFILE 1 -->
@@ -2961,6 +2979,247 @@ function enviarCorreoCertificadora(expId) {
 // ==================
 // PANEL DE CONTROL
 // ==================
+
+// ═══════════════════════════════════════════════════════════
+// RADAR DE CONVERSIONES
+// Muestra vehículos en proceso activo con cronómetro
+// ═══════════════════════════════════════════════════════════
+
+var _radarAbierto = true;
+
+function toggleRadar() {
+  _radarAbierto = !_radarAbierto;
+  var body = document.getElementById('radarBody');
+  var icon = document.getElementById('radarToggleIcon');
+  if(body) body.style.display = _radarAbierto ? 'block' : 'none';
+  if(icon) icon.textContent = _radarAbierto ? '▼' : '▶';
+}
+
+// Calcular días hábiles (excluye domingos) entre dos timestamps
+function diasHabilesDesde(tsInicio) {
+  var ahora = Date.now();
+  if(!tsInicio || tsInicio > ahora) return 0;
+  var ms = ahora - tsInicio;
+  var dias = 0;
+  var cursor = new Date(tsInicio);
+  var fin = new Date(ahora);
+  while(cursor < fin) {
+    var dow = cursor.getDay();
+    if(dow !== 0) dias++; // 0 = domingo
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  // También contar horas parciales del día actual
+  return dias;
+}
+
+// Calcular horas totales transcurridas (para mostrar en < 1 día)
+function horasDesde(tsInicio) {
+  if(!tsInicio) return 0;
+  return Math.floor((Date.now() - tsInicio) / 3600000);
+}
+
+// Detectar si un expediente está en conversión activa
+// Un expediente entra al radar cuando el técnico completa ≥20% de una tarea
+function getInicioConversion(exp) {
+  var e4 = exp.e4 || {};
+  // Buscar el timestamp más antiguo de cualquier acción del técnico en e4
+  var candidatos = [];
+
+  function parseFechaHora(fecha, hora) {
+    if(!fecha || !hora) return null;
+    try {
+      // fecha: "01/06/2026", hora: "03:34 p. m."
+      var partesFecha = fecha.split('/');
+      if(partesFecha.length !== 3) return null;
+      var d = parseInt(partesFecha[0]);
+      var m = parseInt(partesFecha[1]) - 1;
+      var a = parseInt(partesFecha[2]);
+      var horaLimpia = hora.replace('a. m.','AM').replace('p. m.','PM').replace('a.m.','AM').replace('p.m.','PM').trim();
+      var partsH = horaLimpia.split(':');
+      var h = parseInt(partsH[0]);
+      var min = parseInt((partsH[1]||'0').split(' ')[0]);
+      var ampm = horaLimpia.indexOf('PM') !== -1 ? 'PM' : 'AM';
+      if(ampm === 'PM' && h !== 12) h += 12;
+      if(ampm === 'AM' && h === 12) h = 0;
+      var ts = new Date(a, m, d, h, min, 0).getTime();
+      return isNaN(ts) ? null : ts;
+    } catch(e){ return null; }
+  }
+
+  // Campos que indican actividad del técnico
+  var camposTecnico = ['fotoCilindro1','fotoCilindro2','fotoReductor','videoCompresiones','boletaInfo','boletaVenta','capturaPIT','dniTecnico'];
+  for(var c=0; c<camposTecnico.length; c++) {
+    var campo = e4[camposTecnico[c]];
+    if(campo && campo.completado && campo.fecha) {
+      var ts = parseFechaHora(campo.fecha, campo.hora);
+      if(ts) candidatos.push(ts);
+    }
+  }
+  // También revisar datos de texto (serieCilindro indica que el técnico grabó datos)
+  // Estos no tienen timestamp propio — usamos la fecha del expediente como proxy
+  if(e4.serieCilindro || e4.marcaReductor) {
+    // Si hay datos de texto pero no hay foto, usar fecha del expediente como inicio
+    if(candidatos.length === 0 && exp.fecha) {
+      var partesFe = exp.fecha.split('/');
+      if(partesFe.length === 3) {
+        var tsFe = new Date(parseInt(partesFe[2]), parseInt(partesFe[1])-1, parseInt(partesFe[0])).getTime();
+        if(!isNaN(tsFe)) candidatos.push(tsFe);
+      }
+    }
+  }
+
+  if(!candidatos.length) return null;
+  return Math.min.apply(null, candidatos);
+}
+
+// Calcular % de progreso de Etapa 4
+function progresoE4(exp) {
+  var e4 = exp.e4 || {};
+  var items = ['videoCompresiones','fotoCilindro1','fotoReductor','boletaInformativa','boletaVenta','capturaPIT','dniTecnico'];
+  var total = items.length;
+  var done = 0;
+  for(var i=0; i<items.length; i++) {
+    if(e4[items[i]] && e4[items[i]].completado) done++;
+  }
+  if(e4.serieCilindro) done += 0.5; // datos texto = medio punto
+  if(e4.marcaReductor) done += 0.5;
+  return Math.min(100, Math.round((done / total) * 100));
+}
+
+// Color semáforo
+function colorRadar(diasHabiles) {
+  if(diasHabiles >= 2) return { bg:'#fef2f2', border:'#fca5a5', badge:'#dc2626', texto:'🔴 Alerta', icon:'🔴' };
+  if(diasHabiles >= 1) return { bg:'#fefce8', border:'#fde68a', badge:'#d97706', texto:'🟡 En curso', icon:'🟡' };
+  return { bg:'#f0fdf4', border:'#86efac', badge:'#16a34a', texto:'🟢 Normal', icon:'🟢' };
+}
+
+function renderRadar() {
+  var statsEl = document.getElementById('radarStats');
+  var listaEl = document.getElementById('radarLista');
+  if(!statsEl || !listaEl) return;
+
+  // Filtrar expedientes en conversión activa (Etapa 4 con actividad técnica)
+  var enRadar = [];
+  for(var i=0; i<expedientes.length; i++) {
+    var exp = expedientes[i];
+    if(exp.etapa < 4) continue; // Solo etapa 4+
+    var inicio = getInicioConversion(exp);
+    if(!inicio) continue; // Sin actividad técnica aún
+    var dias = diasHabilesDesde(inicio);
+    var horas = horasDesde(inicio);
+    var progreso = progresoE4(exp);
+    enRadar.push({ exp: exp, inicio: inicio, dias: dias, horas: horas, progreso: progreso });
+  }
+
+  // ── Estadísticas ──
+  var totalRadar = enRadar.length;
+  var alertaRoja = enRadar.filter(function(r){ return r.dias >= 2; }).length;
+  var sedes = {};
+  var tiempoTotal = 0;
+  for(var r=0; r<enRadar.length; r++) {
+    tiempoTotal += enRadar[r].horas;
+    var sede = enRadar[r].exp.sede || 'Sin sede';
+    if(!sedes[sede]) sedes[sede] = { count: 0, horas: 0 };
+    sedes[sede].count++;
+    sedes[sede].horas += enRadar[r].horas;
+  }
+  var promedioGeneral = totalRadar > 0 ? Math.round(tiempoTotal / totalRadar) : 0;
+
+  statsEl.innerHTML =
+    '<div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:12px;text-align:center">' +
+    '<div style="font-size:22px;font-weight:800;color:#1e40af">' + totalRadar + '</div>' +
+    '<div style="font-size:11px;color:#3b82f6;font-weight:600">En conversión</div></div>' +
+    '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;text-align:center">' +
+    '<div style="font-size:22px;font-weight:800;color:#dc2626">' + alertaRoja + '</div>' +
+    '<div style="font-size:11px;color:#ef4444;font-weight:600">⚠️ En alerta</div></div>' +
+    '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:12px;text-align:center">' +
+    '<div style="font-size:22px;font-weight:800;color:#16a34a">' + promedioGeneral + 'h</div>' +
+    '<div style="font-size:11px;color:#22c55e;font-weight:600">Promedio general</div></div>' +
+    '<div style="background:#faf5ff;border:1.5px solid #d8b4fe;border-radius:10px;padding:12px;text-align:center">' +
+    '<div style="font-size:13px;font-weight:800;color:#7c3aed">' + Object.keys(sedes).length + '</div>' +
+    '<div style="font-size:11px;color:#8b5cf6;font-weight:600">Sedes activas</div></div>';
+
+  // ── Promedio por sede ──
+  var sedeKeys = Object.keys(sedes);
+  if(sedeKeys.length > 0) {
+    var sedeHtml = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">';
+    for(var s=0; s<sedeKeys.length; s++) {
+      var sd = sedes[sedeKeys[s]];
+      var prom = Math.round(sd.horas / sd.count);
+      sedeHtml += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:12px">' +
+        '<span style="font-weight:700;color:#0f172a">🏢 ' + sedeKeys[s] + '</span> ' +
+        '<span style="color:#64748b">' + sd.count + ' veh. · Prom: ' + prom + 'h</span></div>';
+    }
+    sedeHtml += '</div>';
+    statsEl.insertAdjacentHTML('afterend', sedeHtml);
+  }
+
+  // ── Lista de vehículos ──
+  if(enRadar.length === 0) {
+    listaEl.innerHTML = '<div style="text-align:center;padding:24px;color:#94a3b8;font-size:13px">✅ Sin vehículos en conversión activa</div>';
+    return;
+  }
+
+  // Ordenar: alertas primero
+  enRadar.sort(function(a,b){ return b.dias - a.dias; });
+
+  var html = '';
+  for(var k=0; k<enRadar.length; k++) {
+    var item = enRadar[k];
+    var exp = item.exp;
+    var col = colorRadar(item.dias);
+    var tiempoStr = item.horas < 24 ? item.horas + 'h' : item.dias + ' días';
+    var tecnico = '';
+    if(exp.tecnicoDelantera) tecnico = exp.tecnicoDelantera;
+    if(exp.tecnicoTanque && exp.tecnicoTanque !== tecnico) tecnico += (tecnico ? ' / ' : '') + exp.tecnicoTanque;
+    if(!tecnico) tecnico = 'Sin asignar';
+
+    var divId = 'radarItem_' + exp.id;
+    html += '<div id="' + divId + '" style="background:' + col.bg + ';border:1.5px solid ' + col.border + ';border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      // Semáforo + Placa
+      '<div style="font-size:20px">' + col.icon + '</div>' +
+      '<div style="background:' + col.badge + ';color:white;font-size:13px;font-weight:800;padding:4px 10px;border-radius:6px">' + (exp.placa||'S/P') + '</div>' +
+      // Info vehículo
+      '<div style="flex:1;min-width:120px">' +
+      '<div style="font-size:13px;font-weight:700;color:#0f172a">' + (exp.nombre||'(sin nombre)') + '</div>' +
+      '<div style="font-size:11px;color:#64748b">' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' · ' + (exp.conversion||'GLP') + '</div>' +
+      '</div>' +
+      // Técnico
+      '<div style="text-align:center;min-width:80px">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Técnico</div>' +
+      '<div style="font-size:12px;font-weight:700;color:#374151">' + tecnico + '</div>' +
+      '</div>' +
+      // Sede
+      '<div style="text-align:center;min-width:80px">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Sede</div>' +
+      '<div style="font-size:12px;font-weight:700;color:#374151">🏢 ' + (exp.sede||'—') + '</div>' +
+      '</div>' +
+      // Tiempo
+      '<div style="text-align:center;min-width:70px">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase">Tiempo</div>' +
+      '<div style="font-size:15px;font-weight:800;color:' + col.badge + '">' + tiempoStr + '</div>' +
+      '</div>' +
+      // Progreso
+      '<div style="min-width:100px">' +
+      '<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Progreso E4</div>' +
+      '<div style="background:#e2e8f0;border-radius:99px;height:8px;overflow:hidden">' +
+      '<div style="background:' + col.badge + ';height:100%;width:' + item.progreso + '%;border-radius:99px;transition:width .3s"></div>' +
+      '</div>' +
+      '<div style="font-size:10px;color:#64748b;margin-top:2px;text-align:right">' + item.progreso + '%</div>' +
+      '</div>' +
+      '</div></div>';
+  }
+  listaEl.innerHTML = html;
+  // Agregar eventos onclick a cada card
+  for(var ev=0; ev<enRadar.length; ev++) {
+    (function(eid){
+      var el = document.getElementById('radarItem_' + eid);
+      if(el) el.onclick = function(){ abrirExpediente(eid); };
+    })(enRadar[ev].exp.id);
+  }
+}
+
 function renderPanel() {
   var total=expedientes.length;
   var e1=0,e2=0,comp=0;
@@ -2993,6 +3252,8 @@ function renderPanel() {
     tr.querySelector('#rpl_'+ri).appendChild(mkSpan('td-placa','abrirExpediente',e.id,e.placa||'(sin placa)'));
     tr.querySelector('#ret_'+ri).appendChild(etapaBadge(e.etapa));
   }
+  // Renderizar Radar de Conversiones
+  renderRadar();
 }
 
 // ==================
