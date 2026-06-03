@@ -3087,6 +3087,93 @@ function colorRadar(diasHabiles) {
   return { bg:'#f0fdf4', border:'#86efac', badge:'#16a34a', texto:'🟢 Normal', icon:'🟢' };
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// CULMINACIÓN DE CONVERSIÓN — Botones por técnico
+// Técnico tanque → montaje cilindro | Técnico delantera → montaje electrónica
+// ═══════════════════════════════════════════════════════════
+
+function marcarCulminado(expId, tipo) {
+  // tipo: 'cilindro' (técnico tanque) o 'electronica' (técnico delantera)
+  var expTarget = null;
+  for(var i=0; i<expedientes.length; i++) {
+    if(expedientes[i].id === expId) { expTarget = expedientes[i]; break; }
+  }
+  if(!expTarget) return;
+  if(!expTarget.e4) expTarget.e4 = {};
+
+  var ahora = Date.now();
+
+  // Validar permiso: solo el técnico asignado a esa parte puede culminar
+  var nombre = CU ? CU.nombre : '';
+  if(tipo === 'cilindro') {
+    if(!isAdmin() && !isSupervisor() && expTarget.tecnicoTanque !== nombre) {
+      showToast('Solo el técnico de cilindros puede culminar esta parte', 'error');
+      return;
+    }
+    if(expTarget.e4.cilindroCulminado) {
+      showToast('El montaje de cilindro ya fue culminado', 'info');
+      return;
+    }
+    expTarget.e4.cilindroCulminado = ahora;
+    expTarget.e4.cilindroCulminadoPor = nombre;
+  } else if(tipo === 'electronica') {
+    if(!isAdmin() && !isSupervisor() && expTarget.tecnicoDelantera !== nombre) {
+      showToast('Solo el técnico de electrónica puede culminar esta parte', 'error');
+      return;
+    }
+    if(expTarget.e4.electronicaCulminado) {
+      showToast('El montaje de electrónica ya fue culminado', 'info');
+      return;
+    }
+    expTarget.e4.electronicaCulminado = ahora;
+    expTarget.e4.electronicaCulminadoPor = nombre;
+  }
+
+  // Guardar inicio de conversión si no existe
+  if(!expTarget.e4.conversionInicio) {
+    var inicio = getInicioConversion(expTarget);
+    expTarget.e4.conversionInicio = inicio || ahora;
+  }
+
+  // Si AMBOS culminaron → conversión terminada
+  if(expTarget.e4.cilindroCulminado && expTarget.e4.electronicaCulminado) {
+    expTarget.e4.conversionFin = ahora;
+    var durMs = expTarget.e4.conversionFin - expTarget.e4.conversionInicio;
+    expTarget.e4.conversionDuracionHoras = Math.round(durMs / 3600000 * 10) / 10;
+    showToast('🎉 Conversión culminada — Duración: ' + formatDuracion(durMs), 'success');
+  } else {
+    var parte = tipo === 'cilindro' ? 'Montaje cilindro' : 'Montaje electrónica';
+    showToast('✅ ' + parte + ' culminado', 'success');
+  }
+
+  // Guardar en servidor
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+  if(GM_CONFIG.workerUrl) {
+    PENDING_SYNC = true;
+    fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      cache: 'no-store',
+      body: JSON.stringify({action:'saveOneExp', data: expTarget})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(){ PENDING_SYNC = false; renderRadar(); })
+    .catch(function(){ PENDING_SYNC = false; });
+  }
+  renderRadar();
+}
+
+function formatDuracion(ms) {
+  var horas = Math.floor(ms / 3600000);
+  var mins = Math.floor((ms % 3600000) / 60000);
+  if(horas < 1) return mins + ' min';
+  if(horas < 24) return horas + 'h ' + mins + 'min';
+  var dias = Math.floor(horas / 24);
+  var horasRest = horas % 24;
+  return dias + 'd ' + horasRest + 'h';
+}
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -3097,6 +3184,9 @@ function renderRadar() {
   for(var i=0; i<expedientes.length; i++) {
     var exp = expedientes[i];
     if(exp.etapa < 4) continue; // Solo etapa 4+
+    var e4 = exp.e4 || {};
+    // Excluir conversiones ya culminadas (ambas partes)
+    if(e4.conversionFin) continue;
     var inicio = getInicioConversion(exp);
     if(!inicio) continue; // Sin actividad técnica aún
     var dias = diasHabilesDesde(inicio);
@@ -3189,52 +3279,85 @@ function renderRadar() {
     if(!tecnico) tecnico = 'Sin asignar';
 
     var divId = 'radarItem_' + exp.id;
-    html += '<div id="' + divId + '" style="background:white;border:1.5px solid ' + col.border + ';border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .2s;box-shadow:0 2px 8px rgba(0,0,0,0.06)">' +
-      // Barra superior de color
-      '<div style="height:4px;background:' + col.badge + '"></div>' +
-      '<div style="padding:16px">' +
-      // Fila 1: Placa + Badge estado + Tiempo grande
-      '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">' +
-      '<div style="background:' + col.badge + ';color:white;font-size:15px;font-weight:900;padding:6px 14px;border-radius:8px;letter-spacing:1px">' + (exp.placa||'S/P') + '</div>' +
-      '<div style="background:' + col.bg + ';color:' + col.badge + ';font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid ' + col.border + '">' + col.texto + '</div>' +
-      '<div style="margin-left:auto;text-align:right">' +
-      '<div style="font-size:28px;font-weight:900;color:' + col.badge + ';line-height:1">' + tiempoStr + '</div>' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:600">en conversión</div>' +
-      '</div></div>' +
-      // Fila 2: Info + Técnico + Sede
-      '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">' +
-      '<div style="flex:2;min-width:150px">' +
-      '<div style="font-size:14px;font-weight:700;color:#0f172a">' + (exp.nombre||'Sin nombre') + '</div>' +
-      '<div style="font-size:12px;color:#64748b;margin-top:2px">' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' &nbsp;·&nbsp; 🔧 ' + (exp.conversion||'GLP') + '</div>' +
+    var e4r = exp.e4 || {};
+    // Estado de culminación
+    var cilOk = !!e4r.cilindroCulminado;
+    var elecOk = !!e4r.electronicaCulminado;
+
+    // Determinar si el usuario actual puede culminar cada parte
+    var nombreCU = CU ? CU.nombre : '';
+    var puedeCilindro = isAdmin() || isSupervisor() || exp.tecnicoTanque === nombreCU;
+    var puedeElectronica = isAdmin() || isSupervisor() || exp.tecnicoDelantera === nombreCU;
+
+    // Badges de estado de montaje
+    var montajeBadges = '';
+    if(cilOk) montajeBadges += '<span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;white-space:nowrap">✅ Cilindro</span>';
+    if(elecOk) montajeBadges += '<span style="background:#dbeafe;color:#2563eb;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;white-space:nowrap">✅ Electrónica</span>';
+
+    // Botones de culminación
+    var botonesCulminar = '';
+    if(!cilOk && puedeCilindro) {
+      botonesCulminar += '<button data-culminar="cilindro" data-exp="' + exp.id + '" style="background:#16a34a;color:white;border:none;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap">🔧 Culminar cilindro</button>';
+    }
+    if(!elecOk && puedeElectronica) {
+      botonesCulminar += '<button data-culminar="electronica" data-exp="' + exp.id + '" style="background:#2563eb;color:white;border:none;font-size:10px;font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer;white-space:nowrap">⚡ Culminar electrónica</button>';
+    }
+
+    // CARD COMPACTA — una sola fila
+    html += '<div id="' + divId + '" style="background:white;border:1px solid #e8edf3;border-left:4px solid ' + col.badge + ';border-radius:10px;display:flex;align-items:center;gap:14px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:all .15s">' +
+      // Indicador pulsante
+      '<div style="width:10px;height:10px;border-radius:50%;background:' + col.badge + ';flex-shrink:0;box-shadow:0 0 0 4px ' + col.bg + '"></div>' +
+      // Placa
+      '<div data-open="' + exp.id + '" style="background:' + col.badge + ';color:white;font-size:13px;font-weight:800;padding:5px 11px;border-radius:7px;letter-spacing:.5px;cursor:pointer;flex-shrink:0;min-width:75px;text-align:center">' + (exp.placa||'S/P') + '</div>' +
+      // Cliente + vehículo
+      '<div data-open="' + exp.id + '" style="flex:1;min-width:0;cursor:pointer">' +
+      '<div style="font-size:13px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (exp.nombre||'Sin nombre') + '</div>' +
+      '<div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (exp.marca||'') + ' ' + (exp.modelo||'') + ' · 🏢 ' + (exp.sede||'—') + '</div>' +
       '</div>' +
-      '<div style="text-align:center;padding:0 12px;border-left:1px solid #f1f5f9">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Técnico</div>' +
-      '<div style="font-size:12px;font-weight:700;color:#374151;margin-top:3px">' + tecnico + '</div>' +
+      // Progreso circular mini
+      '<div style="flex-shrink:0;text-align:center;min-width:48px">' +
+      '<div style="font-size:14px;font-weight:800;color:' + col.badge + '">' + item.progreso + '%</div>' +
+      '<div style="background:#f1f5f9;border-radius:99px;height:4px;width:44px;overflow:hidden;margin-top:2px">' +
+      '<div style="background:' + col.badge + ';height:100%;width:' + item.progreso + '%"></div></div>' +
       '</div>' +
-      '<div style="text-align:center;padding:0 12px;border-left:1px solid #f1f5f9">' +
-      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Sede</div>' +
-      '<div style="font-size:12px;font-weight:700;color:#374151;margin-top:3px">🏢 ' + (exp.sede||'—') + '</div>' +
-      '</div></div>' +
-      // Barra de progreso
-      '<div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-      '<span style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Progreso Etapa 4</span>' +
-      '<span style="font-size:12px;font-weight:800;color:' + col.badge + '">' + item.progreso + '%</span></div>' +
-      '<div style="background:#f1f5f9;border-radius:99px;height:10px;overflow:hidden">' +
-      '<div style="background:linear-gradient(90deg,' + col.badge + ',' + col.badge + 'aa);height:100%;width:' + item.progreso + '%;border-radius:99px;transition:width .5s"></div>' +
-      '</div></div>' +
-      '</div></div>';
+      // Tiempo
+      '<div style="flex-shrink:0;text-align:center;min-width:60px;padding:0 8px;border-left:1px solid #f1f5f9;border-right:1px solid #f1f5f9">' +
+      '<div style="font-size:17px;font-weight:900;color:' + col.badge + ';line-height:1">' + tiempoStr + '</div>' +
+      '<div style="font-size:9px;color:#94a3b8;font-weight:600;text-transform:uppercase">tiempo</div>' +
+      '</div>' +
+      // Estado montaje + botones
+      '<div style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;min-width:130px">' +
+      (montajeBadges ? '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">' + montajeBadges + '</div>' : '') +
+      (botonesCulminar ? '<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">' + botonesCulminar + '</div>' : '') +
+      '</div>' +
+      '</div>';
   }
   html += '</div>'; // cierre lista
   container.innerHTML = html;
-  // Agregar eventos onclick a cada card
+  // Eventos: abrir expediente (en placa y cliente)
+  var openEls = container.querySelectorAll('[data-open]');
+  for(var oe=0; oe<openEls.length; oe++) {
+    (function(el){
+      el.onclick = function(e){ e.stopPropagation(); abrirExpediente(el.getAttribute('data-open')); };
+    })(openEls[oe]);
+  }
+  // Eventos: botones culminar
+  var culEls = container.querySelectorAll('[data-culminar]');
+  for(var ce=0; ce<culEls.length; ce++) {
+    (function(el){
+      el.onclick = function(e){
+        e.stopPropagation();
+        marcarCulminado(el.getAttribute('data-exp'), el.getAttribute('data-culminar'));
+      };
+    })(culEls[ce]);
+  }
+  // Hover en cards
   for(var ev=0; ev<enRadar.length; ev++) {
     (function(eid){
       var el = document.getElementById('radarItem_' + eid);
       if(el) {
-        el.onclick = function(){ abrirExpediente(eid); };
-        el.onmouseenter = function(){ this.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)'; this.style.transform = 'translateY(-2px)'; };
-        el.onmouseleave = function(){ this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; this.style.transform = ''; };
+        el.onmouseenter = function(){ this.style.boxShadow = '0 4px 14px rgba(0,0,0,0.1)'; };
+        el.onmouseleave = function(){ this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; };
       }
     })(enRadar[ev].exp.id);
   }
