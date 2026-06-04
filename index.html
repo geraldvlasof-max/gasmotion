@@ -364,10 +364,10 @@ input,select,textarea{font-size:16px!important}
         <p>Software Automotriz</p>
       </div>
       <div style="font-size:22px;font-weight:800;color:#131313;margin-bottom:4px">Bienvenido</div>
-      <div style="font-size:13px;color:#6b82a0;margin-bottom:24px">Ingresa con tu usuario para continuar</div>
+      <div style="font-size:13px;color:#6b82a0;margin-bottom:24px">Ingresa con tu usuario o correo para continuar</div>
       <div class="login-error" id="loginError"></div>
-      <label class="form-label">Tu usuario</label>
-      <input class="form-input" type="text" id="loginUser" placeholder="Tu usuario (ej: iki)" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="form-label">Usuario o correo</label>
+      <input class="form-input" type="text" id="loginUser" placeholder="Usuario o correo electrónico" autocomplete="username" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')doLogin()">
       <label class="form-label" style="margin-top:12px;margin-bottom:6px;display:block;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.3px">CONTRASEÑA</label>
       <div style="position:relative">
         <input class="form-input" type="password" id="loginPass" placeholder="Escribe tu contraseña" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" style="padding-right:44px">
@@ -1668,7 +1668,7 @@ function doLogin() {
   }
   var rawUid = document.getElementById('loginUser').value.trim();
   var pass   = document.getElementById('loginPass').value;
-  if(!rawUid){ setLoginError('⚠️ Escribe tu nombre de usuario.'); return; }
+  if(!rawUid){ setLoginError('⚠️ Escribe tu usuario o correo.'); return; }
   if(!pass)  { setLoginError('⚠️ Escribe tu contraseña.'); return; }
 
   setLoginError('');
@@ -1734,10 +1734,13 @@ function doLogin() {
 function buscarUsuario(rawUid, users) {
   if(!users) return null;
   var uid = normStr(rawUid);
+  var rawLower = rawUid.trim().toLowerCase();
   var entries = Object.entries(users);
   for(var i=0; i<entries.length; i++) {
     var id=entries[i][0], u=entries[i][1];
-    if(normStr(id)===uid || normStr(u.nombre)===uid) {
+    // Buscar por ID, nombre o correo
+    var correoMatch = u.correo && u.correo.trim().toLowerCase() === rawLower;
+    if(normStr(id)===uid || normStr(u.nombre)===uid || correoMatch) {
       return {id:id, user:u};
     }
   }
@@ -2225,7 +2228,7 @@ function mostrarRecuperacion() {
   loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">🔑 Recuperar contraseña</div>' +
     '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Te enviaremos un código a tu correo registrado</div>' +
     '<div id="recError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
-    '<label class="form-label">Tu usuario</label>' +
+    '<label class="form-label">Usuario o correo</label>' +
     '<input class="form-input" type="text" id="recUser" placeholder="Escribe tu usuario (iki)">' +
     '<button class="btn btn-primary" style="width:100%;margin-top:12px" id="btnEnviarCodigo">Enviar código a mi correo</button>' +
     '<div id="codigoSection" style="display:none;margin-top:16px">' +
@@ -3440,6 +3443,77 @@ function formatDuracion(ms) {
   return dias + 'd ' + horasRest + 'h';
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// RESPONSABLES POR DOCUMENTO — resolución dinámica
+// ═══════════════════════════════════════════════════════════
+
+// Obtiene el nombre del asistente FISE (solo hay uno para todas las sedes)
+function getNombreAsistenteFise() {
+  var users = getUsers();
+  var ids = Object.keys(users);
+  for(var i=0; i<ids.length; i++) {
+    if(users[ids[i]].role === 'asistente_fise') return users[ids[i]].nombre || ids[i];
+  }
+  return 'Asistente FISE';
+}
+
+// Obtiene el vendedor asignado a la sede (NO el vendedor de servicio)
+function getNombreVendedorSede(exp) {
+  if(exp && exp.vendedorSede) return exp.vendedorSede;
+  return 'Vendedor de sede';
+}
+
+// Devuelve HTML del badge de responsable para un documento
+function badgeResponsable(nombre, nota) {
+  var notaHtml = nota ? '<span style="font-size:9px;color:#FC682F;font-style:italic;display:block;margin-top:1px">' + nota + '</span>' : '';
+  return '<span style="display:inline-flex;flex-direction:column;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:6px;padding:3px 9px;font-size:10px;color:#8a8a8a;font-weight:500">' +
+    '<span style="display:flex;align-items:center;gap:4px"><span style="color:#a8a8a8">👤 Responsable:</span> <strong style="color:#131313">' + nombre + '</strong></span>' +
+    notaHtml +
+    '</span>';
+}
+
+// Resuelve el responsable según etapa y documento
+function responsablePorDocumento(exp, tipoDoc) {
+  var asistente = getNombreAsistenteFise();
+  var vendedorSede = getNombreVendedorSede(exp);
+  var tecTanque = (exp && exp.tecnicoTanque) ? exp.tecnicoTanque : 'Técnico de tanque';
+  var tecDelantera = (exp && exp.tecnicoDelantera) ? exp.tecnicoDelantera : 'Técnico delantera';
+
+  var mapa = {
+    // Etapa 1
+    'sf1':         { nombre: vendedorSede, nota: '' },
+    'scanfile1':   { nombre: vendedorSede, nota: '' },
+    // Etapa 2
+    'matriz':      { nombre: asistente, nota: '' },
+    'declaracionJurada': { nombre: asistente, nota: '' },
+    'cronograma':  { nombre: asistente, nota: '' },
+    // Etapa 3
+    'sf2':         { nombre: vendedorSede, nota: '' },
+    'scanfile2':   { nombre: vendedorSede, nota: '' },
+    'asignacion':  { nombre: vendedorSede + ' / ' + asistente, nota: '' },
+    // Etapa 4
+    'videoComp':   { nombre: vendedorSede, nota: 'Pronto migrará a técnicos' },
+    'videoCompresiones': { nombre: vendedorSede, nota: 'Pronto migrará a técnicos' },
+    'fotoCilindro1': { nombre: tecTanque, nota: '' },
+    'fotoCilindro2': { nombre: tecTanque, nota: '' },
+    'fotoReductor':  { nombre: tecDelantera, nota: '' },
+    'boletaInfo':    { nombre: asistente, nota: '' },
+    'boletaInformativa': { nombre: asistente, nota: '' },
+    'boletaVenta':   { nombre: asistente, nota: '' },
+    'capturaPIT':    { nombre: asistente, nota: '' },
+    'dniTecnico':    { nombre: asistente, nota: '' },
+    'informeBono':   { nombre: asistente, nota: '' },
+    // Etapa 5 y 6
+    'organizacion':  { nombre: asistente, nota: '' },
+    'certificadora': { nombre: asistente, nota: '' }
+  };
+
+  var r = mapa[tipoDoc];
+  if(!r) return '';
+  return badgeResponsable(r.nombre, r.nota);
+}
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -3901,8 +3975,8 @@ function renderEtapa2(cont, exp) {
 
   // 3 documentos FISE
   var docsE2=[
-    {key:'declaracionJurada',label:'2.1 Declaracion Jurada de Beneficiario FISE — Resp: Asistente FISE'},
-    {key:'cronograma',label:'2.2 Cargo de Cronograma — Resp: Asistente FISE'}
+    {key:'declaracionJurada',label:'2.1 Declaracion Jurada de Beneficiario FISE'},
+    {key:'cronograma',label:'2.2 Cargo de Cronograma'}
   ];
   for(var di=0;di<docsE2.length;di++){
     var dk=docsE2[di];
@@ -4078,7 +4152,7 @@ function renderEtapa4(cont, exp) {
   sf2box.appendChild(dlSf2);sec.appendChild(sf2box);
 
   // 1. Video compresiones
-  sec.appendChild(crearDocCard(exp.id,'videoComp','1. Video de Compresiones — Resp: Vendedor de Sede',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
+  sec.appendChild(crearDocCard(exp.id,'videoComp','1. Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
 
   // 2. Cilindros (fotos + datos)
   sec.appendChild(crearFotoCilindroCard(exp,canSub));
@@ -4087,16 +4161,16 @@ function renderEtapa4(cont, exp) {
   sec.appendChild(crearFotoReductorCard(exp,canSub));
 
   // 4. Boleta Informativa
-  sec.appendChild(crearDocCard(exp.id,'boletaInfo','4. Boleta Informativa — Resp: Asistente FISE',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
+  sec.appendChild(crearDocCard(exp.id,'boletaInfo','4. Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
 
   // 5. Boleta de Venta
-  sec.appendChild(crearDocCard(exp.id,'boletaVenta','5. Boleta de Venta — Resp: Asistente FISE',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
+  sec.appendChild(crearDocCard(exp.id,'boletaVenta','5. Boleta de Venta',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
 
   // 6. Captura PIT
-  sec.appendChild(crearDocCard(exp.id,'capturaPIT','6. Captura PIT — Resp: Asistente FISE',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
+  sec.appendChild(crearDocCard(exp.id,'capturaPIT','6. Captura PIT',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
 
   // 7. DNI Técnico Responsable (nuevo campo)
-  sec.appendChild(crearDocCard(exp.id,'dniTecnico','7. DNI Técnico Responsable — Resp: Asistente FISE',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
+  sec.appendChild(crearDocCard(exp.id,'dniTecnico','7. DNI Técnico Responsable',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
 
   // ── BOTÓN ÚNICO GUARDAR TODOS LOS DATOS TÉCNICOS ──
   if(canSub) {
@@ -4130,7 +4204,7 @@ function renderEtapa4(cont, exp) {
   bonoOpts.appendChild(labSi);bonoOpts.appendChild(labNo);
   bonoDiv.appendChild(bonoOpts);
   if(e4.llevaBono===true){
-    var bonoCard=crearDocCard(exp.id,'informeBono','8. Informe BONO GLP (Opcional) — Resp: Asistente FISE',e4.informeBono||null,canSub,'e4ib','.pdf');
+    var bonoCard=crearDocCard(exp.id,'informeBono','8. Informe BONO GLP (Opcional)',e4.informeBono||null,canSub,'e4ib','.pdf');
     bonoDiv.appendChild(bonoCard);
   }
   sec.appendChild(bonoDiv);
@@ -4164,7 +4238,7 @@ function crearFotoCilindroCard(exp, canSub) {
   var card = document.createElement('div');
   card.className = 'doc-box' + (e4.fotoCilindro1 && e4.fotoCilindro1.completado ? ' done' : '');
   card.style.marginTop = '10px';
-  card.innerHTML = '<div class="doc-box-title">3. Cilindro(s) <span style="font-size:11px;font-weight:400;color:#FFC165">— Resp: Técnico Tanque</span></div>';
+  card.innerHTML = '<div class="doc-box-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>3. Cilindro(s)</span>'+responsablePorDocumento(exp,'fotoCilindro1')+'</div>';
 
   // ── CILINDRO 1 ──
   var c1 = document.createElement('div');
@@ -4832,7 +4906,7 @@ function crearFotoReductorCard(exp, canSub) {
   var card = document.createElement('div');
   card.className = 'doc-box' + (e4.fotoReductor && e4.fotoReductor.completado ? ' done' : '');
   card.style.marginTop = '10px';
-  card.innerHTML = '<div class="doc-box-title">4. Reductor <span style="font-size:11px;font-weight:400;color:#FFC165">— Resp: Técnico Delantera</span></div>';
+  card.innerHTML = '<div class="doc-box-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>4. Reductor</span>'+responsablePorDocumento(exp,'fotoReductor')+'</div>';
 
   var rWrap = document.createElement('div');
   rWrap.style.cssText = 'background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:10px;padding:14px';
@@ -5539,7 +5613,11 @@ function guardarOrdenEtapa5(expId) {
 // ── HELPERS DE CARDS ──
 function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, acceptFmt) {
   var card=document.createElement('div');card.className='doc-box'+(meta&&meta.completado?' done':'');card.style.marginTop='10px';
-  card.innerHTML='<div class="doc-box-title">'+(meta&&meta.completado?'&#10003; ':'')+label+'</div>';
+  // Resolver expediente para responsable
+  var expRef=null;
+  for(var ce=0; ce<expedientes.length; ce++){ if(expedientes[ce].id===expId){ expRef=expedientes[ce]; break; } }
+  var badgeResp = responsablePorDocumento(expRef, tipoKey);
+  card.innerHTML='<div class="doc-box-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>'+(meta&&meta.completado?'&#10003; ':'')+label+'</span>'+badgeResp+'</div>';
   if(meta&&meta.completado){
     var fileUrl=getFileUrl(expId,tipoKey);
     var doneRow=document.createElement('div');doneRow.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:10px 14px;margin-top:8px;gap:10px';
