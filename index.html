@@ -580,6 +580,7 @@ input,select,textarea{font-size:16px!important}
             <div id="newUserForm" style="display:none;background:#F7F7F2;border-radius:10px;padding:18px;border:2px solid #D9D9D9">
               <div class="grid3" style="margin-bottom:12px">
                 <div class="field"><label>Nombre <span class="required">*</span></label><input type="text" id="nu_nombre" placeholder="Nombre completo"></div>
+                <div class="field"><label>Correo electrónico <span class="required">*</span></label><input type="email" id="nu_correo" placeholder="correo@ejemplo.com"></div>
                 <div class="field"><label>Contrasena <span class="required">*</span></label><input type="password" id="nu_pass" placeholder="Min 6 caracteres"></div>
                 <div class="field"><label>Rol <span class="required">*</span></label>
                   <select id="nu_rol" onchange="toggleEspecialidadField()"><option value="">-- Rol --</option><option value="jefe">Jefe de Sede</option><option value="vendedor">Vendedor</option><option value="tecnico">Técnico</option><option value="asistente_fise">Asistente FISE</option></select>
@@ -933,12 +934,92 @@ var GM_CONFIG={
 // ═══════════════════════════════════════════════════════
 var USERS_CACHE = null;
 
+
+// ═══════════════════════════════════════════════════════════
+// CÓDIGOS DE VERIFICACIÓN POR CORREO (Resend)
+// 6 dígitos, validez 10 minutos
+// ═══════════════════════════════════════════════════════════
+
+var _codigosVerificacion = {}; // { uid: { codigo, expira, intentos } }
+
+function generarCodigo6() {
+  var c = '';
+  for(var i=0; i<6; i++) c += Math.floor(Math.random()*10);
+  return c;
+}
+
+function enviarCodigoVerificacion(uid, correoDestino, callback) {
+  var codigo = generarCodigo6();
+  var expira = Date.now() + 10*60*1000; // 10 minutos
+  _codigosVerificacion[uid] = { codigo: codigo, expira: expira, intentos: 0 };
+
+  // Guardar también en sessionStorage por si recarga
+  try {
+    sessionStorage.setItem('gm_codigo_' + uid, JSON.stringify(_codigosVerificacion[uid]));
+  } catch(e){}
+
+  var htmlCorreo = '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:0">' +
+    '<div style="background:#131313;padding:24px;text-align:center;border-radius:12px 12px 0 0">' +
+    '<div style="color:#FFC165;font-size:22px;font-weight:800">Gasmotion</div>' +
+    '<div style="color:#a8a8a8;font-size:12px;margin-top:2px">Carrigas Perú</div></div>' +
+    '<div style="padding:32px 24px;background:#f5f5f0;text-align:center">' +
+    '<div style="font-size:15px;color:#131313;font-weight:600;margin-bottom:8px">Código de verificación</div>' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:24px">Usa este código para cambiar tu contraseña. Válido por 10 minutos.</div>' +
+    '<div style="background:white;border:2px dashed #FFC165;border-radius:12px;padding:20px;margin:0 auto;max-width:240px">' +
+    '<div style="font-size:36px;font-weight:900;letter-spacing:8px;color:#131313;font-family:monospace">' + codigo + '</div>' +
+    '</div>' +
+    '<div style="font-size:12px;color:#a8a8a8;margin-top:24px">Si no solicitaste este código, ignora este correo.</div>' +
+    '</div>' +
+    '<div style="background:#131313;padding:14px;text-align:center;font-size:11px;color:#a8a8a8;border-radius:0 0 12px 12px">Carrigas Perú E.I.R.L. · Sistema Gasmotion</div></div>';
+
+  if(!GM_CONFIG.workerUrl) { callback(false, 'Sin conexión al servidor'); return; }
+
+  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({
+      to: correoDestino,
+      subject: 'Código de verificación Gasmotion: ' + codigo,
+      html: htmlCorreo
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) callback(true, null);
+    else callback(false, d.error || 'No se pudo enviar el correo');
+  })
+  .catch(function(){ callback(false, 'Error de conexión'); });
+}
+
+function verificarCodigo(uid, codigoIngresado) {
+  var registro = _codigosVerificacion[uid];
+  // Recuperar de sessionStorage si no está en memoria
+  if(!registro) {
+    try {
+      var saved = sessionStorage.getItem('gm_codigo_' + uid);
+      if(saved) registro = JSON.parse(saved);
+    } catch(e){}
+  }
+  if(!registro) return { ok:false, error:'No hay código activo. Solicita uno nuevo.' };
+  if(Date.now() > registro.expira) return { ok:false, error:'El código expiró. Solicita uno nuevo.' };
+  registro.intentos = (registro.intentos||0) + 1;
+  if(registro.intentos > 5) return { ok:false, error:'Demasiados intentos. Solicita un código nuevo.' };
+  if(String(codigoIngresado).trim() !== String(registro.codigo)) return { ok:false, error:'Código incorrecto.' };
+  // Código válido — limpiar
+  delete _codigosVerificacion[uid];
+  try{ sessionStorage.removeItem('gm_codigo_' + uid); }catch(e){}
+  return { ok:true };
+}
+
 function getUsers() {
   // Leer del localStorage primero (fuente de verdad para usuarios)
   try {
     var saved = JSON.parse(localStorage.getItem('gm_users')||'null');
     if(saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
       if(!saved['iki']) saved['iki'] = DEFAULT_USERS['iki'];
+      // Asegurar correo de Iki para recuperación
+      if(saved['iki'] && !saved['iki'].correo) saved['iki'].correo = 'geraldvlasof@gmail.com';
       // Si USERS_CACHE tiene más usuarios que localStorage (saveUsers falló),
       // priorizar USERS_CACHE
       if(USERS_CACHE && Object.keys(USERS_CACHE).length > Object.keys(saved).length) {
@@ -1292,7 +1373,7 @@ function nowHora() { return new Date().toLocaleTimeString('es-PE',{hour:'2-digit
 // STORAGE
 // ==================
 var DEFAULT_USERS = {
-  iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'carrigas2025', especialidad:'', mustChangePass: false }
+  iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'carrigas2025', especialidad:'', correo:'geraldvlasof@gmail.com', mustChangePass: false }
 };
 var SERVER_USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
@@ -2135,7 +2216,7 @@ function mostrarRecuperacion() {
   var loginBox = document.getElementById('loginBox');
   if(!loginBox) return;
   loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">🔑 Recuperar contraseña</div>' +
-    '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Solo disponible para el administrador principal</div>' +
+    '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Te enviaremos un código a tu correo registrado</div>' +
     '<div id="recError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
     '<label class="form-label">Tu usuario</label>' +
     '<input class="form-input" type="text" id="recUser" placeholder="Escribe tu usuario (iki)">' +
@@ -2157,22 +2238,37 @@ function mostrarRecuperacion() {
 function enviarCodigoRecuperacion() {
   var uid = document.getElementById('recUser').value.trim().toLowerCase();
   var errEl = document.getElementById('recError');
-  if(!uid) { errEl.textContent = 'Escribe tu usuario.'; return; }
-  // Solo admin puede recuperar por correo
+  if(!uid) { errEl.style.color='#dc2626'; errEl.textContent = 'Escribe tu usuario.'; return; }
   var users = getUsers();
   var u = users[uid];
-  if(!u || u.role !== 'admin') {
-    errEl.textContent = 'Este usuario no tiene recuperación por correo. Contacta al administrador.';
+  if(!u) {
+    errEl.style.color='#dc2626';
+    errEl.textContent = 'Usuario no encontrado.';
     return;
   }
-  // Generar código de 6 dígitos
-  _recoveryCode = String(Math.floor(100000 + Math.random() * 900000));
-  _recoveryExpiry = Date.now() + 600000; // 10 minutos
-  // Mostrar el código en pantalla (en producción iría por correo via EmailJS)
-  errEl.style.color = '#16a34a';
-  errEl.textContent = '✅ Código generado: ' + _recoveryCode + ' (válido 10 min) — En producción llegaría a tu correo.';
-  document.getElementById('codigoSection').style.display = 'block';
-  console.log('Código de recuperación para', uid, ':', _recoveryCode);
+  if(!u.correo || u.correo.indexOf('@') === -1) {
+    errEl.style.color='#dc2626';
+    errEl.textContent = 'Este usuario no tiene correo registrado. Contacta al administrador.';
+    return;
+  }
+  // Ocultar correo parcialmente para confirmación
+  var correoMasked = u.correo.replace(/^(.{2})(.*)(@.*)$/, function(m,a,b,c){ return a + b.replace(/./g,'*') + c; });
+  var btn = document.getElementById('btnEnviarCodigo');
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando...'; }
+  errEl.style.color = '#8a8a8a';
+  errEl.textContent = 'Enviando código...';
+
+  enviarCodigoVerificacion(uid, u.correo, function(ok, error){
+    if(btn){ btn.disabled = false; btn.textContent = 'Enviar código a mi correo'; }
+    if(ok) {
+      errEl.style.color = '#16a34a';
+      errEl.textContent = '✅ Código enviado a ' + correoMasked + ' (válido 10 min)';
+      document.getElementById('codigoSection').style.display = 'block';
+    } else {
+      errEl.style.color = '#dc2626';
+      errEl.textContent = '❌ ' + (error || 'No se pudo enviar el código');
+    }
+  });
 }
 
 function verificarCodigoRecuperacion() {
@@ -2181,14 +2277,13 @@ function verificarCodigoRecuperacion() {
   var uid = document.getElementById('recUser').value.trim().toLowerCase();
   var errEl = document.getElementById('recError');
   errEl.style.color = '#dc2626';
-  if(!_recoveryCode || Date.now() > _recoveryExpiry) {
-    errEl.textContent = 'El código expiró. Solicita uno nuevo.';
-    _recoveryCode = null; return;
-  }
-  if(codigo !== _recoveryCode) { errEl.textContent = 'Código incorrecto.'; return; }
-  var strength = validarFortalezaPass(newPass);
-  if(!strength.ok) { errEl.textContent = 'La contraseña no cumple los requisitos.'; return; }
-  // Cambiar contraseña
+
+  if(newPass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+
+  var resultado = verificarCodigo(uid, codigo);
+  if(!resultado.ok) { errEl.textContent = resultado.error; return; }
+
+  // Código válido — cambiar contraseña
   var users = getUsers();
   if(users[uid]) {
     users[uid].pass = newPass;
@@ -2200,7 +2295,6 @@ function verificarCodigoRecuperacion() {
         body: JSON.stringify({users: users})
       }).catch(function(){});
     }
-    _recoveryCode = null;
     errEl.style.color = '#16a34a';
     errEl.textContent = '✅ Contraseña cambiada. Ahora puedes iniciar sesión.';
     setTimeout(function(){ mostrarLogin(); }, 2000);
@@ -2368,6 +2462,7 @@ function mostrarCambiarMiPassword() {
   document.body.appendChild(overlay);
 
   document.getElementById('btnCancelCP').onclick = function() { document.body.removeChild(overlay); };
+  // Paso 1: validar contraseña actual y enviar código por correo
   document.getElementById('btnGuardarCP').onclick = function() {
     var actual   = document.getElementById('cpActual').value;
     var nueva    = document.getElementById('cpNueva').value;
@@ -2383,6 +2478,59 @@ function mostrarCambiarMiPassword() {
     if(nueva.length < 6) { msgEl.style.color='#dc2626'; msgEl.textContent='La nueva contraseña debe tener al menos 6 caracteres.'; return; }
     if(nueva !== confirm) { msgEl.style.color='#dc2626'; msgEl.textContent='Las contraseñas no coinciden.'; return; }
 
+    // Si el usuario tiene correo, pedir verificación por código
+    if(users[uid].correo && users[uid].correo.indexOf('@') !== -1) {
+      var btnG = document.getElementById('btnGuardarCP');
+      btnG.disabled = true; btnG.textContent = 'Enviando código...';
+      msgEl.style.color = '#8a8a8a';
+      msgEl.textContent = 'Enviando código de verificación...';
+
+      enviarCodigoVerificacion(uid, users[uid].correo, function(ok, error){
+        btnG.disabled = false; btnG.textContent = 'Guardar';
+        if(!ok) { msgEl.style.color='#dc2626'; msgEl.textContent = '❌ ' + (error||'No se pudo enviar el código'); return; }
+
+        var correoMasked = users[uid].correo.replace(/^(.{2})(.*)(@.*)$/, function(m,a,b,c){ return a + b.replace(/./g,'*') + c; });
+        // Mostrar campo de código
+        var codeBox = document.getElementById('cpCodeBox');
+        if(!codeBox) {
+          codeBox = document.createElement('div');
+          codeBox.id = 'cpCodeBox';
+          codeBox.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px solid #f0f0f0';
+          codeBox.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Código enviado a ' + correoMasked + '</label>' +
+            '<input type="text" id="cpCodigo" maxlength="6" placeholder="6 dígitos" style="width:100%;border:2px solid #e2e8f0;border-radius:8px;padding:10px;font-size:18px;box-sizing:border-box;text-align:center;letter-spacing:4px;font-family:monospace">';
+          var btnConfirmar = document.getElementById('btnGuardarCP');
+          btnConfirmar.parentNode.insertBefore(codeBox, btnConfirmar);
+        }
+        msgEl.style.color = '#16a34a';
+        msgEl.textContent = '✅ Código enviado. Ingrésalo para confirmar.';
+        btnG.textContent = 'Confirmar cambio';
+
+        // Cambiar la acción del botón al segundo paso
+        btnG.onclick = function() {
+          var codigo = document.getElementById('cpCodigo').value.trim();
+          var resultado = verificarCodigo(uid, codigo);
+          if(!resultado.ok) { msgEl.style.color='#dc2626'; msgEl.textContent = resultado.error; return; }
+          // Código válido — guardar nueva contraseña
+          users[uid].pass = nueva;
+          users[uid].mustChangePass = false;
+          CU.pass = nueva;
+          try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
+          saveUsers(users);
+          if(GM_CONFIG.workerUrl) {
+            fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({users: users})
+            }).catch(function(){});
+          }
+          msgEl.style.color = '#16a34a';
+          msgEl.textContent = '✅ Contraseña cambiada correctamente.';
+          setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
+        };
+      });
+      return;
+    }
+
+    // Sin correo: cambio directo (fallback)
     users[uid].pass = nueva;
     users[uid].mustChangePass = false;
     CU.pass = nueva;
@@ -2396,7 +2544,7 @@ function mostrarCambiarMiPassword() {
     }
     msgEl.style.color = '#16a34a';
     msgEl.textContent = '✅ Contraseña cambiada correctamente.';
-    setTimeout(function(){ document.body.removeChild(overlay); }, 1500);
+    setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
   };
 }
 
@@ -6896,10 +7044,11 @@ function crearUsuario(){
   if(pass.length<6){showAlert('alertUsuarios','Mínimo 6 caracteres en la contraseña.','error');return;}
   var esp='';
   if(rol==='tecnico'){var es=document.getElementById('nu_especialidad');if(es)esp=es.value;}
+  var correo=document.getElementById('nu_correo')?document.getElementById('nu_correo').value.trim():'';
+  if(!correo||correo.indexOf('@')===-1){showAlert('alertUsuarios','El correo electrónico es obligatorio y debe ser válido.','error');return;}
   var users=getUsers();
   var id=normStr(nombre).replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'')+'_'+String(Date.now()).slice(-4);
-  console.log('crearUsuario: id generado='+id+' usuarios antes='+JSON.stringify(Object.keys(users)));
-  users[id]={nombre:nombre,role:rol,sede:sede,pass:pass,especialidad:esp};
+  users[id]={nombre:nombre,role:rol,sede:sede,pass:pass,especialidad:esp,correo:correo};
   console.log('crearUsuario: usuarios después='+JSON.stringify(Object.keys(users)));
   saveUsers(users);
   console.log('crearUsuario: localStorage después de saveUsers='+JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('gm_users')||'{}'))));
