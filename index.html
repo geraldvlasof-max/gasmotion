@@ -941,6 +941,8 @@ var USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
 
 var _codigosVerificacion = {}; // { uid: { codigo, expira, intentos } }
+// FLAG: cuando el dominio carrigasperu.com esté verificado en Resend, cambiar a true
+var CODIGOS_EMAIL_ACTIVOS = false;
 
 function generarCodigo6() {
   var c = '';
@@ -2251,6 +2253,11 @@ function enviarCodigoRecuperacion() {
     errEl.textContent = 'Este usuario no tiene correo registrado. Contacta al administrador.';
     return;
   }
+  if(!CODIGOS_EMAIL_ACTIVOS) {
+    errEl.style.color='#d97706';
+    errEl.textContent = 'La recuperación por correo aún no está disponible. Contacta a Iki para restablecer tu contraseña.';
+    return;
+  }
   // Ocultar correo parcialmente para confirmación
   var correoMasked = u.correo.replace(/^(.{2})(.*)(@.*)$/, function(m,a,b,c){ return a + b.replace(/./g,'*') + c; });
   var btn = document.getElementById('btnEnviarCodigo');
@@ -2478,8 +2485,8 @@ function mostrarCambiarMiPassword() {
     if(nueva.length < 6) { msgEl.style.color='#dc2626'; msgEl.textContent='La nueva contraseña debe tener al menos 6 caracteres.'; return; }
     if(nueva !== confirm) { msgEl.style.color='#dc2626'; msgEl.textContent='Las contraseñas no coinciden.'; return; }
 
-    // Si el usuario tiene correo, pedir verificación por código
-    if(users[uid].correo && users[uid].correo.indexOf('@') !== -1) {
+    // Si el usuario tiene correo Y los códigos están activos, pedir verificación
+    if(CODIGOS_EMAIL_ACTIVOS && users[uid].correo && users[uid].correo.indexOf('@') !== -1) {
       var btnG = document.getElementById('btnGuardarCP');
       btnG.disabled = true; btnG.textContent = 'Enviando código...';
       msgEl.style.color = '#8a8a8a';
