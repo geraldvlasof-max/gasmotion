@@ -951,6 +951,11 @@ function generarCodigo6() {
 }
 
 function enviarCodigoVerificacion(uid, correoDestino, callback) {
+  // BLOQUEO GLOBAL: mientras el dominio no esté verificado en Resend
+  if(!CODIGOS_EMAIL_ACTIVOS) {
+    callback(false, 'El envío de códigos por correo aún no está habilitado. Contacta a Iki.');
+    return;
+  }
   var codigo = generarCodigo6();
   var expira = Date.now() + 10*60*1000; // 10 minutos
   _codigosVerificacion[uid] = { codigo: codigo, expira: expira, intentos: 0 };
