@@ -1299,80 +1299,6 @@ function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha,
   });
 }
 function getFileMeta(expId, tipoKey) { return FILE_STORE[expId + '_' + tipoKey] || null; }
-
-// ═══════════════════════════════════════════════════════════
-// VISOR DE DOCUMENTOS EN MODAL + DESCARGA DIRECTA
-// ═══════════════════════════════════════════════════════════
-
-function abrirVisorDocumento(driveFileId, nombreArchivo) {
-  if(!driveFileId) { showToast('Documento no disponible', 'error'); return; }
-
-  var overlay = document.createElement('div');
-  overlay.id = 'visorDocOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:0';
-
-  // Barra superior
-  var barra = document.createElement('div');
-  barra.style.cssText = 'background:#131313;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0';
-  barra.innerHTML =
-    '<span style="color:white;font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ' + (nombreArchivo||'Documento') + '</span>';
-
-  // Botón descargar
-  var btnDl = document.createElement('button');
-  btnDl.style.cssText = 'background:#FFC165;color:#131313;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
-  btnDl.innerHTML = '⬇ Descargar';
-  btnDl.onclick = function(){ descargarDocumento(driveFileId, nombreArchivo); };
-  barra.appendChild(btnDl);
-
-  // Botón cerrar
-  var btnX = document.createElement('button');
-  btnX.style.cssText = 'background:rgba(255,255,255,0.15);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:16px;font-weight:700;cursor:pointer;line-height:1';
-  btnX.innerHTML = '✕';
-  btnX.onclick = function(){ if(overlay.parentNode) document.body.removeChild(overlay); };
-  barra.appendChild(btnX);
-
-  overlay.appendChild(barra);
-
-  // Iframe con el visor de Drive (preview)
-  var iframe = document.createElement('iframe');
-  iframe.src = 'https://drive.google.com/file/d/' + driveFileId + '/preview';
-  iframe.style.cssText = 'flex:1;width:100%;border:none;background:#525659';
-  iframe.setAttribute('allow', 'autoplay');
-  overlay.appendChild(iframe);
-
-  // Cerrar al hacer clic en el fondo oscuro (la barra y el iframe no propagan)
-  overlay.onclick = function(e){ if(e.target === overlay) { if(overlay.parentNode) document.body.removeChild(overlay); } };
-
-  document.body.appendChild(overlay);
-}
-
-function descargarDocumento(driveFileId, nombreArchivo) {
-  if(!driveFileId) { showToast('Documento no disponible', 'error'); return; }
-  // URL de descarga directa de Drive
-  var url = 'https://drive.google.com/uc?export=download&id=' + driveFileId;
-  // Crear enlace temporal y forzar descarga
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = nombreArchivo || 'documento';
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  showToast('⬇ Iniciando descarga...', 'success');
-}
-
-// Obtiene el ID de Drive de un documento por su tipoKey
-function getDriveFileId(expId, tipoKey) {
-  for(var i=0;i<expedientes.length;i++) {
-    if(expedientes[i].id === expId) {
-      var df = expedientes[i].driveFiles;
-      if(df && df[tipoKey] && df[tipoKey].id) return df[tipoKey].id;
-      break;
-    }
-  }
-  return null;
-}
-
 function getFileUrl(expId, tipoKey) {
   // 1. Buscar en driveFiles del expediente (fuente principal)
   for(var i=0;i<expedientes.length;i++) {
@@ -1518,32 +1444,16 @@ function loadExpFromScript(){
     try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(ex){}
 
     GM_LAST_SYNC = Date.now();
-
-    // OPTIMIZACIÓN: solo re-renderizar si los datos cambiaron
-    // Firma ligera: id + etapa + última modificación de cada expediente
-    var firma = '';
-    for(var fi=0; fi<remote.length; fi++){
-      var ex = remote[fi];
-      firma += ex.id + ':' + ex.etapa + ':' + (ex.timestamp||'') + '|';
-    }
-    if(firma === GM_LAST_FIRMA){
-      console.log('Sin cambios — omitiendo re-render');
-      return;
-    }
-    GM_LAST_FIRMA = firma;
-
     var app = document.getElementById('app');
     if(app && app.style.display !== 'none'){
       if(isTecnico()) {
         renderVistaTecnico();
       } else {
+        renderPanel();
         var act = document.querySelector('.tab-content.active');
-        // Solo renderizar el tab activo (no todo)
-        if(act && act.id==='tab-panel') renderPanel();
-        else if(act && act.id==='tab-bandeja') renderBandeja();
-        else if(act && act.id==='tab-clientes') renderPanelClientes();
-        else if(act && act.id==='tab-expedientes') renderExpedientes();
-        else if(act && act.id==='tab-radar') renderRadar();
+        if(act && act.id==='tab-bandeja') renderBandeja();
+        if(act && act.id==='tab-clientes') renderPanelClientes();
+        if(act && act.id==='tab-expedientes') renderExpedientes();
       }
     }
     console.log('Exp cargados D1:', remote.length);
@@ -2956,15 +2866,10 @@ function renderDocHistorialRow(label, meta, fileUrl, downloadUrl) {
   var viewUrl = fileUrl;
   var dlUrl = downloadUrl || fileUrl;
   var btnHtml = '';
-  // Extraer el ID de Drive del viewUrl para usar el visor modal
-  var driveIdMatch = viewUrl ? viewUrl.match(/\/d\/([^\/]+)/) : null;
-  var driveId = driveIdMatch ? driveIdMatch[1] : null;
-  if(!driveId && viewUrl){ var m2 = viewUrl.match(/[?&]id=([^&]+)/); if(m2) driveId = m2[1]; }
-  if(driveId) {
-    var nombreEsc = (nombre||'').replace(/'/g,"\\'");
+  if(viewUrl) {
     btnHtml = '<div style="display:flex;gap:4px">' +
-      '<button onclick="abrirVisorDocumento(\'' + driveId + '\',\'' + nombreEsc + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#5C8CF5;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁 Ver</button>' +
-      '<button onclick="descargarDocumento(\'' + driveId + '\',\'' + nombreEsc + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#131313;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬇</button>' +
+      '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
+      '<a href="' + dlUrl + '" target="_blank" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#131313;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇</a>' +
       '</div>';
   } else {
     btnHtml = '<span style="font-size:11px;color:#9ca3af;font-style:italic">Pendiente de sincronizar</span>';
@@ -4038,9 +3943,7 @@ function renderEtapa1(cont, exp) {
   sec.appendChild(box);
   var isAdmin=CU&&CU.role==='admin';
   var isFise=CU&&CU.role==='asistente_fise';
-  // El vendedor puede avanzar SUS propios expedientes (o de su sede)
-  var esVendedorDelExp = CU && CU.role==='vendedor' && (exp.vendedorServicio===CU.nombre || exp.registradoPor===CU.nombre || exp.vendedorSede===CU.nombre || exp.sede===CU.sede);
-  if(isAdmin||isFise||esVendedorDelExp){
+  if(isAdmin||isFise){
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
     avBtn.textContent='Avanzar a Etapa 2 →';
@@ -5788,6 +5691,80 @@ function guardarOrdenEtapa5(expId) {
 
 
 // ── HELPERS DE CARDS ──
+
+// ═══════════════════════════════════════════════════════════
+// REEMPLAZAR ARCHIVO — Lógica B+C+E1
+// B: confirmación previa
+// C: solo responsable + admin + supervisor
+// E1: solo si el expediente aún está en la etapa del documento
+// ═══════════════════════════════════════════════════════════
+
+var ETAPA_POR_DOC = {'sf1': 1, 'scanfile1': 1, 'matriz': 2, 'declaracionJurada': 2, 'cronograma': 2, 'sf2': 3, 'scanfile2': 3, 'videoComp': 4, 'fotoCilindro1': 4, 'fotoCilindro2': 4, 'fotoReductor': 4, 'boletaInfo': 4, 'boletaVenta': 4, 'capturaPIT': 4, 'dniTecnico': 4, 'informeBono': 4};
+var ROLES_POR_DOC = {'sf1': ['admin', 'supervisor', 'vendedor'], 'scanfile1': ['admin', 'supervisor', 'vendedor'], 'matriz': ['admin', 'supervisor', 'asistente_fise'], 'declaracionJurada': ['admin', 'supervisor', 'asistente_fise'], 'cronograma': ['admin', 'supervisor', 'asistente_fise'], 'sf2': ['admin', 'supervisor', 'vendedor'], 'scanfile2': ['admin', 'supervisor', 'vendedor'], 'videoComp': ['admin', 'supervisor', 'vendedor'], 'fotoCilindro1': ['admin', 'supervisor', 'tecnico'], 'fotoCilindro2': ['admin', 'supervisor', 'tecnico'], 'fotoReductor': ['admin', 'supervisor', 'tecnico'], 'boletaInfo': ['admin', 'supervisor', 'asistente_fise'], 'boletaVenta': ['admin', 'supervisor', 'asistente_fise'], 'capturaPIT': ['admin', 'supervisor', 'asistente_fise'], 'dniTecnico': ['admin', 'supervisor', 'asistente_fise'], 'informeBono': ['admin', 'supervisor', 'asistente_fise']};
+
+function puedeReemplazar(tipoKey, exp) {
+  if(!CU || !exp) return false;
+  var etapaDoc = ETAPA_POR_DOC[tipoKey];
+  var rolesOk  = ROLES_POR_DOC[tipoKey] || ['admin','supervisor'];
+
+  // E1: el expediente debe estar en la etapa del documento o anterior
+  if(etapaDoc && exp.etapa > etapaDoc) return false;
+
+  // C: el usuario debe ser del rol permitido
+  var roleOk = false;
+  for(var r=0; r<rolesOk.length; r++){
+    if(CU.role === rolesOk[r]) { roleOk = true; break; }
+  }
+  if(!roleOk) return false;
+
+  // C extra: técnicos solo pueden reemplazar SUS documentos
+  if(CU.role === 'tecnico') {
+    if(tipoKey === 'fotoCilindro1' || tipoKey === 'fotoCilindro2') {
+      return exp.tecnicoTanque === CU.nombre;
+    }
+    if(tipoKey === 'fotoReductor') {
+      return exp.tecnicoDelantera === CU.nombre;
+    }
+    return false;
+  }
+
+  // C extra: vendedor solo puede reemplazar en su sede o sus expedientes
+  if(CU.role === 'vendedor') {
+    return exp.vendedorServicio === CU.nombre ||
+           exp.registradoPor    === CU.nombre ||
+           exp.vendedorSede     === CU.nombre ||
+           exp.sede             === CU.sede;
+  }
+
+  return true;
+}
+
+function confirmarReemplazo(tipoKey, expId, storePrefix, acceptFmt) {
+  if(!confirm('¿Deseas reemplazar este archivo?\nEl archivo anterior será sustituido por el nuevo.\nEsta acción no se puede deshacer.')) return;
+  // Abrir selector de archivo
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = acceptFmt || '*/*';
+  inp.onchange = function() {
+    var file = inp.files[0];
+    if(!file) return;
+    showToast('⏳ Subiendo archivo de reemplazo...', 'info');
+    storeFile(expId, tipoKey, file, function(url, nombre) {
+      grabarArchivoEnExp(expId, tipoKey, nombre, storePrefix, true);
+      showToast('✅ Archivo reemplazado por ' + (CU ? CU.nombre : '?'), 'success');
+      // Refrescar el modal
+      setTimeout(function(){
+        var exp = null;
+        for(var i=0;i<expedientes.length;i++){
+          if(expedientes[i].id===expId){ exp=expedientes[i]; break; }
+        }
+        if(exp) abrirExpediente(expId);
+      }, 600);
+    });
+  };
+  inp.click();
+}
+
 function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, acceptFmt) {
   var card=document.createElement('div');card.className='doc-box'+(meta&&meta.completado?' done':'');card.style.marginTop='10px';
   // Resolver expediente para responsable
@@ -5797,35 +5774,53 @@ function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, accept
   card.innerHTML='<div class="doc-box-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>'+(meta&&meta.completado?'&#10003; ':'')+label+'</span>'+badgeResp+'</div>';
   if(meta&&meta.completado){
     var fileUrl=getFileUrl(expId,tipoKey);
-    var doneRow=document.createElement('div');doneRow.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:10px 14px;margin-top:8px;gap:10px';
+    // Buscar expediente para puedeReemplazar
+    var expRef=null;
+    for(var px=0;px<expedientes.length;px++){if(expedientes[px].id===expId){expRef=expedientes[px];break;}}
+    var doneRow=document.createElement('div');doneRow.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:10px 14px;margin-top:8px;gap:10px;flex-wrap:wrap';
     var dLeft=document.createElement('div');
-    dLeft.innerHTML='<div style="font-size:12px;font-weight:600;color:#065f46">&#128206; '+meta.nombre+'</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">Subido por: <strong>'+meta.subidoPor+'</strong> — '+meta.fecha+' '+meta.hora+'</div>';
+    // Trazabilidad discreta: nombre + fecha + hora en fuente pequeña
+    var reemplazadoInfo = meta.reemplazadoPor ?
+      '<div style="font-size:10px;color:#a8a8a8;margin-top:3px">🔄 Reemplazado por <strong>'+meta.reemplazadoPor+'</strong> — '+meta.fechaReemplazo+' '+meta.horaReemplazo+'</div>' : '';
+    dLeft.innerHTML='<div style="font-size:12px;font-weight:600;color:#065f46">&#128206; '+meta.nombre+'</div>'+
+      '<div style="font-size:10px;color:#6b82a0;margin-top:2px">📤 <strong>'+meta.subidoPor+'</strong> · '+(meta.fecha||'')+' '+(meta.hora||'')+'</div>'+
+      reemplazadoInfo;
     doneRow.appendChild(dLeft);
     var driveId = getDriveFileId(expId, tipoKey);
-    var btnGroup = document.createElement('div');
-    btnGroup.style.cssText = 'display:flex;gap:6px;flex-shrink:0';
+    var btnGrp = document.createElement('div');
+    btnGrp.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;flex-shrink:0';
     if(driveId){
-      var verBtn=document.createElement('button');
-      verBtn.className='btn btn-sm';
-      verBtn.style.cssText='background:#5C8CF5;color:white;white-space:nowrap';
-      verBtn.innerHTML='&#128065; Ver';
-      verBtn.onclick=(function(did,nom){return function(){abrirVisorDocumento(did,nom);};})(driveId,meta.nombre);
-      btnGroup.appendChild(verBtn);
-
-      var dlBtn=document.createElement('button');
-      dlBtn.className='btn btn-teal btn-sm';
-      dlBtn.style.cssText='white-space:nowrap';
-      dlBtn.innerHTML='&#11015; Descargar';
-      dlBtn.onclick=(function(did,nom){return function(){descargarDocumento(did,nom);};})(driveId,meta.nombre);
-      btnGroup.appendChild(dlBtn);
+      // Botón Ver (modal)
+      var vBtn=document.createElement('button');
+      vBtn.className='btn btn-sm';
+      vBtn.style.cssText='background:#5C8CF5;color:white;white-space:nowrap';
+      vBtn.innerHTML='&#128065; Ver';
+      vBtn.onclick=(function(did,nom){return function(){abrirVisorDocumento(did,nom);};})(driveId,meta.nombre);
+      btnGrp.appendChild(vBtn);
+      // Botón Descargar (directo)
+      var dBtn=document.createElement('button');
+      dBtn.className='btn btn-teal btn-sm';
+      dBtn.style.cssText='white-space:nowrap';
+      dBtn.innerHTML='&#11015; Descargar';
+      dBtn.onclick=(function(did,nom){return function(){descargarDocumento(did,nom);};})(driveId,meta.nombre);
+      btnGrp.appendChild(dBtn);
+      // Botón Reemplazar (B+C+E1)
+      if(expRef && puedeReemplazar(tipoKey, expRef)){
+        var rBtn=document.createElement('button');
+        rBtn.className='btn btn-sm';
+        rBtn.style.cssText='background:#F0F0F0;color:#374151;border:1px solid #D9D9D9;white-space:nowrap;font-size:11px';
+        rBtn.innerHTML='&#128260; Reemplazar';
+        rBtn.onclick=(function(tk,eid,sp,af){return function(){confirmarReemplazo(tk,eid,sp,af);};})(tipoKey,expId,storePrefix,acceptFmt||'*/*');
+        btnGrp.appendChild(rBtn);
+      }
     } else {
-      var reBtn=document.createElement('span');
-      reBtn.className='btn btn-sm';
-      reBtn.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';
-      reBtn.textContent='Re-subir';
-      btnGroup.appendChild(reBtn);
+      var noBtn=document.createElement('span');
+      noBtn.className='btn btn-sm';
+      noBtn.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;font-size:11px';
+      noBtn.textContent='Sin archivo';
+      btnGrp.appendChild(noBtn);
     }
-    doneRow.appendChild(btnGroup);card.appendChild(doneRow);
+    doneRow.appendChild(btnGrp);card.appendChild(doneRow);
   } else if(puedeSub){
     var instrDiv=document.createElement('div');instrDiv.style.cssText='font-size:12px;color:#6b82a0;margin-bottom:10px';instrDiv.textContent='Haz clic o arrastra para adjuntar archivo';
     card.appendChild(instrDiv);
@@ -7523,24 +7518,17 @@ function mostrarBtnSync() {
 // ═══════════════════════════════════════════════════════
 var GM_POLLING_INTERVAL = null;
 var GM_LAST_SYNC = 0;
-var GM_LAST_FIRMA = '';
 
 function iniciarPolling() {
   if(GM_POLLING_INTERVAL) clearInterval(GM_POLLING_INTERVAL);
   // Primera carga inmediata
   loadExpFromScript();
-  // Luego cada 45 segundos (reducir carga del servidor)
+  // Luego cada 30 segundos
   GM_POLLING_INTERVAL = setInterval(function() {
     if(!CU) { detenerPolling(); return; }
-    // Pausar polling si hay un modal de expediente abierto (evita recargas pesadas)
-    var modal = document.getElementById('expModal');
-    if(modal && modal.style.display !== 'none' && modal.style.display !== '') {
-      console.log('Modal abierto — polling en pausa');
-      return;
-    }
     loadExpFromScript();
-  }, 45000);
-  console.log('Polling iniciado — actualización cada 45s');
+  }, 15000);
+  console.log('Polling iniciado — actualización cada 30s');
 }
 
 function detenerPolling() {
