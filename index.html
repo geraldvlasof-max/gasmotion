@@ -1299,6 +1299,80 @@ function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha,
   });
 }
 function getFileMeta(expId, tipoKey) { return FILE_STORE[expId + '_' + tipoKey] || null; }
+
+// ═══════════════════════════════════════════════════════════
+// VISOR DE DOCUMENTOS EN MODAL + DESCARGA DIRECTA
+// ═══════════════════════════════════════════════════════════
+
+function abrirVisorDocumento(driveFileId, nombreArchivo) {
+  if(!driveFileId) { showToast('Documento no disponible', 'error'); return; }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'visorDocOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;padding:0';
+
+  // Barra superior
+  var barra = document.createElement('div');
+  barra.style.cssText = 'background:#131313;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-shrink:0';
+  barra.innerHTML =
+    '<span style="color:white;font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📄 ' + (nombreArchivo||'Documento') + '</span>';
+
+  // Botón descargar
+  var btnDl = document.createElement('button');
+  btnDl.style.cssText = 'background:#FFC165;color:#131313;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap';
+  btnDl.innerHTML = '⬇ Descargar';
+  btnDl.onclick = function(){ descargarDocumento(driveFileId, nombreArchivo); };
+  barra.appendChild(btnDl);
+
+  // Botón cerrar
+  var btnX = document.createElement('button');
+  btnX.style.cssText = 'background:rgba(255,255,255,0.15);color:white;border:none;border-radius:8px;padding:8px 14px;font-size:16px;font-weight:700;cursor:pointer;line-height:1';
+  btnX.innerHTML = '✕';
+  btnX.onclick = function(){ if(overlay.parentNode) document.body.removeChild(overlay); };
+  barra.appendChild(btnX);
+
+  overlay.appendChild(barra);
+
+  // Iframe con el visor de Drive (preview)
+  var iframe = document.createElement('iframe');
+  iframe.src = 'https://drive.google.com/file/d/' + driveFileId + '/preview';
+  iframe.style.cssText = 'flex:1;width:100%;border:none;background:#525659';
+  iframe.setAttribute('allow', 'autoplay');
+  overlay.appendChild(iframe);
+
+  // Cerrar al hacer clic en el fondo oscuro (la barra y el iframe no propagan)
+  overlay.onclick = function(e){ if(e.target === overlay) { if(overlay.parentNode) document.body.removeChild(overlay); } };
+
+  document.body.appendChild(overlay);
+}
+
+function descargarDocumento(driveFileId, nombreArchivo) {
+  if(!driveFileId) { showToast('Documento no disponible', 'error'); return; }
+  // URL de descarga directa de Drive
+  var url = 'https://drive.google.com/uc?export=download&id=' + driveFileId;
+  // Crear enlace temporal y forzar descarga
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = nombreArchivo || 'documento';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('⬇ Iniciando descarga...', 'success');
+}
+
+// Obtiene el ID de Drive de un documento por su tipoKey
+function getDriveFileId(expId, tipoKey) {
+  for(var i=0;i<expedientes.length;i++) {
+    if(expedientes[i].id === expId) {
+      var df = expedientes[i].driveFiles;
+      if(df && df[tipoKey] && df[tipoKey].id) return df[tipoKey].id;
+      break;
+    }
+  }
+  return null;
+}
+
 function getFileUrl(expId, tipoKey) {
   // 1. Buscar en driveFiles del expediente (fuente principal)
   for(var i=0;i<expedientes.length;i++) {
@@ -1444,16 +1518,32 @@ function loadExpFromScript(){
     try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(ex){}
 
     GM_LAST_SYNC = Date.now();
+
+    // OPTIMIZACIÓN: solo re-renderizar si los datos cambiaron
+    // Firma ligera: id + etapa + última modificación de cada expediente
+    var firma = '';
+    for(var fi=0; fi<remote.length; fi++){
+      var ex = remote[fi];
+      firma += ex.id + ':' + ex.etapa + ':' + (ex.timestamp||'') + '|';
+    }
+    if(firma === GM_LAST_FIRMA){
+      console.log('Sin cambios — omitiendo re-render');
+      return;
+    }
+    GM_LAST_FIRMA = firma;
+
     var app = document.getElementById('app');
     if(app && app.style.display !== 'none'){
       if(isTecnico()) {
         renderVistaTecnico();
       } else {
-        renderPanel();
         var act = document.querySelector('.tab-content.active');
-        if(act && act.id==='tab-bandeja') renderBandeja();
-        if(act && act.id==='tab-clientes') renderPanelClientes();
-        if(act && act.id==='tab-expedientes') renderExpedientes();
+        // Solo renderizar el tab activo (no todo)
+        if(act && act.id==='tab-panel') renderPanel();
+        else if(act && act.id==='tab-bandeja') renderBandeja();
+        else if(act && act.id==='tab-clientes') renderPanelClientes();
+        else if(act && act.id==='tab-expedientes') renderExpedientes();
+        else if(act && act.id==='tab-radar') renderRadar();
       }
     }
     console.log('Exp cargados D1:', remote.length);
@@ -2866,10 +2956,15 @@ function renderDocHistorialRow(label, meta, fileUrl, downloadUrl) {
   var viewUrl = fileUrl;
   var dlUrl = downloadUrl || fileUrl;
   var btnHtml = '';
-  if(viewUrl) {
+  // Extraer el ID de Drive del viewUrl para usar el visor modal
+  var driveIdMatch = viewUrl ? viewUrl.match(/\/d\/([^\/]+)/) : null;
+  var driveId = driveIdMatch ? driveIdMatch[1] : null;
+  if(!driveId && viewUrl){ var m2 = viewUrl.match(/[?&]id=([^&]+)/); if(m2) driveId = m2[1]; }
+  if(driveId) {
+    var nombreEsc = (nombre||'').replace(/'/g,"\\'");
     btnHtml = '<div style="display:flex;gap:4px">' +
-      '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
-      '<a href="' + dlUrl + '" target="_blank" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#131313;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇</a>' +
+      '<button onclick="abrirVisorDocumento(\'' + driveId + '\',\'' + nombreEsc + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#5C8CF5;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁 Ver</button>' +
+      '<button onclick="descargarDocumento(\'' + driveId + '\',\'' + nombreEsc + '\')" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#131313;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">⬇</button>' +
       '</div>';
   } else {
     btnHtml = '<span style="font-size:11px;color:#9ca3af;font-style:italic">Pendiente de sincronizar</span>';
@@ -3943,7 +4038,9 @@ function renderEtapa1(cont, exp) {
   sec.appendChild(box);
   var isAdmin=CU&&CU.role==='admin';
   var isFise=CU&&CU.role==='asistente_fise';
-  if(isAdmin||isFise){
+  // El vendedor puede avanzar SUS propios expedientes (o de su sede)
+  var esVendedorDelExp = CU && CU.role==='vendedor' && (exp.vendedorServicio===CU.nombre || exp.registradoPor===CU.nombre || exp.vendedorSede===CU.nombre || exp.sede===CU.sede);
+  if(isAdmin||isFise||esVendedorDelExp){
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
     avBtn.textContent='Avanzar a Etapa 2 →';
@@ -5704,10 +5801,31 @@ function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, accept
     var dLeft=document.createElement('div');
     dLeft.innerHTML='<div style="font-size:12px;font-weight:600;color:#065f46">&#128206; '+meta.nombre+'</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">Subido por: <strong>'+meta.subidoPor+'</strong> — '+meta.fecha+' '+meta.hora+'</div>';
     doneRow.appendChild(dLeft);
-    var dlA=document.createElement('a');
-    if(fileUrl){dlA.href=fileUrl;dlA.download=meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='&#11015; Descargar';}
-    else{dlA.className='btn btn-sm';dlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA.textContent='Re-subir';}
-    doneRow.appendChild(dlA);card.appendChild(doneRow);
+    var driveId = getDriveFileId(expId, tipoKey);
+    var btnGroup = document.createElement('div');
+    btnGroup.style.cssText = 'display:flex;gap:6px;flex-shrink:0';
+    if(driveId){
+      var verBtn=document.createElement('button');
+      verBtn.className='btn btn-sm';
+      verBtn.style.cssText='background:#5C8CF5;color:white;white-space:nowrap';
+      verBtn.innerHTML='&#128065; Ver';
+      verBtn.onclick=(function(did,nom){return function(){abrirVisorDocumento(did,nom);};})(driveId,meta.nombre);
+      btnGroup.appendChild(verBtn);
+
+      var dlBtn=document.createElement('button');
+      dlBtn.className='btn btn-teal btn-sm';
+      dlBtn.style.cssText='white-space:nowrap';
+      dlBtn.innerHTML='&#11015; Descargar';
+      dlBtn.onclick=(function(did,nom){return function(){descargarDocumento(did,nom);};})(driveId,meta.nombre);
+      btnGroup.appendChild(dlBtn);
+    } else {
+      var reBtn=document.createElement('span');
+      reBtn.className='btn btn-sm';
+      reBtn.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';
+      reBtn.textContent='Re-subir';
+      btnGroup.appendChild(reBtn);
+    }
+    doneRow.appendChild(btnGroup);card.appendChild(doneRow);
   } else if(puedeSub){
     var instrDiv=document.createElement('div');instrDiv.style.cssText='font-size:12px;color:#6b82a0;margin-bottom:10px';instrDiv.textContent='Haz clic o arrastra para adjuntar archivo';
     card.appendChild(instrDiv);
@@ -7405,17 +7523,24 @@ function mostrarBtnSync() {
 // ═══════════════════════════════════════════════════════
 var GM_POLLING_INTERVAL = null;
 var GM_LAST_SYNC = 0;
+var GM_LAST_FIRMA = '';
 
 function iniciarPolling() {
   if(GM_POLLING_INTERVAL) clearInterval(GM_POLLING_INTERVAL);
   // Primera carga inmediata
   loadExpFromScript();
-  // Luego cada 30 segundos
+  // Luego cada 45 segundos (reducir carga del servidor)
   GM_POLLING_INTERVAL = setInterval(function() {
     if(!CU) { detenerPolling(); return; }
+    // Pausar polling si hay un modal de expediente abierto (evita recargas pesadas)
+    var modal = document.getElementById('expModal');
+    if(modal && modal.style.display !== 'none' && modal.style.display !== '') {
+      console.log('Modal abierto — polling en pausa');
+      return;
+    }
     loadExpFromScript();
-  }, 15000);
-  console.log('Polling iniciado — actualización cada 30s');
+  }, 45000);
+  console.log('Polling iniciado — actualización cada 45s');
 }
 
 function detenerPolling() {
