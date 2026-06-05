@@ -1661,6 +1661,21 @@ function normStr(s){
     .replace(/[úùüû]/g,'u').replace(/ñ/g,'n')
     .replace(/[^a-z0-9_. -]/g,'').trim();
 }
+
+// Mostrar/ocultar contraseña en el login
+function togglePassVis() {
+  var inp = document.getElementById('loginPass');
+  var icon = document.getElementById('eyeIcon');
+  if(!inp) return;
+  if(inp.type === 'password') {
+    inp.type = 'text';
+    if(icon) icon.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if(icon) icon.textContent = '👁';
+  }
+}
+
 function doLogin() {
   if(_loginBlocked){
     setLoginError('⏳ Cuenta bloqueada temporalmente. Espera 2 minutos.');
@@ -2386,6 +2401,71 @@ function renderGestionUsuarios() {
     })(u2id);
   }
   document.getElementById('btnCrearUser').onclick = function(){ crearNuevoUsuario(); };
+}
+
+
+// Editar nombre y correo de un usuario
+
+function actualizarSidebarUsuario() {
+  if(!CU) return;
+  var nameEl = document.getElementById('sidebarName');
+  var avatarEl = document.getElementById('sidebarAvatar');
+  if(nameEl) nameEl.textContent = CU.nombre;
+  if(avatarEl) avatarEl.textContent = CU.nombre.charAt(0).toUpperCase();
+}
+function editarUsuario(uid) {
+  var users = getUsers();
+  var u = users[uid];
+  if(!u) return;
+
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:28px;max-width:400px;width:100%">' +
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">✏️ Editar usuario</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:20px">@' + uid + '</div>' +
+    '<div id="editUserMsg" style="font-size:12px;margin-bottom:12px"></div>' +
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Nombre completo</label>' +
+    '<input type="text" id="euNombre" value="' + (u.nombre||'').replace(/"/g,'&quot;') + '" style="width:100%;border:2px solid #D9D9D9;border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:14px">' +
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Correo electrónico</label>' +
+    '<input type="email" id="euCorreo" value="' + (u.correo||'').replace(/"/g,'&quot;') + '" placeholder="correo@ejemplo.com" style="width:100%;border:2px solid #D9D9D9;border-radius:8px;padding:10px;font-size:14px;box-sizing:border-box;margin-bottom:16px">' +
+    '<div style="display:flex;gap:8px">' +
+    '<button id="euGuardar" style="flex:1;padding:12px;background:#131313;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Guardar cambios</button>' +
+    '<button id="euCancel" style="flex:1;padding:12px;background:#F0F0F0;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Cancelar</button>' +
+    '</div></div>';
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('euCancel').onclick = function(){ document.body.removeChild(overlay); };
+  document.getElementById('euGuardar').onclick = function() {
+    var nombre = document.getElementById('euNombre').value.trim();
+    var correo = document.getElementById('euCorreo').value.trim();
+    var msgEl = document.getElementById('editUserMsg');
+
+    if(!nombre) { msgEl.style.color='#dc2626'; msgEl.textContent='El nombre no puede estar vacío.'; return; }
+    if(correo && correo.indexOf('@') === -1) { msgEl.style.color='#dc2626'; msgEl.textContent='El correo no es válido.'; return; }
+
+    var users = getUsers();
+    if(users[uid]) {
+      users[uid].nombre = nombre;
+      users[uid].correo = correo;
+      saveUsers(users);
+      // Si es el usuario actual, actualizar sesión
+      if(CU && CU.id === uid) {
+        CU.nombre = nombre;
+        CU.correo = correo;
+        try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
+        actualizarSidebarUsuario();
+      }
+      msgEl.style.color = '#16a34a';
+      msgEl.textContent = '✅ Usuario actualizado.';
+      setTimeout(function(){
+        if(overlay.parentNode) document.body.removeChild(overlay);
+        renderUsuarios();
+        poblarUserSelects();
+      }, 1000);
+    }
+  };
 }
 
 function resetPassUsuario(uid) {
@@ -5732,11 +5812,13 @@ function renderUsuarios() {
     if(u.role==='tecnico'&&u.especialidad)meta+=' | '+u.especialidad;
 
     // Login box — cómo ingresar
+    var correoTxt = u.correo ? u.correo : '(sin correo registrado)';
     var loginInfo='<div style="margin-top:8px;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:8px;padding:8px 10px">'+
       '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">📱 Cómo ingresar a la app:</div>'+
       '<div style="font-size:12px;color:#131313"><strong>Usuario:</strong> '+u.nombre+'</div>'+
+      '<div style="font-size:12px;color:#131313;margin-top:2px"><strong>Correo:</strong> '+correoTxt+'</div>'+
       '<div style="font-size:12px;color:#131313;margin-top:2px"><strong>Contraseña:</strong> ••••••</div>'+
-      '<div style="font-size:10px;color:#a8a8a8;margin-top:4px">Escribe exactamente el nombre como aparece arriba</div>'+
+      '<div style="font-size:10px;color:#a8a8a8;margin-top:4px">Puede ingresar con su nombre o su correo</div>'+
       '</div>';
 
     card.innerHTML=
@@ -5752,6 +5834,12 @@ function renderUsuarios() {
     // Botones
     var btns=document.createElement('div');
     btns.style.cssText='display:flex;flex-direction:column;gap:6px;flex-shrink:0';
+
+    var eb=document.createElement('button');
+    eb.style.cssText='background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
+    eb.textContent='✏️ Editar';
+    eb.onclick=(function(uid){return function(){editarUsuario(uid);};})(id);
+    btns.appendChild(eb);
 
     var cb=document.createElement('button');
     cb.style.cssText='background:#F0F0F0;color:#475569;border:1px solid #D9D9D9;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
