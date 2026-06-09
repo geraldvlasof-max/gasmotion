@@ -1,12 +1,9 @@
-// Gasmotion Service Worker v4.0 — Network First, No API Cache
-
-const CACHE_NAME = 'gasmotion-v40';
+// Gasmotion Service Worker v4.1 — Network First, No API Cache
+const CACHE_NAME = 'gasmotion-v41';
 const WORKER_DOMAIN = 'gasmotion-sync.geraldvlasof.workers.dev';
-
 self.addEventListener('install', function(e) {
   self.skipWaiting(); // Activar inmediatamente sin esperar
 });
-
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
@@ -19,7 +16,6 @@ self.addEventListener('activate', function(e) {
     })
   );
 });
-
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
   
