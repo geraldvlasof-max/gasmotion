@@ -1,8 +1,8 @@
-// Gasmotion Service Worker v4.1 — Network First, No API Cache
-const CACHE_NAME = 'gasmotion-v41';
+// Gasmotion Service Worker v4.2 — Network First, No API Cache
+const CACHE_NAME = 'gasmotion-v42';
 const WORKER_DOMAIN = 'gasmotion-sync.geraldvlasof.workers.dev';
 self.addEventListener('install', function(e) {
-  self.skipWaiting(); // Activar inmediatamente sin esperar
+  self.skipWaiting();
 });
 self.addEventListener('activate', function(e) {
   e.waitUntil(
@@ -12,20 +12,16 @@ self.addEventListener('activate', function(e) {
             .map(function(k) { return caches.delete(k); })
       );
     }).then(function() {
-      return self.clients.claim(); // Tomar control inmediato de todos los tabs
+      return self.clients.claim();
     })
   );
 });
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
-  
-  // NUNCA cachear el Worker de Cloudflare
   if(url.indexOf(WORKER_DOMAIN) !== -1) {
     e.respondWith(fetch(e.request, {cache: 'no-store'}));
     return;
   }
-  
-  // Para todo lo demás: red primero, caché como fallback offline
   if(e.request.method === 'GET') {
     e.respondWith(
       fetch(e.request, {cache: 'no-cache'})
