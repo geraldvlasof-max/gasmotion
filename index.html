@@ -1020,18 +1020,13 @@ function verificarCodigo(uid, codigoIngresado) {
 }
 
 function getUsers() {
-  // Leer del localStorage primero (fuente de verdad para usuarios)
+  // localStorage es la fuente de verdad local (ya sincronizado con el servidor)
   try {
     var saved = JSON.parse(localStorage.getItem('gm_users')||'null');
     if(saved && typeof saved === 'object' && Object.keys(saved).length > 0) {
       if(!saved['iki']) saved['iki'] = DEFAULT_USERS['iki'];
-      // Asegurar correo de Iki para recuperación
       if(saved['iki'] && !saved['iki'].correo) saved['iki'].correo = 'geraldvlasof@gmail.com';
-      // Si USERS_CACHE tiene más usuarios que localStorage (saveUsers falló),
-      // priorizar USERS_CACHE
-      if(USERS_CACHE && Object.keys(USERS_CACHE).length > Object.keys(saved).length) {
-        return USERS_CACHE;
-      }
+      // localStorage y caché SIEMPRE sincronizados — no priorizar caché viejo
       USERS_CACHE = saved;
       return USERS_CACHE;
     }
@@ -1040,7 +1035,6 @@ function getUsers() {
   if(USERS_CACHE && Object.keys(USERS_CACHE).length > 0) {
     return USERS_CACHE;
   }
-  // Último fallback: DEFAULT_USERS
   var base = JSON.parse(JSON.stringify(DEFAULT_USERS));
   USERS_CACHE = base;
   return USERS_CACHE;
@@ -2653,29 +2647,28 @@ function mostrarCambiarMiPassword() {
 function eliminarUsuario(uid) {
   if(uid === 'iki') { showToast('No se puede eliminar al administrador principal', 'error'); return; }
   if(!confirm('¿Eliminar al usuario @' + uid + '? Esta acción no se puede deshacer.')) return;
-  var users = getUsers();
-  delete users[uid];
-  // Guardar en localStorage SIN fusionar con DEFAULT_USERS
-  USERS_CACHE = users;
-  try { localStorage.setItem('gm_users', JSON.stringify(users)); } catch(e){}
-  // Guardar en D1 — enviar deletedUser para que el merge lo elimine
-  if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({deletedUser: uid})
-    })
-    .then(function(r){ return r.json(); })
-    .then(function(){
+  if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
+
+  // Eliminar en el servidor — la respuesta del servidor es la fuente de verdad
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
+    body: JSON.stringify({deletedUser: uid})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok && d.users) {
+      // Reemplazar caché y localStorage con la lista LIMPIA del servidor
+      USERS_CACHE = d.users;
+      try { localStorage.setItem('gm_users', JSON.stringify(d.users)); } catch(e){}
       showToast('Usuario @' + uid + ' eliminado', 'success');
       if(typeof renderGestionUsuarios==='function') renderGestionUsuarios();
       if(typeof renderUsuarios==='function') renderUsuarios();
-    })
-    .catch(function(){ showToast('Error eliminando usuario', 'error'); });
-  } else {
-    showToast('Usuario @' + uid + ' eliminado', 'success');
-    if(typeof renderGestionUsuarios==='function') renderGestionUsuarios();
-    if(typeof renderUsuarios==='function') renderUsuarios();
-  }
+      if(typeof poblarUserSelects==='function') poblarUserSelects();
+    } else {
+      showToast('Error eliminando usuario', 'error');
+    }
+  })
+  .catch(function(){ showToast('Error de conexión al eliminar', 'error'); });
 }
 
 function crearNuevoUsuario() {
