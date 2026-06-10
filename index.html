@@ -1896,6 +1896,13 @@ function editarNombreAdmin() {
 
 (function(){
   buildLoginSelect();
+  // Descargar usuarios del servidor D1 al arrancar (sincroniza todos los dispositivos)
+  if(GM_CONFIG.workerUrl) {
+    loadUsersFromSheets(function(){
+      buildLoginSelect(); // Refrescar el select con los usuarios del servidor
+      if(typeof poblarUserSelects==='function') poblarUserSelects();
+    });
+  }
   var s=sessionStorage.getItem('gm_session');
   if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();}catch(e){}}
 })();
@@ -2651,18 +2658,23 @@ function eliminarUsuario(uid) {
   // Guardar en localStorage SIN fusionar con DEFAULT_USERS
   USERS_CACHE = users;
   try { localStorage.setItem('gm_users', JSON.stringify(users)); } catch(e){}
-  // Guardar en D1
+  // Guardar en D1 — enviar deletedUser para que el merge lo elimine
   if(GM_CONFIG.workerUrl) {
     fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({users: users})
+      body: JSON.stringify({deletedUser: uid})
     })
     .then(function(r){ return r.json(); })
-    .then(function(){ showToast('Usuario @' + uid + ' eliminado', 'success'); renderGestionUsuarios(); })
+    .then(function(){
+      showToast('Usuario @' + uid + ' eliminado', 'success');
+      if(typeof renderGestionUsuarios==='function') renderGestionUsuarios();
+      if(typeof renderUsuarios==='function') renderUsuarios();
+    })
     .catch(function(){ showToast('Error eliminando usuario', 'error'); });
   } else {
     showToast('Usuario @' + uid + ' eliminado', 'success');
-    renderGestionUsuarios();
+    if(typeof renderGestionUsuarios==='function') renderGestionUsuarios();
+    if(typeof renderUsuarios==='function') renderUsuarios();
   }
 }
 
@@ -7210,6 +7222,12 @@ function mostrarApp(){
   hideEl('loginScreen');
   document.getElementById('app').style.display='block';
   actualizarSidebarUser();
+  // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
+  if(GM_CONFIG.workerUrl) {
+    loadUsersFromSheets(function(){
+      if(typeof poblarUserSelects==='function') poblarUserSelects();
+    });
+  }
   var isAdm=isAdmin(),isFis=isFise(),isTec=isTecnico();
   var isVend=CU.role==='vendedor'||CU.role==='jefe';
   document.getElementById('navUsuarios').style.display=isAdm?'':'none';
