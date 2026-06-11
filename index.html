@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.3.0';
+    var GM_VERSION = '3.4.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -726,7 +726,7 @@ input,select,textarea{font-size:16px!important}
 function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
   if(!GM_CONFIG.workerUrl || !dataUrl) return;
   console.log('Subiendo foto a Drive:', fotoKey, 'exp:', expId);
-  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -948,7 +948,8 @@ var GM_CONFIG={
   apiKey:        'AIzaSyBqV-R1W6TMXuwBcRwsbWR43rhBSlfcD1E',
   driveFolder:   '190IfSEViIZvn_78nIreo9M3u-o9qljyf',
   sheetsId:      '1rjDfZjdqWBbkclHPJJIY3v2Zg9wOE0iE8DPLzy34dYg',
-  workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev'
+  workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev',
+  gmKey:         'gmk_369420912baf970a5c8f1dab6742674eb8bd94e8a6c4d37e'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
@@ -1002,7 +1003,7 @@ function enviarCodigoVerificacion(uid, correoDestino, callback) {
 
   if(!GM_CONFIG.workerUrl) { callback(false, 'Sin conexión al servidor'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1099,7 +1100,7 @@ function saveUsers(u) {
   }
   // Subir al servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: u})
@@ -1111,7 +1112,7 @@ function saveUsers(u) {
 }
 
 function loadUsersFromSheets(callback) {
-  var url = GM_CONFIG.workerUrl + '?action=getUsers';
+  var url = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers';
   fetch(url)
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -1148,7 +1149,7 @@ function syncUsersToSheets(users, callback) {
   var usersObj = users || getUsers();
   USERS_CACHE = usersObj;
   try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({action:'saveUsers', users:usersObj})
@@ -1169,7 +1170,7 @@ function forzarSyncUsuarios() {
   var total = Object.keys(users).length;
   showToast('Subiendo ' + total + ' usuarios al servidor...', 'info');
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1275,7 +1276,7 @@ function storeFile(expId, tipoKey, file, callback) {
 function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha, hora) {
   if(!GM_CONFIG.workerUrl) return;
   showToast('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Subiendo ' + nombre + ' a Drive...', 'info');
-  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -1420,7 +1421,7 @@ function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
   if(PENDING_SYNC) { console.log('Sync pendiente — omitiendo polling'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=getExp', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getExp', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(data){
     var remote = data.expedientes || [];
@@ -1482,7 +1483,7 @@ function saveExp(){
   if(GM_SYNC && GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
     var exps = limpiarExpParaSync(expedientes);
-    fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -1524,7 +1525,7 @@ function syncSheets(){
 function syncExpUnoAUno(exps, idx) {
   if(idx >= exps.length){ GM_SYNCING=false; return; }
   var exp = exps[idx];
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveOneExp', data:exp})
@@ -1546,7 +1547,7 @@ function syncSheetsConFeedback(callback){
   // Para asignación de técnicos, solo guardar el expediente modificado
   // Usar POST con JSON (no GET con URL gigante)
   var expsLimpios = limpiarExpParaSync(expedientes);
-  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1691,6 +1692,61 @@ function togglePassVis() {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// SEGURIDAD: HASH DE CONTRASEÑAS SHA-256 (Web Crypto API)
+// Las contraseñas se guardan como hash irreversible de 64 hex.
+// Migración transparente: las passwords legacy en texto plano
+// se convierten a hash en el primer login exitoso.
+// ═══════════════════════════════════════════════════════════
+
+function sha256Hex(texto, callback) {
+  try {
+    var enc = new TextEncoder();
+    crypto.subtle.digest('SHA-256', enc.encode(texto)).then(function(buf){
+      var arr = new Uint8Array(buf);
+      var hex = '';
+      for(var i=0; i<arr.length; i++) {
+        var h = arr[i].toString(16);
+        if(h.length < 2) h = '0' + h;
+        hex += h;
+      }
+      callback(hex);
+    }).catch(function(){ callback(null); });
+  } catch(e) { callback(null); }
+}
+
+function esHashSHA256(s) {
+  return typeof s === 'string' && /^[a-f0-9]{64}$/.test(s);
+}
+
+// Verifica una contraseña escrita contra la almacenada (hash o texto plano legacy)
+// callback(ok, eraTextoPlano)
+function verificarPassword(escrita, almacenada, callback) {
+  if(esHashSHA256(almacenada)) {
+    sha256Hex(escrita, function(h){
+      callback(h !== null && h === almacenada, false);
+    });
+  } else {
+    var ok = (escrita === almacenada);
+    callback(ok, ok);
+  }
+}
+
+// Migra la contraseña de un usuario a hash (tras login exitoso con texto plano)
+function migrarPasswordAHash(uid, passPlano) {
+  sha256Hex(passPlano, function(h){
+    if(!h) return;
+    var users = getUsers();
+    if(users[uid] && !esHashSHA256(users[uid].pass)) {
+      users[uid].pass = h;
+      saveUsers(users);
+      if(CU && CU.id === uid) CU.pass = h;
+      console.log('Password migrada a hash: ' + uid);
+    }
+  });
+}
+
 function doLogin() {
   if(_loginBlocked){
     setLoginError('Cuenta bloqueada temporalmente. Espera 2 minutos.');
@@ -1709,27 +1765,30 @@ function doLogin() {
   var found = buscarUsuario(rawUid, localUsers);
 
   if(found) {
-    // Usuario encontrado localmente
-    if(found.user.pass !== pass) {
-      setLoginBtn('Ingresar al sistema', false);
-      _loginAttempts++;
-      if(_loginAttempts >= 5) {
-        _loginBlocked = true;
-        _loginBlockTimer = setTimeout(function(){_loginBlocked=false;_loginAttempts=0;}, 120000);
-        setLoginError('5 intentos fallidos. Cuenta bloqueada 2 minutos.');
-      } else {
-        setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+    // Usuario encontrado localmente — verificar password (hash o legacy)
+    verificarPassword(pass, found.user.pass, function(okPass, eraPlano){
+      if(!okPass) {
+        setLoginBtn('Ingresar al sistema', false);
+        _loginAttempts++;
+        if(_loginAttempts >= 5) {
+          _loginBlocked = true;
+          _loginBlockTimer = setTimeout(function(){_loginBlocked=false;_loginAttempts=0;}, 120000);
+          setLoginError('5 intentos fallidos. Cuenta bloqueada 2 minutos.');
+        } else {
+          setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+        }
+        return;
       }
-      return;
-    }
-    // Login OK local
-    completarLogin(found.id, found.user);
+      // Login OK local — migrar a hash si era texto plano
+      if(eraPlano) migrarPasswordAHash(found.id, pass);
+      completarLogin(found.id, found.user);
+    });
     return;
   }
 
   // Paso 2: no está local — buscar en servidor D1
   setLoginBtn('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Verificando...', true);
-  fetch(GM_CONFIG.workerUrl + '?action=getUsers', { cache: 'no-store' })
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers', { cache: 'no-store' })
   .then(function(r){ return r.json(); })
   .then(function(data){
     setLoginBtn('Ingresar al sistema', false);
@@ -1744,12 +1803,15 @@ function doLogin() {
         setLoginError('Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
         return;
       }
-      if(foundServer.user.pass !== pass) {
-        _loginAttempts++;
-        setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
-        return;
-      }
-      completarLogin(foundServer.id, foundServer.user);
+      verificarPassword(pass, foundServer.user.pass, function(okPass, eraPlano){
+        if(!okPass) {
+          _loginAttempts++;
+          setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+          return;
+        }
+        if(eraPlano) migrarPasswordAHash(foundServer.id, pass);
+        completarLogin(foundServer.id, foundServer.user);
+      });
       return;
     }
     _loginAttempts++;
@@ -1794,7 +1856,7 @@ function completarLogin(uid, u) {
   // Esto asegura que todos los dispositivos tengan los usuarios actualizados
   if(u.role === 'admin' && GM_CONFIG.workerUrl) {
     var localUsers = getUsers();
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: localUsers})
@@ -1842,19 +1904,21 @@ function guardarNuevaPassword(uid) {
   var strength = validarFortalezaPass(p1);
   if(!strength.ok) { errEl.textContent = 'La contraseña no cumple los requisitos mínimos.'; return; }
   if(p1 !== p2) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
-  // Actualizar usuario
+  // Actualizar usuario — guardar hasheada
   var users = getUsers();
-  if(users[uid]) {
-    users[uid].pass = p1;
+  if(!users[uid]) return;
+  sha256Hex(p1, function(hashP1){
+    if(!hashP1) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; return; }
+    users[uid].pass = hashP1;
     users[uid].mustChangePass = false;
     saveUsers(users);
     // Actualizar CU
-    CU.pass = p1;
+    CU.pass = hashP1;
     CU.mustChangePass = false;
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     // Subir al servidor
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
@@ -1862,7 +1926,7 @@ function guardarNuevaPassword(uid) {
     }
     showToast('Contraseña actualizada correctamente', 'success');
     mostrarApp(); setupInactivity();
-  }
+  });
 }
 
 function setLoginError(msg) {
@@ -2025,7 +2089,7 @@ function grabarSf1() {
     // Subir expediente nuevo al servidor directamente (saveOneExp es más rápido)
     if(GM_CONFIG.workerUrl) {
       var expLimpio = JSON.parse(JSON.stringify(exp));
-      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         cache: 'no-store',
@@ -2236,7 +2300,7 @@ function eliminarExp(id) {
 
   // 4. Eliminar del servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=deleteExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -2335,14 +2399,16 @@ function verificarCodigoRecuperacion() {
   var resultado = verificarCodigo(uid, codigo);
   if(!resultado.ok) { errEl.textContent = resultado.error; return; }
 
-  // Código válido — cambiar contraseña
+  // Código válido — cambiar contraseña (hasheada)
   var users = getUsers();
-  if(users[uid]) {
-    users[uid].pass = newPass;
+  if(!users[uid]) return;
+  sha256Hex(newPass, function(hashNP){
+    if(!hashNP) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; return; }
+    users[uid].pass = hashNP;
     users[uid].mustChangePass = false;
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -2350,7 +2416,7 @@ function verificarCodigoRecuperacion() {
     errEl.style.color = '#16a34a';
     errEl.textContent = 'Contraseña cambiada. Ahora puedes iniciar sesión.';
     setTimeout(function(){ mostrarLogin(); }, 2000);
-  }
+  });
 }
 
 function mostrarLogin() {
@@ -2497,18 +2563,21 @@ function resetPassUsuario(uid) {
   var tempPass = '';
   for(var i=0; i<8; i++) tempPass += chars[Math.floor(Math.random()*chars.length)];
   tempPass = 'G' + tempPass.substring(1,6) + '7' + tempPass.substring(7);
-  users[uid].pass = tempPass;
-  users[uid].mustChangePass = true;
-  saveUsers(users);
-  if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({users: users})
-    }).catch(function(){});
-  }
-  // Modal profesional en lugar de alert
-  mostrarModalContrasenaReset(users[uid].nombre || uid, uid, tempPass);
-  renderGestionUsuarios();
+  sha256Hex(tempPass, function(hashTP){
+    if(!hashTP) { showToast('Error de seguridad. Intenta de nuevo.', 'error'); return; }
+    users[uid].pass = hashTP;
+    users[uid].mustChangePass = true;
+    saveUsers(users);
+    if(GM_CONFIG.workerUrl) {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({users: users})
+      }).catch(function(){});
+    }
+    // Modal profesional — muestra la temporal en claro UNA vez
+    mostrarModalContrasenaReset(users[uid].nombre || uid, uid, tempPass);
+    renderGestionUsuarios();
+  });
 }
 
 function mostrarModalContrasenaReset(nombre, uid, tempPass) {
@@ -2591,9 +2660,12 @@ function mostrarCambiarMiPassword() {
     var users = getUsers();
     var uid = CU ? CU.id : null;
     if(!uid || !users[uid]) { msgEl.style.color='#dc2626'; msgEl.textContent='Error de sesión.'; return; }
-    if(users[uid].pass !== actual) { msgEl.style.color='#dc2626'; msgEl.textContent='La contraseña actual es incorrecta.'; return; }
     if(nueva.length < 6) { msgEl.style.color='#dc2626'; msgEl.textContent='La nueva contraseña debe tener al menos 6 caracteres.'; return; }
     if(nueva !== confirm) { msgEl.style.color='#dc2626'; msgEl.textContent='Las contraseñas no coinciden.'; return; }
+
+    // Verificar contraseña actual (acepta hash o texto plano legacy)
+    verificarPassword(actual, users[uid].pass, function(okActual){
+    if(!okActual) { msgEl.style.color='#dc2626'; msgEl.textContent='La contraseña actual es incorrecta.'; return; }
 
     // Si el usuario tiene correo Y los códigos están activos, pedir verificación
     if(CODIGOS_EMAIL_ACTIVOS && users[uid].correo && users[uid].correo.indexOf('@') !== -1) {
@@ -2627,14 +2699,16 @@ function mostrarCambiarMiPassword() {
           var codigo = document.getElementById('cpCodigo').value.trim();
           var resultado = verificarCodigo(uid, codigo);
           if(!resultado.ok) { msgEl.style.color='#dc2626'; msgEl.textContent = resultado.error; return; }
-          // Código válido — guardar nueva contraseña
-          users[uid].pass = nueva;
+          // Código válido — guardar nueva contraseña (hasheada)
+          sha256Hex(nueva, function(hashNueva){
+          if(!hashNueva) { msgEl.style.color='#dc2626'; msgEl.textContent='Error de seguridad. Intenta de nuevo.'; return; }
+          users[uid].pass = hashNueva;
           users[uid].mustChangePass = false;
-          CU.pass = nueva;
+          CU.pass = hashNueva;
           try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
           saveUsers(users);
           if(GM_CONFIG.workerUrl) {
-            fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+            fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
               method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({users: users})
             }).catch(function(){});
@@ -2642,19 +2716,22 @@ function mostrarCambiarMiPassword() {
           msgEl.style.color = '#16a34a';
           msgEl.textContent = 'Contraseña cambiada correctamente.';
           setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
+          }); // fin sha256Hex
         };
       });
       return;
     }
 
-    // Sin correo: cambio directo (fallback)
-    users[uid].pass = nueva;
+    // Sin correo: cambio directo (fallback) — hashear antes de guardar
+    sha256Hex(nueva, function(hashNueva){
+    if(!hashNueva) { msgEl.style.color='#dc2626'; msgEl.textContent='Error de seguridad. Intenta de nuevo.'; return; }
+    users[uid].pass = hashNueva;
     users[uid].mustChangePass = false;
-    CU.pass = nueva;
+    CU.pass = hashNueva;
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -2662,6 +2739,8 @@ function mostrarCambiarMiPassword() {
     msgEl.style.color = '#16a34a';
     msgEl.textContent = 'Contraseña cambiada correctamente.';
     setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
+    }); // fin sha256Hex
+    }); // fin verificarPassword
   };
 }
 
@@ -2671,7 +2750,7 @@ function eliminarUsuario(uid) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
 
   // Eliminar en el servidor — la respuesta del servidor es la fuente de verdad
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
     body: JSON.stringify({deletedUser: uid})
   })
@@ -2703,19 +2782,22 @@ function crearNuevoUsuario() {
   if(users[uid]) { errEl.textContent = '! El usuario @' + uid + ' ya existe.'; errEl.style.color='#dc2626'; return; }
   // Generar contraseña temporal
   var tempPass = 'Pass' + String(Math.floor(1000 + Math.random()*9000)) + '!';
-  users[uid] = { nombre: nombre, role: rol, sede: sede, pass: tempPass, mustChangePass: true, especialidad: '' };
-  saveUsers(users);
-  if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({users: users})
-    }).catch(function(){});
-  }
-  errEl.style.color = '#16a34a';
-  errEl.textContent = 'Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
-  renderGestionUsuarios();
-  renderUsuarios();
-  poblarUserSelects();
+  sha256Hex(tempPass, function(hashTP){
+    if(!hashTP) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; errEl.style.color='#dc2626'; return; }
+    users[uid] = { nombre: nombre, role: rol, sede: sede, pass: hashTP, mustChangePass: true, especialidad: '' };
+    saveUsers(users);
+    if(GM_CONFIG.workerUrl) {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({users: users})
+      }).catch(function(){});
+    }
+    errEl.style.color = '#16a34a';
+    errEl.textContent = 'Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
+    renderGestionUsuarios();
+    renderUsuarios();
+    poblarUserSelects();
+  });
 }
 
 
@@ -3092,7 +3174,7 @@ function renderEtapa6(cont, exp) {
 // ── Funciones de plantillas ──
 function cargarPlantillasEnSelect(sel, expId) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3114,7 +3196,7 @@ function aplicarPlantilla(val, expId) {
     return;
   }
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3130,12 +3212,12 @@ function guardarComoPlantilla(expId) {
   var ta = document.getElementById('e6_cuerpo_' + expId);
   var cuerpo = ta ? ta.value : '';
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
     plantillas.push({nombre: nombre, cuerpo: cuerpo});
-    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'email_plantillas', configValue: plantillas})
@@ -3148,7 +3230,7 @@ function guardarComoPlantilla(expId) {
 // ── Correos frecuentes ──
 function cargarCorreosFrecuentes(dataList) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
@@ -3164,14 +3246,14 @@ function cargarCorreosFrecuentes(dataList) {
 function guardarCorreoFrecuente(email) {
   if(!email || email.indexOf('@') === -1) return;
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
     if(correos.indexOf(email) !== -1) return;
     correos.unshift(email);
     if(correos.length > 20) correos = correos.slice(0,20);
-    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'correos_frecuentes', configValue: correos})
@@ -3240,7 +3322,7 @@ function enviarCorreoCertificadora(expId) {
     return;
   }
 
-  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -3526,7 +3608,7 @@ function marcarCulminado(expId, tipo) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   if(GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
-    fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -4870,7 +4952,7 @@ function guardarTodosDatosTecnicos(expId, silencioso) {
   var btn = document.getElementById('btnGuardarTecnico_' + expId);
   if(btn && !silencioso) { btn.disabled = true; btn.textContent = 'Guardando...'; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -4914,7 +4996,7 @@ function grabarDatosCilindro(id) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   // Bloquear polling y subir al servidor con saveOneExp
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -4957,7 +5039,7 @@ function grabarDatosCilindro2(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5013,7 +5095,7 @@ function grabarDatosReductor(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5346,7 +5428,7 @@ function cargarPaginasEtapa5(exp) {
 
   // Cargar orden guardado del servidor
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
       var ordenGuardado = d.orden || null;
@@ -5524,7 +5606,7 @@ function expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado) {
       var esPDF = nombre.indexOf('.pdf') !== -1 || nombre === '';
       if(!esPDF) return;
 
-      var proxyUrl = GM_CONFIG.workerUrl + '?action=proxyFile&fileId=' + doc.driveFile.id;
+      var proxyUrl = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + doc.driveFile.id;
       var loadTask = pdfjsLib.getDocument(proxyUrl);
       var p = loadTask.promise.then(function(pdf) {
         var totalPages = pdf.numPages;
@@ -5746,7 +5828,7 @@ function guardarOrdenEtapa5(expId) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
   var btn = document.getElementById('btnGuardarOrden_' + expId);
   if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveOrdenExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOrdenExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5940,9 +6022,12 @@ function mostrarCambioPass(uid){
   if(nueva.length<6){showAlert('alertUsuarios','Mínimo 6 caracteres.','error');return;}
   var users=getUsers();
   if(!users[uid]){showAlert('alertUsuarios','Usuario no encontrado.','error');return;}
-  users[uid].pass=nueva;
-  saveUsers(users);
-  showAlert('alertUsuarios','Contraseña actualizada para '+users[uid].nombre,'success');
+  sha256Hex(nueva, function(hashN){
+    if(!hashN){showAlert('alertUsuarios','Error de seguridad. Intenta de nuevo.','error');return;}
+    users[uid].pass=hashN;
+    saveUsers(users);
+    showAlert('alertUsuarios','Contraseña actualizada para '+users[uid].nombre,'success');
+  });
 }
 function toggleNewUserForm(){var f=document.getElementById('newUserForm');f.style.display=f.style.display==='none'?'block':'none';}
 
@@ -6016,8 +6101,12 @@ function cambiarPass(){
   var uid=document.getElementById('cfg_user').value;
   var pass=document.getElementById('cfg_pass').value.trim();
   if(pass.length<6){showAlert('alertConfig','Minimo 6 caracteres.','error');return;}
-  var users=getUsers();users[uid].pass=pass;saveUsers(users);document.getElementById('cfg_pass').value='';
-  showAlert('alertConfig','Contrasena actualizada.','success');
+  var users=getUsers();
+  sha256Hex(pass, function(hashP){
+    if(!hashP){showAlert('alertConfig','Error de seguridad. Intenta de nuevo.','error');return;}
+    users[uid].pass=hashP;saveUsers(users);document.getElementById('cfg_pass').value='';
+    showAlert('alertConfig','Contrasena actualizada.','success');
+  });
 }
 
 // ==================
@@ -7307,7 +7396,9 @@ function crearUsuario(){
   if(!correo||correo.indexOf('@')===-1){showAlert('alertUsuarios','El correo electrónico es obligatorio y debe ser válido.','error');return;}
   var users=getUsers();
   var id=normStr(nombre).replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'')+'_'+String(Date.now()).slice(-4);
-  users[id]={nombre:nombre,role:rol,sede:sede,pass:pass,especialidad:esp,correo:correo};
+  sha256Hex(pass, function(hashP){
+  if(!hashP){showAlert('alertUsuarios','Error de seguridad. Intenta de nuevo.','error');return;}
+  users[id]={nombre:nombre,role:rol,sede:sede,pass:hashP,especialidad:esp,correo:correo};
   console.log('crearUsuario: usuarios después='+JSON.stringify(Object.keys(users)));
   saveUsers(users);
   console.log('crearUsuario: localStorage después de saveUsers='+JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('gm_users')||'{}'))));
@@ -7331,6 +7422,7 @@ function crearUsuario(){
     var titleEl = document.getElementById('topbarTitle');
     if(titleEl) titleEl.textContent = 'Gestión de Usuarios';
   }, 200);
+  }); // fin sha256Hex
 }
 
 function toggleEspecialidadField(){
@@ -7422,13 +7514,13 @@ function buildSyncUrl() {
     action: 'saveExp',
     expedientes: exps
   }));
-  return GM_CONFIG.workerUrl + '?action=saveExp&data=' + data;
+  return GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp&data=' + data;
 }
 
 function sincronizarAhora(callback) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length === 0) { if(callback) callback(true, 0); return; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveExp', expedientes:exps})
@@ -7451,7 +7543,7 @@ window.addEventListener('beforeunload', function(e) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length > 0) {
     navigator.sendBeacon(
-      GM_CONFIG.workerUrl + '?action=saveExp',
+      GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp',
       new Blob([JSON.stringify({action:'saveExp', expedientes:exps})], {type:'application/json'})
     );
   }
