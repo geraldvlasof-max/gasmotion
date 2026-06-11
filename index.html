@@ -328,7 +328,7 @@ input,select,textarea{font-size:16px!important}
 <body>
 <div id="gmLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:9999;align-items:center;justify-content:center">
   <div style="background:white;border-radius:16px;padding:32px 40px;text-align:center;max-width:280px">
-    <div style="font-size:40px;margin-bottom:12px">☁️</div>
+    <div style="font-size:40px;margin-bottom:12px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
     <div id="gmLoadingMsg" style="font-size:14px;font-weight:700;color:#131313;margin-bottom:4px">Subiendo...</div>
     <div style="font-size:11px;color:#8a8a8a;margin-bottom:16px">Por favor espera</div>
     <div style="height:4px;background:#D9D9D9;border-radius:2px;overflow:hidden">
@@ -384,22 +384,22 @@ input,select,textarea{font-size:16px!important}
       <div style="position:relative">
         <input class="form-input" type="password" id="loginPass" placeholder="Escribe tu contraseña" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" style="padding-right:44px">
         <button type="button" onclick="togglePassVis()" style="position:absolute;right:0;top:0;bottom:0;width:44px;background:none;border:none;cursor:pointer;color:#8a8a8a;font-size:18px;display:flex;align-items:center;justify-content:center" title="Ver contraseña">
-          <span id="eyeIcon">👁</span>
+          <span id="eyeIcon">Ver</span>
         </button>
       </div>
       <button class="btn-login-main" onclick="doLogin()">Ingresar al sistema</button>
       <button style="background:transparent;border:none;color:#6b82a0;font-size:12px;margin-top:8px;cursor:pointer;width:100%;padding:4px" onclick="mostrarRecuperacion()">¿Olvidaste tu contraseña?</button>
       <div id="pwaInstallBanner" style="display:none;margin-top:14px;background:#131313;border-radius:12px;padding:14px 16px;align-items:center;gap:12px;cursor:pointer;border:1px solid rgba(255,255,255,0.1)" onclick="instalarApp()">
-        <span style="font-size:26px">📲</span>
+        <span style="font-size:22px">+</span>
         <div style="flex:1"><div style="font-size:13px;font-weight:700;color:white">Instalar app Gasmotion</div>
         <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">Toca para añadir a tu celular</div></div>
         <span style="color:#FFC165;font-size:18px">→</span>
       </div>
       <div id="iosInstallHint" style="display:none;margin-top:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:11px 14px;font-size:12px;color:#0369a1;text-align:center">
-        <strong>iPhone:</strong> Toca ⬆️ y luego <strong>"Añadir a pantalla de inicio"</strong>
+        <strong>iPhone:</strong> Toca ⬆ y luego <strong>"Añadir a pantalla de inicio"</strong>
       </div>
       <div class="login-footer">Gasmotion Software Automotriz | En colaboracion con Carrigas Peru E.I.R.L.<br>Sistema Seguro SSL | Uso Interno Autorizado | &copy; 2025</div>
-      <div style="margin-top:16px;text-align:center"><button onclick="diagnosticarLogin()" style="background:none;border:1px solid #D9D9D9;border-radius:6px;padding:6px 14px;font-size:11px;color:#a8a8a8;cursor:pointer">🔍 Diagnóstico</button></div><div id="diagBox" style="display:none;margin-top:12px;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:8px;padding:12px;font-size:11px;color:#374151;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
+      <div style="margin-top:16px;text-align:center"><button onclick="diagnosticarLogin()" style="background:none;border:1px solid #D9D9D9;border-radius:6px;padding:6px 14px;font-size:11px;color:#a8a8a8;cursor:pointer">Diagnóstico</button></div><div id="diagBox" style="display:none;margin-top:12px;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:8px;padding:12px;font-size:11px;color:#374151;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -441,10 +441,10 @@ input,select,textarea{font-size:16px!important}
           <div>
             <div class="sidebar-user-name" id="sidebarName" onclick="editarNombreAdmin()" title="Clic para editar">-</div>
             <div class="sidebar-user-role" id="sidebarRole">-</div>
-            <div class="edit-hint">✎ clic para editar</div>
+            <div class="edit-hint">clic para editar</div>
           </div>
         </div>
-        <button style="width:100%;margin-bottom:6px;padding:8px;background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#a8a8a8;font-size:12px;cursor:pointer;font-weight:600" onclick="mostrarCambiarMiPassword()">🔒 Cambiar contraseña</button>
+        <button style="width:100%;margin-bottom:6px;padding:8px;background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:8px;color:#a8a8a8;font-size:12px;cursor:pointer;font-weight:600" onclick="mostrarCambiarMiPassword()">Cambiar contraseña</button>
         <button class="btn-logout" onclick="doLogout()">Cerrar sesion</button>
       </div>
     </aside>
@@ -464,28 +464,28 @@ input,select,textarea{font-size:16px!important}
         <div class="tab-content active" id="tab-panel">
           <div class="stats-grid">
             <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Total expedientes</div><div class="stat-chip chip-amber">📁</div></div>
+              <div class="stat-top"><div class="stat-label">Total expedientes</div><div class="stat-chip chip-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div></div>
               <div class="stat-num" id="st-total">0</div>
               <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFC165" stop-opacity="0.35"/><stop offset="100%" stop-color="#FFC165" stop-opacity="0"/></linearGradient></defs><path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,8 L120,12 L120,36 L0,36 Z" fill="url(#grad-amber)"/><path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,8 L120,12" fill="none" stroke="#FFC165" stroke-width="2"/></svg>
             </div>
             <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">En Etapa 1</div><div class="stat-chip chip-orange">📋</div></div>
+              <div class="stat-top"><div class="stat-label">En Etapa 1</div><div class="stat-chip chip-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div></div>
               <div class="stat-num" id="st-e1">0</div>
               <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-orange" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FC682F" stop-opacity="0.3"/><stop offset="100%" stop-color="#FC682F" stop-opacity="0"/></linearGradient></defs><path d="M0,20 L20,24 L40,16 L60,22 L80,12 L100,18 L120,10 L120,36 L0,36 Z" fill="url(#grad-orange)"/><path d="M0,20 L20,24 L40,16 L60,22 L80,12 L100,18 L120,10" fill="none" stroke="#FC682F" stroke-width="2"/></svg>
             </div>
             <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Pendiente FISE</div><div class="stat-chip chip-blue">⏳</div></div>
+              <div class="stat-top"><div class="stat-label">Pendiente FISE</div><div class="stat-chip chip-blue">◷</div></div>
               <div class="stat-num" id="st-e2">0</div>
               <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5C8CF5" stop-opacity="0.3"/><stop offset="100%" stop-color="#5C8CF5" stop-opacity="0"/></linearGradient></defs><path d="M0,16 L20,20 L40,14 L60,18 L80,22 L100,15 L120,20 L120,36 L0,36 Z" fill="url(#grad-blue)"/><path d="M0,16 L20,20 L40,14 L60,18 L80,22 L100,15 L120,20" fill="none" stroke="#5C8CF5" stroke-width="2"/></svg>
             </div>
             <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Completados</div><div class="stat-chip chip-green">✅</div></div>
+              <div class="stat-top"><div class="stat-label">Completados</div><div class="stat-chip chip-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
               <div class="stat-num" id="st-comp">0</div>
               <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-green" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.3"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs><path d="M0,30 L20,26 L40,28 L60,20 L80,22 L100,12 L120,8 L120,36 L0,36 Z" fill="url(#grad-green)"/><path d="M0,30 L20,26 L40,28 L60,20 L80,22 L100,12 L120,8" fill="none" stroke="#22c55e" stroke-width="2"/></svg>
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-icon ci-teal">📋</div><div><div class="card-title">Ultimos expedientes</div><div class="card-sub">Clic en la placa para abrir</div></div></div>
+            <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div><div><div class="card-title">Ultimos expedientes</div><div class="card-sub">Clic en la placa para abrir</div></div></div>
             <div class="table-wrap">
               <table><thead><tr><th>Placa</th><th>Cliente</th><th>Sede</th><th>Etapa</th><th>Fecha</th></tr></thead>
               <tbody id="recentBody"></tbody></table>
@@ -510,10 +510,10 @@ input,select,textarea{font-size:16px!important}
           <!-- Formulario nuevo -->
           <div id="formNuevoSf1" style="display:none">
             <div class="card" style="border-color:#FFC165;border-width:2px">
-              <div class="card-header"><div class="card-icon ci-teal">📄</div><div><div class="card-title">Subir SCANFILE 1</div><div class="card-sub">PDF con TIV + DNI (ambas caras) + Checklist en un solo archivo</div></div></div>
+              <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="card-title">Subir SCANFILE 1</div><div class="card-sub">PDF con TIV + DNI (ambas caras) + Checklist en un solo archivo</div></div></div>
               <div class="drop-zone" id="sf1NuevoDrop" ondragover="dragOverSf1Nuevo(event)" ondragleave="dragLeaveSf1Nuevo(event)" ondrop="dropSf1Nuevo(event)" style="margin-bottom:16px">
                 <input type="file" id="sf1NuevoInput" accept="image/*,.pdf" onchange="onSf1NuevoChange(this)">
-                <div style="font-size:40px;margin-bottom:8px">📄</div>
+                <div style="margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                 <div style="font-size:14px;font-weight:700;color:#131313;margin-bottom:4px">Haz clic o arrastra el SCANFILE 1</div>
                 <div style="font-size:12px;color:#6b82a0">PDF unico con: TIV + DNI ambas caras + Checklist de taller</div>
                 <div class="loaded-msg" id="sf1NuevoMsg"></div>
@@ -541,7 +541,7 @@ input,select,textarea{font-size:16px!important}
                 </div>
               </div>
               <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;">
-                <div style="font-weight:700;color:#065f46;margin-bottom:3px">&#128205; Vendedor de Sede (auto-asignado)</div>
+                <div style="font-weight:700;color:#065f46;margin-bottom:3px">⊕ Vendedor de Sede (auto-asignado)</div>
                 <div id="vendedorSedeDisplay" style="color:#065f46;font-weight:600">Se asigna al seleccionar sede</div>
                 <div style="color:#6b82a0;margin-top:2px">Responsable del Video de Compresiones (E4.2)</div>
               </div>
@@ -557,7 +557,7 @@ input,select,textarea{font-size:16px!important}
           </div>
 
           <div id="bandejaGrid"></div>
-          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">📋</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes de procesar.</p></div>
+          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes de procesar.</p></div>
         </div>
 
         <!-- EXPEDIENTES -->
@@ -588,7 +588,7 @@ input,select,textarea{font-size:16px!important}
             <div style="font-size:12px;color:#6b82a0;margin-top:2px">Expedientes en Etapa 2 — pendientes de procesar la Matriz Excel y documentos FISE</div>
           </div>
           <div id="fiseGrid"></div>
-          <div class="empty-state" id="fiseEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">📂</div><p style="font-size:14px;font-weight:600;color:#131313">Sin expedientes pendientes</p></div>
+          <div class="empty-state" id="fiseEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div><p style="font-size:14px;font-weight:600;color:#131313">Sin expedientes pendientes</p></div>
         </div>
 
         <!-- USUARIOS -->
@@ -623,16 +623,16 @@ input,select,textarea{font-size:16px!important}
           <div style="margin-top:16px;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:10px;padding:14px">
             <div style="font-size:11px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Sincronización de Usuarios</div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn btn-sm" style="background:#131313;color:white;border:none" onclick="exportarUsuariosJSON()">📤 Exportar usuarios</button>
+              <button class="btn btn-sm" style="background:#131313;color:white;border:none" onclick="exportarUsuariosJSON()">Exportar usuarios</button>
               <div style="position:relative">
-                <button class="btn btn-sm" style="background:#FFC165;color:#131313;border:none">📥 Importar usuarios</button>
+                <button class="btn btn-sm" style="background:#FFC165;color:#131313;border:none">Importar usuarios</button>
                 <input type="file" accept=".json" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="importarUsuariosJSON(this)">
               </div>
             </div>
             <div style="font-size:11px;color:#a8a8a8;margin-top:8px">Si un usuario nuevo no puede ingresar desde su celular, toca "Forzar sincronización".</div>
             <div style="margin-top:10px">
               <button class="btn btn-sm" style="background:#22c55e;color:white;border:none;width:100%;padding:10px;font-size:13px;font-weight:700" onclick="forzarSyncUsuarios()">
-                ☁️ Forzar sincronización ahora
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Forzar sincronización ahora
               </button>
             </div>
           </div>
@@ -647,17 +647,17 @@ input,select,textarea{font-size:16px!important}
             <div id="alertConfig" style="margin-top:10px"></div>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-icon ci-teal">&#128205;</div><div><div class="card-title">Vendedor por Sede</div><div class="card-sub">Responsable del Video de Compresiones en Etapa 4 — se auto-asigna al crear expedientes</div></div></div>
+            <div class="card-header"><div class="card-icon ci-teal">⊕</div><div><div class="card-title">Vendedor por Sede</div><div class="card-sub">Responsable del Video de Compresiones en Etapa 4 — se auto-asigna al crear expedientes</div></div></div>
             <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:14px">
-              <div class="field"><label>&#128205; Santa Anita</label><select id="cfg_vs_santaanita"><option value="">-- Sin asignar --</option></select></div>
-              <div class="field"><label>&#128205; Chorrillos</label><select id="cfg_vs_chorrillos"><option value="">-- Sin asignar --</option></select></div>
-              <div class="field"><label>&#128205; SMP</label><select id="cfg_vs_smp"><option value="">-- Sin asignar --</option></select></div>
+              <div class="field"><label>⊕ Santa Anita</label><select id="cfg_vs_santaanita"><option value="">-- Sin asignar --</option></select></div>
+              <div class="field"><label>⊕ Chorrillos</label><select id="cfg_vs_chorrillos"><option value="">-- Sin asignar --</option></select></div>
+              <div class="field"><label>⊕ SMP</label><select id="cfg_vs_smp"><option value="">-- Sin asignar --</option></select></div>
             </div>
             <button class="btn btn-teal" onclick="guardarConfigSede()">Guardar Vendedores de Sede</button>
             <div id="alertConfigSede" style="margin-top:8px"></div>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-icon ci-orange">👤</div><div><div class="card-title">Gestion de Vendedores</div></div></div>
+            <div class="card-header"><div class="card-icon ci-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="card-title">Gestion de Vendedores</div></div></div>
             <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
               <input type="text" id="nuevoVendedor" placeholder="Nombre del vendedor" style="flex:1;border:2px solid #D9D9D9;border-radius:8px;padding:9px 13px;font-family:inherit;font-size:13px;outline:none;background:white">
               <button class="btn btn-teal" onclick="agregarVendedor()">+ Agregar</button>
@@ -666,7 +666,7 @@ input,select,textarea{font-size:16px!important}
             <div id="alertVendedores" style="margin-top:10px"></div>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-icon ci-navy">🔒</div><div><div class="card-title">Cambiar Contrasena</div></div></div>
+            <div class="card-header"><div class="card-icon ci-navy"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div><div class="card-title">Cambiar Contrasena</div></div></div>
             <div class="grid2" style="margin-bottom:14px">
               <div class="field"><label>Usuario</label><select id="cfg_user"></select></div>
               <div class="field"><label>Nueva contrasena</label><input type="password" id="cfg_pass" placeholder="Min 6 caracteres"></div>
@@ -674,14 +674,14 @@ input,select,textarea{font-size:16px!important}
             <button class="btn btn-navy" onclick="cambiarPass()">Guardar</button>
           </div>
           <div class="card">
-            <div class="card-header"><div class="card-icon ci-green">💾</div><div><div class="card-title">Respaldo de Datos</div><div class="card-sub">Exporta e importa — util para migrar de dominio</div></div></div>
+            <div class="card-header"><div class="card-icon ci-green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div><div><div class="card-title">Respaldo de Datos</div><div class="card-sub">Exporta e importa — util para migrar de dominio</div></div></div>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-green" onclick="exportarRespaldo()">⬇ Descargar Respaldo (JSON)</button>
               <div style="position:relative"><button class="btn btn-outline" onclick="document.getElementById('importInput').click()">⬆ Importar Respaldo</button><input type="file" id="importInput" accept=".json" style="display:none" onchange="importarRespaldo(this)"></div>
             </div>
           </div>
           <div class="card" style="border-color:rgba(239,68,68,0.3)">
-            <div class="card-header"><div class="card-icon" style="background:#fef2f2">⚠</div><div><div class="card-title" style="color:#ef4444">Zona de Peligro</div></div></div>
+            <div class="card-header"><div class="card-icon" style="background:#fef2f2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div><div class="card-title" style="color:#ef4444">Zona de Peligro</div></div></div>
             <button class="btn btn-danger" onclick="confirmarBorrado()">Borrar todos los expedientes</button>
           </div>
         </div>
@@ -739,7 +739,7 @@ function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     if(d.ok && d.driveFile) {
-      console.log('✅ Foto en Drive:', d.driveFile.viewUrl);
+      console.log('Foto en Drive:', d.driveFile.viewUrl);
       // Actualizar expediente local con URL de Drive
       for(var i=0; i<expedientes.length; i++){
         if(expedientes[i].id === expId){
@@ -753,7 +753,7 @@ function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
           break;
         }
       }
-      showToast('📁 Foto guardada en Drive', 'success');
+      showToast('Foto guardada en Drive', 'success');
     } else {
       console.warn('Error subiendo a Drive:', d.error || d);
     }
@@ -882,7 +882,7 @@ function driveAuthorizar(callback) {
           localStorage.setItem('gm_drive_token', DRIVE_ACCESS_TOKEN);
           localStorage.setItem('gm_drive_expiry', String(DRIVE_TOKEN_EXPIRY));
         } catch(e) {}
-        showToast('✅ Google Drive autorizado correctamente', 'success');
+        showToast('Google Drive autorizado correctamente', 'success');
         if(callback) callback(DRIVE_ACCESS_TOKEN);
       }
     } catch(e) {
@@ -926,7 +926,7 @@ function subirArchivoADrive(file, nombreArchivo, callback) {
         }).then(function() {
           var downloadUrl = 'https://drive.google.com/uc?export=download&id=' + data.id;
           var viewUrl = 'https://drive.google.com/file/d/' + data.id + '/view';
-          showToast('✅ Archivo subido a Drive', 'success');
+          showToast('Archivo subido a Drive', 'success');
           if(callback) callback({ id:data.id, downloadUrl:downloadUrl, viewUrl:viewUrl });
         });
       } else {
@@ -1178,13 +1178,13 @@ function forzarSyncUsuarios() {
   .then(function(r){ return r.json(); })
   .then(function(d){
     if(d.ok) {
-      showToast('✅ ' + total + ' usuarios guardados en servidor', 'success');
+      showToast('' + total + ' usuarios guardados en servidor', 'success');
       renderUsuarios();
     } else {
-      showToast('❌ Error guardando usuarios', 'error');
+      showToast('Error guardando usuarios', 'error');
     }
   })
-  .catch(function(){ showToast('❌ Error de conexión', 'error'); });
+  .catch(function(){ showToast('Error de conexión', 'error'); });
 }
 
 function exportarUsuariosJSON() {
@@ -1207,7 +1207,7 @@ function importarUsuariosJSON(input) {
       saveUsers(users);
       USERS_CACHE = users;
       renderUsuarios();
-      showToast('✅ ' + Object.keys(users).length + ' usuarios importados', 'success');
+      showToast('' + Object.keys(users).length + ' usuarios importados', 'success');
     } catch(err) { showToast('Archivo inválido', 'error'); }
   };
   fr.readAsText(input.files[0]);
@@ -1274,7 +1274,7 @@ function storeFile(expId, tipoKey, file, callback) {
 // ═══════════════════════════════════════════════════════════
 function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha, hora) {
   if(!GM_CONFIG.workerUrl) return;
-  showToast('☁️ Subiendo ' + nombre + ' a Drive...', 'info');
+  showToast('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Subiendo ' + nombre + ' a Drive...', 'info');
   fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1288,7 +1288,7 @@ function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha,
   .then(function(r){ return r.json(); })
   .then(function(d){
     if(d.ok && d.driveFile) {
-      console.log('✅ Archivo en Drive:', tipoKey, d.driveFile.viewUrl);
+      console.log('Archivo en Drive:', tipoKey, d.driveFile.viewUrl);
       // Actualizar driveFiles en el expediente local
       for(var i=0; i<expedientes.length; i++){
         if(expedientes[i].id === expId){
@@ -1302,15 +1302,15 @@ function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha,
           break;
         }
       }
-      showToast('✅ ' + nombre + ' guardado en Drive', 'success');
+      showToast('' + nombre + ' guardado en Drive', 'success');
     } else {
       console.warn('Error subiendo a Drive:', d.error);
-      showToast('⚠️ Error subiendo a Drive: ' + (d.error||''), 'error');
+      showToast('! Error subiendo a Drive: ' + (d.error||''), 'error');
     }
   })
   .catch(function(e){
     console.warn('Error Drive upload:', e);
-    showToast('⚠️ Sin conexión a Drive', 'error');
+    showToast('! Sin conexión a Drive', 'error');
   });
 }
 function getFileMeta(expId, tipoKey) { return FILE_STORE[expId + '_' + tipoKey] || null; }
@@ -1684,25 +1684,25 @@ function togglePassVis() {
   if(!inp) return;
   if(inp.type === 'password') {
     inp.type = 'text';
-    if(icon) icon.textContent = '🙈';
+    if(icon) icon.textContent = 'Ocultar';
   } else {
     inp.type = 'password';
-    if(icon) icon.textContent = '👁';
+    if(icon) icon.textContent = 'Ver';
   }
 }
 
 function doLogin() {
   if(_loginBlocked){
-    setLoginError('⏳ Cuenta bloqueada temporalmente. Espera 2 minutos.');
+    setLoginError('Cuenta bloqueada temporalmente. Espera 2 minutos.');
     return;
   }
   var rawUid = document.getElementById('loginUser').value.trim();
   var pass   = document.getElementById('loginPass').value;
-  if(!rawUid){ setLoginError('⚠️ Escribe tu usuario o correo.'); return; }
-  if(!pass)  { setLoginError('⚠️ Escribe tu contraseña.'); return; }
+  if(!rawUid){ setLoginError('! Escribe tu usuario o correo.'); return; }
+  if(!pass)  { setLoginError('! Escribe tu contraseña.'); return; }
 
   setLoginError('');
-  setLoginBtn('🔍 Buscando usuario...', true);
+  setLoginBtn('Buscando usuario...', true);
 
   // Paso 1: buscar en caché local
   var localUsers = getUsers();
@@ -1716,9 +1716,9 @@ function doLogin() {
       if(_loginAttempts >= 5) {
         _loginBlocked = true;
         _loginBlockTimer = setTimeout(function(){_loginBlocked=false;_loginAttempts=0;}, 120000);
-        setLoginError('🔒 5 intentos fallidos. Cuenta bloqueada 2 minutos.');
+        setLoginError('5 intentos fallidos. Cuenta bloqueada 2 minutos.');
       } else {
-        setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+        setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
       }
       return;
     }
@@ -1728,7 +1728,7 @@ function doLogin() {
   }
 
   // Paso 2: no está local — buscar en servidor D1
-  setLoginBtn('☁️ Verificando...', true);
+  setLoginBtn('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Verificando...', true);
   fetch(GM_CONFIG.workerUrl + '?action=getUsers', { cache: 'no-store' })
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -1741,23 +1741,23 @@ function doLogin() {
       var foundServer = buscarUsuario(rawUid, serverUsers);
       if(!foundServer) {
         _loginAttempts++;
-        setLoginError('❌ Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
+        setLoginError('Usuario "' + rawUid + '" no registrado. Contacta al administrador.');
         return;
       }
       if(foundServer.user.pass !== pass) {
         _loginAttempts++;
-        setLoginError('❌ Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
+        setLoginError('Contraseña incorrecta. Intento ' + _loginAttempts + '/5.');
         return;
       }
       completarLogin(foundServer.id, foundServer.user);
       return;
     }
     _loginAttempts++;
-    setLoginError('❌ Usuario "' + rawUid + '" no encontrado. Contacta al administrador.');
+    setLoginError('Usuario "' + rawUid + '" no encontrado. Contacta al administrador.');
   })
   .catch(function(e){
     setLoginBtn('Ingresar al sistema', false);
-    setLoginError('⏳ Sin respuesta del servidor. Verifica tu conexión a internet.');
+    setLoginError('Sin respuesta del servidor. Verifica tu conexión a internet.');
   });
 }
 
@@ -1809,7 +1809,7 @@ function completarLogin(uid, u) {
 function mostrarCambioPasswordObligatorio(uid) {
   var loginBox = document.getElementById('loginBox');
   if(!loginBox) { mostrarApp(); setupInactivity(); return; }
-  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">🔐 Cambiar contraseña</div>' +
+  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">Cambiar contraseña</div>' +
     '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Por seguridad debes establecer una nueva contraseña antes de continuar</div>' +
     '<div id="cambioPassError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
     '<label class="form-label">Nueva contraseña</label>' +
@@ -1829,10 +1829,10 @@ function mostrarCambioPasswordObligatorio(uid) {
 function validarFortalezaPass(pass) {
   var ok = pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass);
   if(!pass) return { ok: false, html: '' };
-  if(pass.length < 8) return { ok: false, html: '<span style="color:#dc2626">❌ Mínimo 8 caracteres</span>' };
-  if(!/[A-Z]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">❌ Necesita al menos 1 mayúscula</span>' };
-  if(!/[0-9]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">❌ Necesita al menos 1 número</span>' };
-  return { ok: true, html: '<span style="color:#16a34a">✅ Contraseña segura</span>' };
+  if(pass.length < 8) return { ok: false, html: '<span style="color:#dc2626">Mínimo 8 caracteres</span>' };
+  if(!/[A-Z]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">Necesita al menos 1 mayúscula</span>' };
+  if(!/[0-9]/.test(pass)) return { ok: false, html: '<span style="color:#dc2626">Necesita al menos 1 número</span>' };
+  return { ok: true, html: '<span style="color:#16a34a">Contraseña segura</span>' };
 }
 
 function guardarNuevaPassword(uid) {
@@ -1860,7 +1860,7 @@ function guardarNuevaPassword(uid) {
         body: JSON.stringify({users: users})
       }).catch(function(e){ console.warn('Error guardando users:', e); });
     }
-    showToast('✅ Contraseña actualizada correctamente', 'success');
+    showToast('Contraseña actualizada correctamente', 'success');
     mostrarApp(); setupInactivity();
   }
 }
@@ -2095,14 +2095,14 @@ function renderBandeja() {
         '<span class="sede-chip">'+exp.sede+'</span>'+
       '</div>'+
       (exp.comentarioVendedor?'<div style="background:#fef3c7;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px"><strong>Comentario:</strong> '+exp.comentarioVendedor+'</div>':'')+
-      '<div class="meta-row"><span>&#128206;</span><span>'+sf1meta.nombre+'</span></div>'+
-      '<div class="meta-row"><span>&#128100;</span><span>Subido por: <strong>'+sf1meta.subidoPor+'</strong></span></div>'+
-      '<div class="meta-row"><span>&#128197;</span><span>'+sf1meta.fecha+' '+sf1meta.hora+'</span></div>'+
+      '<div class="meta-row"><span>∷</span><span>'+sf1meta.nombre+'</span></div>'+
+      '<div class="meta-row"><span>◯</span><span>Subido por: <strong>'+sf1meta.subidoPor+'</strong></span></div>'+
+      '<div class="meta-row"><span>▦</span><span>'+sf1meta.fecha+' '+sf1meta.hora+'</span></div>'+
       '<div id="bcard_actions_'+ri+'" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>';
     grid.appendChild(card);
     var acts=card.querySelector('#bcard_actions_'+ri);
     var dlA=document.createElement('a');
-    if(sf1url){dlA.href=sf1url;dlA.download=sf1meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='&#11015; Descargar SCANFILE 1';}
+    if(sf1url){dlA.href=sf1url;dlA.download=sf1meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='↓ Descargar SCANFILE 1';}
     else{dlA.className='btn btn-sm';dlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA.textContent='Re-subir para descargar';}
     acts.appendChild(dlA);
     var canAvanzar=CU&&(CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe');
@@ -2150,12 +2150,12 @@ function renderPanelFise() {
         '<div><div style="font-size:15px;font-weight:800;color:#131313">'+exp.placa+' — '+exp.modeloVehiculo+'</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">Sede: '+exp.sede+' | Vendedor: '+exp.vendedorServicio+'</div></div>'+
         '<span style="font-size:10px;padding:3px 10px;border-radius:20px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a">Etapa 2</span>'+
       '</div>'+
-      '<div class="meta-row" style="margin-bottom:8px"><span>&#128197;</span><span>Subido: '+exp.fecha+' '+exp.hora+' por '+exp.registradoPor+'</span></div>'+
+      '<div class="meta-row" style="margin-bottom:8px"><span>▦</span><span>Subido: '+exp.fecha+' '+exp.hora+' por '+exp.registradoPor+'</span></div>'+
       '<div id="fcard_'+ri+'" style="display:flex;flex-direction:column;gap:8px"></div>';
     grid.appendChild(card);
     var acts=card.querySelector('#fcard_'+ri);
     var dlA=document.createElement('a');
-    if(sf1url){dlA.href=sf1url;dlA.download=sf1meta.nombre||'scanfile1.pdf';dlA.className='btn btn-teal btn-sm';dlA.innerHTML='&#11015; Descargar SCANFILE 1';}
+    if(sf1url){dlA.href=sf1url;dlA.download=sf1meta.nombre||'scanfile1.pdf';dlA.className='btn btn-teal btn-sm';dlA.innerHTML='↓ Descargar SCANFILE 1';}
     else{dlA.className='btn btn-sm';dlA.style.cssText='background:#fef3c7;color:#92400e;border:1px solid #fde68a';dlA.textContent='SCANFILE 1 no disponible — recarga la sesion';}
     acts.appendChild(dlA);
     var abrirBtn=mkBtn('btn btn-navy btn-sm','width:100%;justify-content:center','abrirExpediente',exp.id,'Abrir y procesar Etapa 2 →');
@@ -2218,7 +2218,7 @@ function renderExpedientes() {
 
 function eliminarExp(id) {
   // Solo admin puede eliminar
-  if(!canDeleteExp()) { showToast('❌ Sin permiso para eliminar expedientes', 'error'); return; }
+  if(!canDeleteExp()) { showToast('Sin permiso para eliminar expedientes', 'error'); return; }
   // 1. Registrar el ID como eliminado — el polling nunca lo re-subirá
   var eliminados = [];
   try { eliminados = JSON.parse(localStorage.getItem('gm_eliminados') || '[]'); } catch(e) {}
@@ -2262,7 +2262,7 @@ function eliminarExp(id) {
 function mostrarRecuperacion() {
   var loginBox = document.getElementById('loginBox');
   if(!loginBox) return;
-  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">🔑 Recuperar contraseña</div>' +
+  loginBox.innerHTML = '<div style="font-size:20px;font-weight:800;color:#131313;margin-bottom:4px">Recuperar contraseña</div>' +
     '<div style="font-size:13px;color:#6b82a0;margin-bottom:20px">Te enviaremos un código a tu correo registrado</div>' +
     '<div id="recError" style="color:#dc2626;font-size:13px;margin-bottom:8px"></div>' +
     '<label class="form-label">Usuario o correo</label>' +
@@ -2314,11 +2314,11 @@ function enviarCodigoRecuperacion() {
     if(btn){ btn.disabled = false; btn.textContent = 'Enviar código a mi correo'; }
     if(ok) {
       errEl.style.color = '#16a34a';
-      errEl.textContent = '✅ Código enviado a ' + correoMasked + ' (válido 10 min)';
+      errEl.textContent = 'Código enviado a ' + correoMasked + ' (válido 10 min)';
       document.getElementById('codigoSection').style.display = 'block';
     } else {
       errEl.style.color = '#dc2626';
-      errEl.textContent = '❌ ' + (error || 'No se pudo enviar el código');
+      errEl.textContent = '' + (error || 'No se pudo enviar el código');
     }
   });
 }
@@ -2348,7 +2348,7 @@ function verificarCodigoRecuperacion() {
       }).catch(function(){});
     }
     errEl.style.color = '#16a34a';
-    errEl.textContent = '✅ Contraseña cambiada. Ahora puedes iniciar sesión.';
+    errEl.textContent = 'Contraseña cambiada. Ahora puedes iniciar sesión.';
     setTimeout(function(){ mostrarLogin(); }, 2000);
   }
 }
@@ -2369,29 +2369,29 @@ function renderGestionUsuarios() {
     var uid = uids[i];
     var u = users[uid];
     var rolLabel = {
-      'admin':'👑 Admin',
-      'supervisor':'🔶 Supervisor',
-      'vendedor':'🛒 Vendedor',
-      'tecnico':'🔧 Técnico',
-      'asistente_fise':'📋 Asistente FISE'
+      'admin':'Admin',
+      'supervisor':'Supervisor',
+      'vendedor':'Vendedor',
+      'tecnico':'Técnico',
+      'asistente_fise':'Asistente FISE'
     }[u.role] || u.role;
     var esIki = uid === 'iki';
     rows += '<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #D9D9D9;border-radius:8px;margin-bottom:8px;background:white">' +
       '<div style="flex:1">' +
         '<div style="font-weight:700;font-size:14px">' + (u.nombre||uid) + ' <span style="font-size:11px;color:#6b82a0">@' + uid + '</span></div>' +
-        '<div style="font-size:12px;color:#8a8a8a">' + rolLabel + ' — ' + (u.sede||'Todas') + (u.mustChangePass?' — <span style="color:#f59e0b">⚠️ Debe cambiar pass</span>':'') + '</div>' +
+        '<div style="font-size:12px;color:#8a8a8a">' + rolLabel + ' — ' + (u.sede||'Todas') + (u.mustChangePass?' — <span style="color:#f59e0b">! Debe cambiar pass</span>':'') + '</div>' +
       '</div>';
     if(!esIki) {
-      rows += '<button class="btn btn-sm" style="background:#f59e0b;color:white" id="btnReset_'+uid+'">🔄 Reset pass</button>';
-      rows += '<button class="btn btn-sm" style="background:#dc2626;color:white" id="btnDel_'+uid+'">🗑</button>';
+      rows += '<button class="btn btn-sm" style="background:#f59e0b;color:white" id="btnReset_'+uid+'">Reset pass</button>';
+      rows += '<button class="btn btn-sm" style="background:#dc2626;color:white" id="btnDel_'+uid+'">&#215;</button>';
     }
     rows += '</div>';
   }
   var container = document.getElementById('tabUsuarios');
   if(!container) return;
-  container.innerHTML = '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800">👥 Gestión de Usuarios</h3>' +
+  container.innerHTML = '<h3 style="margin:0 0 16px;font-size:16px;font-weight:800">Gestión de Usuarios</h3>' +
     rows +
-    '<hr style="margin:16px 0"><h4 style="margin:0 0 12px;font-size:14px;font-weight:700">➕ Crear nuevo usuario</h4>' +
+    '<hr style="margin:16px 0"><h4 style="margin:0 0 12px;font-size:14px;font-weight:700">Crear nuevo usuario</h4>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
       '<input class="form-input" id="nuUid" placeholder="usuario (sin espacios)" style="font-size:13px">' +
       '<input class="form-input" id="nuNombre" placeholder="Nombre completo" style="font-size:13px">' +
@@ -2444,7 +2444,7 @@ function editarUsuario(uid) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML =
     '<div style="background:white;border-radius:16px;padding:28px;max-width:400px;width:100%">' +
-    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">✏️ Editar usuario</div>' +
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">Editar usuario</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:20px">@' + uid + '</div>' +
     '<div id="editUserMsg" style="font-size:12px;margin-bottom:12px"></div>' +
     '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Nombre completo</label>' +
@@ -2480,7 +2480,7 @@ function editarUsuario(uid) {
         actualizarSidebarUsuario();
       }
       msgEl.style.color = '#16a34a';
-      msgEl.textContent = '✅ Usuario actualizado.';
+      msgEl.textContent = 'Usuario actualizado.';
       setTimeout(function(){
         if(overlay.parentNode) document.body.removeChild(overlay);
         renderUsuarios();
@@ -2517,7 +2517,7 @@ function mostrarModalContrasenaReset(nombre, uid, tempPass) {
   overlay.innerHTML =
     '<div style="background:white;border-radius:16px;padding:28px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">' +
-    '<div style="width:44px;height:44px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">🔐</div>' +
+    '<div style="width:44px;height:44px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px">&#9679;</div>' +
     '<div><div style="font-size:16px;font-weight:800;color:#131313">Contraseña Restablecida</div>' +
     '<div style="font-size:12px;color:#8a8a8a">Usuario: ' + nombre + ' (@' + uid + ')</div></div></div>' +
     '<div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:16px;margin-bottom:16px">' +
@@ -2525,10 +2525,10 @@ function mostrarModalContrasenaReset(nombre, uid, tempPass) {
     '<div style="font-size:22px;font-weight:800;color:#131313;font-family:monospace;letter-spacing:2px;text-align:center;padding:10px;background:white;border-radius:8px;border:2px dashed #bae6fd" id="tempPassDisplay">' + tempPass + '</div>' +
     '</div>' +
     '<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:12px;color:#92400e;margin-bottom:16px">' +
-    '⚠️ Comparte esta contraseña con el usuario. Deberá cambiarla en su próximo ingreso.' +
+    '! Comparte esta contraseña con el usuario. Deberá cambiarla en su próximo ingreso.' +
     '</div>' +
     '<div style="display:flex;gap:8px">' +
-    '<button id="btnCopiarPass" style="flex:1;padding:10px;background:#131313;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">📋 Copiar contraseña</button>' +
+    '<button id="btnCopiarPass" style="flex:1;padding:10px;background:#131313;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Copiar contraseña</button>' +
     '<button id="btnCerrarReset" style="flex:1;padding:10px;background:#F0F0F0;color:#374151;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Cerrar</button>' +
     '</div></div>';
 
@@ -2538,8 +2538,8 @@ function mostrarModalContrasenaReset(nombre, uid, tempPass) {
     var txt = document.getElementById('tempPassDisplay').textContent;
     if(navigator.clipboard) {
       navigator.clipboard.writeText(txt).then(function(){
-        document.getElementById('btnCopiarPass').textContent = '✅ Copiado';
-        setTimeout(function(){ document.getElementById('btnCopiarPass').textContent = '📋 Copiar contraseña'; }, 2000);
+        document.getElementById('btnCopiarPass').textContent = 'Copiado';
+        setTimeout(function(){ document.getElementById('btnCopiarPass').textContent = 'Copiar contraseña'; }, 2000);
       });
     } else {
       var ta = document.createElement('textarea');
@@ -2548,7 +2548,7 @@ function mostrarModalContrasenaReset(nombre, uid, tempPass) {
       ta.select();
       document.execCommand('copy');
       document.body.removeChild(ta);
-      document.getElementById('btnCopiarPass').textContent = '✅ Copiado';
+      document.getElementById('btnCopiarPass').textContent = 'Copiado';
     }
   };
   document.getElementById('btnCerrarReset').onclick = function() {
@@ -2562,7 +2562,7 @@ function mostrarCambiarMiPassword() {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML =
     '<div style="background:white;border-radius:16px;padding:28px;max-width:380px;width:100%">' +
-    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🔒 Cambiar mi contraseña</div>' +
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">Cambiar mi contraseña</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:20px">Usuario: ' + (CU ? CU.nombre : '') + '</div>' +
     '<div id="cambioPassMsg" style="font-size:12px;margin-bottom:12px"></div>' +
     '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Contraseña actual</label>' +
@@ -2604,7 +2604,7 @@ function mostrarCambiarMiPassword() {
 
       enviarCodigoVerificacion(uid, users[uid].correo, function(ok, error){
         btnG.disabled = false; btnG.textContent = 'Guardar';
-        if(!ok) { msgEl.style.color='#dc2626'; msgEl.textContent = '❌ ' + (error||'No se pudo enviar el código'); return; }
+        if(!ok) { msgEl.style.color='#dc2626'; msgEl.textContent = '' + (error||'No se pudo enviar el código'); return; }
 
         var correoMasked = users[uid].correo.replace(/^(.{2})(.*)(@.*)$/, function(m,a,b,c){ return a + b.replace(/./g,'*') + c; });
         // Mostrar campo de código
@@ -2619,7 +2619,7 @@ function mostrarCambiarMiPassword() {
           btnConfirmar.parentNode.insertBefore(codeBox, btnConfirmar);
         }
         msgEl.style.color = '#16a34a';
-        msgEl.textContent = '✅ Código enviado. Ingrésalo para confirmar.';
+        msgEl.textContent = 'Código enviado. Ingrésalo para confirmar.';
         btnG.textContent = 'Confirmar cambio';
 
         // Cambiar la acción del botón al segundo paso
@@ -2640,7 +2640,7 @@ function mostrarCambiarMiPassword() {
             }).catch(function(){});
           }
           msgEl.style.color = '#16a34a';
-          msgEl.textContent = '✅ Contraseña cambiada correctamente.';
+          msgEl.textContent = 'Contraseña cambiada correctamente.';
           setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
         };
       });
@@ -2660,7 +2660,7 @@ function mostrarCambiarMiPassword() {
       }).catch(function(){});
     }
     msgEl.style.color = '#16a34a';
-    msgEl.textContent = '✅ Contraseña cambiada correctamente.';
+    msgEl.textContent = 'Contraseña cambiada correctamente.';
     setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
   };
 }
@@ -2698,9 +2698,9 @@ function crearNuevoUsuario() {
   var rol = document.getElementById('nuRol').value;
   var sede = document.getElementById('nuSede').value;
   var errEl = document.getElementById('nuError');
-  if(!uid || !nombre) { errEl.textContent = '⚠️ Completa todos los campos.'; errEl.style.color='#dc2626'; return; }
+  if(!uid || !nombre) { errEl.textContent = '! Completa todos los campos.'; errEl.style.color='#dc2626'; return; }
   var users = getUsers();
-  if(users[uid]) { errEl.textContent = '⚠️ El usuario @' + uid + ' ya existe.'; errEl.style.color='#dc2626'; return; }
+  if(users[uid]) { errEl.textContent = '! El usuario @' + uid + ' ya existe.'; errEl.style.color='#dc2626'; return; }
   // Generar contraseña temporal
   var tempPass = 'Pass' + String(Math.floor(1000 + Math.random()*9000)) + '!';
   users[uid] = { nombre: nombre, role: rol, sede: sede, pass: tempPass, mustChangePass: true, especialidad: '' };
@@ -2712,7 +2712,7 @@ function crearNuevoUsuario() {
     }).catch(function(){});
   }
   errEl.style.color = '#16a34a';
-  errEl.textContent = '✅ Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
+  errEl.textContent = 'Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
   renderGestionUsuarios();
   renderUsuarios();
   poblarUserSelects();
@@ -2744,7 +2744,7 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   header.innerHTML = '<div style="display:flex;align-items:center;gap:10px">' +
     '<div style="width:24px;height:24px;border-radius:50%;background:' + color + ';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">✓</div>' +
     '<span style="font-size:13px;font-weight:700;color:#131313">' + label + '</span>' +
-    '<span style="font-size:11px;color:#10b981;font-weight:600">✅ Completada</span>' +
+    '<span style="font-size:11px;color:#10b981;font-weight:600">Completada</span>' +
     '</div>' +
     '<span id="arrow_' + sectionId + '" style="font-size:14px;color:#6b82a0;transition:transform 0.2s">▼</span>';
 
@@ -2811,9 +2811,9 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     var hayDatosCil1 = e4.serieCilindro || e4.fechaFabCilindro;
     if(hayDatosCil1) {
       docsHtml += '<div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #FFC165">';
-      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">🔵 CILINDRO 1</div>';
-      if(e4.serieCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieCilindro + '</strong></div>';
-      if(e4.fechaFabCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📅 Fecha fabricación: <strong>' + e4.fechaFabCilindro + '</strong></div>';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">CILINDRO 1</div>';
+      if(e4.serieCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Serie: <strong>' + e4.serieCilindro + '</strong></div>';
+      if(e4.fechaFabCilindro) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Fecha fabricación: <strong>' + e4.fechaFabCilindro + '</strong></div>';
       docsHtml += '</div>';
     }
 
@@ -2821,22 +2821,22 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     var hayDatosCil2 = e4.serieCilindro2 || e4.fechaFabCilindro2;
     if(hayDatosCil2 && !e4.cilindro2NoAplica) {
       docsHtml += '<div style="background:#f0f9ff;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #FFC165">';
-      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">🔵 CILINDRO 2</div>';
-      if(e4.serieCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieCilindro2 + '</strong></div>';
-      if(e4.fechaFabCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📅 Fecha fabricación: <strong>' + e4.fechaFabCilindro2 + '</strong></div>';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#0369a1;margin-bottom:6px">CILINDRO 2</div>';
+      if(e4.serieCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Serie: <strong>' + e4.serieCilindro2 + '</strong></div>';
+      if(e4.fechaFabCilindro2) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Fecha fabricación: <strong>' + e4.fechaFabCilindro2 + '</strong></div>';
       docsHtml += '</div>';
     }
     if(e4.cilindro2NoAplica) {
-      docsHtml += '<div style="font-size:12px;color:#a8a8a8;padding:4px 0;font-style:italic">🔵 Cilindro 2: No aplica</div>';
+      docsHtml += '<div style="font-size:12px;color:#a8a8a8;padding:4px 0;font-style:italic">Cilindro 2: No aplica</div>';
     }
 
     // ── Datos Reductor ──
     var hayDatosRed = e4.marcaReductor || e4.serieReductor;
     if(hayDatosRed) {
       docsHtml += '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid #22c55e">';
-      docsHtml += '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px">🔧 REDUCTOR</div>';
-      if(e4.marcaReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">🏷️ Marca: <strong>' + e4.marcaReductor + '</strong></div>';
-      if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">📋 Serie: <strong>' + e4.serieReductor + '</strong></div>';
+      docsHtml += '<div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px">REDUCTOR</div>';
+      if(e4.marcaReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Marca: <strong>' + e4.marcaReductor + '</strong></div>';
+      if(e4.serieReductor) docsHtml += '<div style="font-size:12px;color:#374151;padding:3px 0">Serie: <strong>' + e4.serieReductor + '</strong></div>';
       docsHtml += '</div>';
     }
 
@@ -2894,7 +2894,7 @@ function renderDocHistorialRow(label, meta, fileUrl, downloadUrl) {
   var btnHtml = '';
   if(viewUrl) {
     btnHtml = '<div style="display:flex;gap:4px">' +
-      '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
+      '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">Ver</a>' +
       '<a href="' + dlUrl + '" target="_blank" download="' + nombre + '" style="display:inline-flex;align-items:center;gap:3px;padding:4px 8px;background:#131313;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇</a>' +
       '</div>';
   } else {
@@ -2910,10 +2910,10 @@ function renderFotoHistorialRow(label, meta, fotoUrl, driveInfo) {
   if(!meta) return '';
   var btnHtml = '';
   if(driveInfo && driveInfo.viewUrl) {
-    btnHtml = '<a href="' + driveInfo.viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">👁 Ver</a>' +
+    btnHtml = '<a href="' + driveInfo.viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#059669;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">Ver</a>' +
       '<a href="' + driveInfo.downloadUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:#131313;color:white;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;margin-left:4px">⬇ Descargar</a>';
   } else if(fotoUrl) {
-    btnHtml = '<button id="btnVerFoto_' + label.replace(/ /g,'') + '" style="padding:4px 10px;background:#059669;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">👁 Ver</button>';
+    btnHtml = '<button id="btnVerFoto_' + label.replace(/ /g,'') + '" style="padding:4px 10px;background:#059669;color:white;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Ver</button>';
     (function(url, nm){ 
       setTimeout(function(){
         var b = document.getElementById('btnVerFoto_' + label.replace(/ /g,''));
@@ -2946,13 +2946,13 @@ function renderEtapa6(cont, exp) {
   // ── Sección PDF Consolidado ──
   var pdfSec = document.createElement('div');
   pdfSec.style.cssText = 'background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:16px;margin-top:16px';
-  pdfSec.innerHTML = '<div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">📄 Documentos del Expediente</div>' +
+  pdfSec.innerHTML = '<div style="font-size:13px;font-weight:800;color:#0369a1;margin-bottom:4px">Documentos del Expediente</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Basado en el orden definido en Etapa 5</div>';
 
   // Listar documentos del Grupo 1
   var docs = getDocsParaCertificadora(exp);
   if(docs.length === 0) {
-    pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:10px;background:#fef9c3;border-radius:8px">⚠️ No hay documentos en Etapa 5. Completa primero las etapas anteriores.</div>';
+    pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:10px;background:#fef9c3;border-radius:8px">! No hay documentos en Etapa 5. Completa primero las etapas anteriores.</div>';
   } else {
     var docList = '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">';
     for(var d=0; d<docs.length; d++) {
@@ -2960,7 +2960,7 @@ function renderEtapa6(cont, exp) {
       var hasFile = doc.driveFile && doc.driveFile.viewUrl;
       var nota = doc.omitirUltimaPagina ? ' (sin última pág.)' : '';
       docList += '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:white;border-radius:8px;border:1px solid #D9D9D9">' +
-        '<span style="font-size:16px">' + (hasFile ? '✅' : '⚠️') + '</span>' +
+        '<span style="font-size:16px">' + (hasFile ? '✓' : '!') + '</span>' +
         '<span style="font-size:12px;font-weight:600;color:#131313;flex:1">' + doc.label + nota + '</span>' +
         (hasFile ? '<a href="' + doc.driveFile.viewUrl + '" target="_blank" style="font-size:11px;color:#FFC165">Ver</a>' : '<span style="font-size:11px;color:#f59e0b">Sin archivo</span>') +
         '</div>';
@@ -2971,11 +2971,11 @@ function renderEtapa6(cont, exp) {
     // Video de compresiones
     var e4video = exp.e4 && exp.e4.videoCompresiones ? exp.e4.videoCompresiones : null;
     var dfVideo = exp.driveFiles && exp.driveFiles['videoComp'] ? exp.driveFiles['videoComp'] : null;
-    pdfSec.innerHTML += '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:6px">🎥 Video de compresiones (adjunto por separado)</div>';
+    pdfSec.innerHTML += '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:6px">Video de compresiones (adjunto por separado)</div>';
     if(dfVideo && dfVideo.viewUrl) {
-      pdfSec.innerHTML += '<div style="font-size:12px;color:#22c55e;padding:6px 10px;background:#f0fdf4;border-radius:6px">✅ ' + (e4video ? e4video.nombre : 'Video') + ' — disponible en Drive</div>';
+      pdfSec.innerHTML += '<div style="font-size:12px;color:#22c55e;padding:6px 10px;background:#f0fdf4;border-radius:6px">' + (e4video ? e4video.nombre : 'Video') + ' — disponible en Drive</div>';
     } else {
-      pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:6px 10px;background:#fef9c3;border-radius:6px">⚠️ Video no subido aún (Etapa 4)</div>';
+      pdfSec.innerHTML += '<div style="font-size:12px;color:#f59e0b;padding:6px 10px;background:#fef9c3;border-radius:6px">! Video no subido aún (Etapa 4)</div>';
     }
   }
   sec.appendChild(pdfSec);
@@ -2983,7 +2983,7 @@ function renderEtapa6(cont, exp) {
   // ── Compositor de correo ──
   var mailSec = document.createElement('div');
   mailSec.style.cssText = 'margin-top:16px;background:white;border:1.5px solid #D9D9D9;border-radius:12px;overflow:hidden';
-  mailSec.innerHTML = '<div style="background:#131313;padding:12px 16px;font-size:13px;font-weight:700;color:white">✉️ Compositor de Correo</div>';
+  mailSec.innerHTML = '<div style="background:#131313;padding:12px 16px;font-size:13px;font-weight:700;color:white">Compositor de Correo</div>';
 
   var mailBody = document.createElement('div');
   mailBody.style.cssText = 'padding:16px;display:flex;flex-direction:column;gap:12px';
@@ -3054,7 +3054,7 @@ function renderEtapa6(cont, exp) {
   // Adjuntos adicionales
   var adjDiv = document.createElement('div');
   adjDiv.style.cssText = 'background:#F7F7F2;border-radius:8px;padding:12px';
-  adjDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">📎 Adjuntos adicionales (opcional)</div>';
+  adjDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Adjuntos adicionales (opcional)</div>';
   var adjInp = document.createElement('input');
   adjInp.type = 'file';
   adjInp.id = 'e6_adjuntos_' + exp.id;
@@ -3069,7 +3069,7 @@ function renderEtapa6(cont, exp) {
     btnEnviar.id = 'btn_enviar_e6_' + exp.id;
     btnEnviar.className = 'btn btn-primary';
     btnEnviar.style.cssText = 'width:100%;justify-content:center;font-size:15px;padding:14px';
-    btnEnviar.innerHTML = '📨 Enviar correo a certificadora';
+    btnEnviar.innerHTML = 'Enviar correo a certificadora';
     btnEnviar.onclick = (function(eid){ return function(){ enviarCorreoCertificadora(eid); }; })(exp.id);
     mailBody.appendChild(btnEnviar);
   }
@@ -3080,7 +3080,7 @@ function renderEtapa6(cont, exp) {
   histDiv.style.cssText = 'font-size:12px;color:#8a8a8a;margin-top:8px';
   if(exp.e6 && exp.e6.envios && exp.e6.envios.length > 0) {
     var last = exp.e6.envios[exp.e6.envios.length-1];
-    histDiv.innerHTML = '✅ Último envío: ' + last.fecha + ' ' + last.hora + ' → ' + last.para;
+    histDiv.innerHTML = 'Último envío: ' + last.fecha + ' ' + last.hora + ' → ' + last.para;
   }
   mailBody.appendChild(histDiv);
 
@@ -3141,7 +3141,7 @@ function guardarComoPlantilla(expId) {
       body: JSON.stringify({configKey:'email_plantillas', configValue: plantillas})
     });
   })
-  .then(function(){ showToast('✅ Plantilla guardada', 'success'); })
+  .then(function(){ showToast('Plantilla guardada', 'success'); })
   .catch(function(){ showToast('Error guardando plantilla', 'error'); });
 }
 
@@ -3232,11 +3232,11 @@ function enviarCorreoCertificadora(expId) {
   linksHtml += '</ul>';
   htmlCuerpo = htmlCuerpo.replace('</div></div><div style="background:#131313', linksHtml + '</div></div><div style="background:#131313');
 
-  if(btnEl) { btnEl.disabled = true; btnEl.textContent = '⏳ Enviando...'; }
+  if(btnEl) { btnEl.disabled = true; btnEl.textContent = 'Enviando...'; }
 
   if(!GM_CONFIG.workerUrl) {
     showToast('Sin conexión al servidor', 'error');
-    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Enviar correo a certificadora'; }
     return;
   }
 
@@ -3248,9 +3248,9 @@ function enviarCorreoCertificadora(expId) {
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Enviar correo a certificadora'; }
     if(d.ok) {
-      showToast('✅ Correo enviado correctamente', 'success');
+      showToast('Correo enviado correctamente', 'success');
       guardarCorreoFrecuente(para);
       // Registrar envío en historial del expediente
       for(var i=0; i<expedientes.length; i++) {
@@ -3266,14 +3266,14 @@ function enviarCorreoCertificadora(expId) {
         }
       }
       var histDiv = document.getElementById('e6_historial_' + expId);
-      if(histDiv) histDiv.innerHTML = '✅ Enviado ahora → ' + para;
+      if(histDiv) histDiv.innerHTML = 'Enviado ahora → ' + para;
     } else {
-      showToast('❌ Error: ' + (d.error||'No se pudo enviar'), 'error');
+      showToast('Error: ' + (d.error||'No se pudo enviar'), 'error');
     }
   })
   .catch(function(e) {
-    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = '📨 Enviar correo a certificadora'; }
-    showToast('❌ Error de conexión', 'error');
+    if(btnEl) { btnEl.disabled = false; btnEl.innerHTML = 'Enviar correo a certificadora'; }
+    showToast('Error de conexión', 'error');
   });
 }
 
@@ -3457,9 +3457,9 @@ function progresoE4(exp) {
 
 // Color semáforo
 function colorRadar(diasHabiles) {
-  if(diasHabiles >= 2) return { bg:'#fef2f2', border:'#fca5a5', badge:'#dc2626', texto:'🔴 Alerta', icon:'🔴' };
-  if(diasHabiles >= 1) return { bg:'#fefce8', border:'#fde68a', badge:'#d97706', texto:'🟡 En curso', icon:'🟡' };
-  return { bg:'#f0fdf4', border:'#86efac', badge:'#16a34a', texto:'🟢 Normal', icon:'🟢' };
+  if(diasHabiles >= 2) return { bg:'#fef2f2', border:'#fca5a5', badge:'#dc2626', texto:'Alerta', icon:'' };
+  if(diasHabiles >= 1) return { bg:'#fefce8', border:'#fde68a', badge:'#d97706', texto:'En curso', icon:'' };
+  return { bg:'#f0fdf4', border:'#86efac', badge:'#16a34a', texto:'Normal', icon:'' };
 }
 
 
@@ -3516,10 +3516,10 @@ function marcarCulminado(expId, tipo) {
     expTarget.e4.conversionFin = ahora;
     var durMs = expTarget.e4.conversionFin - expTarget.e4.conversionInicio;
     expTarget.e4.conversionDuracionHoras = Math.round(durMs / 3600000 * 10) / 10;
-    showToast('🎉 Conversión culminada — Duración: ' + formatDuracion(durMs), 'success');
+    showToast('Conversión culminada — Duración: ' + formatDuracion(durMs), 'success');
   } else {
     var parte = tipo === 'cilindro' ? 'Montaje cilindro' : 'Montaje electrónica';
-    showToast('✅ ' + parte + ' culminado', 'success');
+    showToast('' + parte + ' culminado', 'success');
   }
 
   // Guardar en servidor
@@ -3574,7 +3574,7 @@ function getNombreVendedorSede(exp) {
 function badgeResponsable(nombre, nota) {
   var notaHtml = nota ? '<span style="font-size:9px;color:#FC682F;font-style:italic;display:block;margin-top:1px">' + nota + '</span>' : '';
   return '<span style="display:inline-flex;flex-direction:column;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:6px;padding:3px 9px;font-size:10px;color:#8a8a8a;font-weight:500">' +
-    '<span style="display:flex;align-items:center;gap:4px"><span style="color:#a8a8a8">👤 Responsable:</span> <strong style="color:#131313">' + nombre + '</strong></span>' +
+    '<span style="display:flex;align-items:center;gap:4px"><span style="color:#a8a8a8">Responsable:</span> <strong style="color:#131313">' + nombre + '</strong></span>' +
     notaHtml +
     '</span>';
 }
@@ -3663,7 +3663,7 @@ function renderRadar() {
   // Header
   html += '<div style="background:linear-gradient(135deg,#131313 0%,#262626 100%);border-radius:16px;padding:24px;margin-bottom:20px">' +
     '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">' +
-    '<div style="width:48px;height:48px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(79,70,229,0.4)">🎯</div>' +
+    '<div style="width:48px;height:48px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(79,70,229,0.4)">&#9673;</div>' +
     '<div><div style="font-size:20px;font-weight:800;color:white;letter-spacing:-.5px">Radar de Conversiones</div>' +
     '<div style="font-size:12px;color:#a8a8a8;margin-top:2px">Actualizado en tiempo real · Solo días hábiles (excluye domingos)</div></div>' +
     '<button onclick="renderRadar()" style="margin-left:auto;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white;border-radius:10px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600">↻ Actualizar</button>' +
@@ -3675,10 +3675,10 @@ function renderRadar() {
     '<div style="font-size:11px;color:#8a8a8a;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">En conversión</div></div>' +
     '<div style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);border-radius:12px;padding:16px;text-align:center">' +
     '<div style="font-size:32px;font-weight:900;color:#ef4444;line-height:1">' + alertaRoja + '</div>' +
-    '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">⚠ En alerta</div></div>' +
+    '<div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">En alerta</div></div>' +
     '<div style="background:rgba(234,179,8,0.15);border:1px solid rgba(234,179,8,0.3);border-radius:12px;padding:16px;text-align:center">' +
     '<div style="font-size:32px;font-weight:900;color:#fbbf24;line-height:1">' + alertaAmarilla + '</div>' +
-    '<div style="font-size:11px;color:#fbbf24;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">⏳ Advertencia</div></div>' +
+    '<div style="font-size:11px;color:#fbbf24;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Advertencia</div></div>' +
     '<div style="background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);border-radius:12px;padding:16px;text-align:center">' +
     '<div style="font-size:28px;font-weight:900;color:#4ade80;line-height:1">' + promedioGeneral + '<span style="font-size:16px">h</span></div>' +
     '<div style="font-size:11px;color:#4ade80;margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Prom. general</div></div>' +
@@ -3692,7 +3692,7 @@ function renderRadar() {
       var prom = Math.round(sd.horas / sd.count);
       var sedeColor = ['#FFC165','#f97316','#8b5cf6','#10b981'][s % 4];
       html += '<div style="background:white;border:1.5px solid #D9D9D9;border-radius:12px;padding:14px;border-left:4px solid ' + sedeColor + '">' +
-        '<div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">🏢 ' + sedeKeys[s] + '</div>' +
+        '<div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">' + sedeKeys[s] + '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-end">' +
         '<div><span style="font-size:24px;font-weight:800;color:#131313">' + sd.count + '</span><span style="font-size:12px;color:#a8a8a8"> vehículos</span></div>' +
         '<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:' + sedeColor + '">' + prom + 'h</div><div style="font-size:10px;color:#a8a8a8">promedio</div></div>' +
@@ -3704,7 +3704,7 @@ function renderRadar() {
   // ── Lista de vehículos ──
   if(enRadar.length === 0) {
     container.innerHTML = html + '<div style="background:#f0fdf4;border:2px dashed #86efac;border-radius:16px;padding:40px;text-align:center">' +
-      '<div style="font-size:48px;margin-bottom:12px">✅</div>' +
+      '<div style="font-size:48px;margin-bottom:12px">✓</div>' +
       '<div style="font-size:16px;font-weight:700;color:#16a34a">Sin vehículos en conversión activa</div>' +
       '<div style="font-size:13px;color:#8a8a8a;margin-top:4px">Todos los expedientes están al día</div></div>';
     return;
@@ -3749,8 +3749,8 @@ function renderRadar() {
       botonCulminar = '<div style="position:relative">' +
         '<button data-menu="' + exp.id + '" style="background:#f5f5f0;color:#131313;border:1px solid #D9D9D9;font-size:11px;font-weight:600;padding:6px 12px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap">Culminar <span style="font-size:9px">▾</span></button>' +
         '<div id="menuCulminar_' + exp.id + '" style="display:none;position:absolute;right:0;top:calc(100% + 4px);background:white;border:1px solid #D9D9D9;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,0.12);z-index:50;min-width:170px;overflow:hidden">';
-      if(!cilOk) botonCulminar += '<button data-culminar="cilindro" data-exp="' + exp.id + '" style="display:block;width:100%;text-align:left;padding:10px 14px;background:white;border:none;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:12px;color:#131313">🔧 Culminar cilindro</button>';
-      if(!elecOk) botonCulminar += '<button data-culminar="electronica" data-exp="' + exp.id + '" style="display:block;width:100%;text-align:left;padding:10px 14px;background:white;border:none;cursor:pointer;font-size:12px;color:#131313">⚡ Culminar electrónica</button>';
+      if(!cilOk) botonCulminar += '<button data-culminar="cilindro" data-exp="' + exp.id + '" style="display:block;width:100%;text-align:left;padding:10px 14px;background:white;border:none;border-bottom:1px solid #f0f0f0;cursor:pointer;font-size:12px;color:#131313">Culminar cilindro</button>';
+      if(!elecOk) botonCulminar += '<button data-culminar="electronica" data-exp="' + exp.id + '" style="display:block;width:100%;text-align:left;padding:10px 14px;background:white;border:none;cursor:pointer;font-size:12px;color:#131313">Culminar electrónica</button>';
       botonCulminar += '</div></div>';
     }
 
@@ -3958,12 +3958,12 @@ function renderEtapa1(cont, exp) {
 
   // Trazabilidad discreta
   var reemplazadoInfo = sf1.reemplazadoPor ?
-    '<div style="font-size:10px;color:#a8a8a8;margin-top:2px">🔄 Reemplazado por <strong>'+sf1.reemplazadoPor+'</strong> — '+sf1.fechaReemplazo+' '+sf1.horaReemplazo+'</div>' : '';
+    '<div style="font-size:10px;color:#a8a8a8;margin-top:2px">Reemplazado por <strong>'+sf1.reemplazadoPor+'</strong> — '+sf1.fechaReemplazo+' '+sf1.horaReemplazo+'</div>' : '';
 
   box.innerHTML=
     '<div class="doc-box-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>&#10003; SCANFILE 1</span>'+responsablePorDocumento(exp,'sf1')+'</div>'+
-    '<div class="meta-row"><span>&#128206;</span><span>'+sf1.nombre+'</span></div>'+
-    '<div style="font-size:10px;color:#6b82a0;margin-top:3px">📤 <strong>'+(sf1.subidoPor||'-')+'</strong> · '+(sf1.fecha||'')+' '+(sf1.hora||'')+'</div>'+
+    '<div class="meta-row"><span>∷</span><span>'+sf1.nombre+'</span></div>'+
+    '<div style="font-size:10px;color:#6b82a0;margin-top:3px"><strong>'+(sf1.subidoPor||'-')+'</strong> · '+(sf1.fecha||'')+' '+(sf1.hora||'')+'</div>'+
     reemplazadoInfo+
     '<div style="font-size:11px;color:#6b82a0;margin:8px 0;font-style:italic">PDF con TIV + DNI (ambas caras) + Checklist de taller</div>';
 
@@ -3975,14 +3975,14 @@ function renderEtapa1(cont, exp) {
     var vBtn=document.createElement('button');
     vBtn.className='btn btn-sm';
     vBtn.style.cssText='background:#5C8CF5;color:white;white-space:nowrap';
-    vBtn.innerHTML='&#128065; Ver';
+    vBtn.innerHTML='◉ Ver';
     vBtn.onclick=(function(did,nom){return function(){abrirVisorDocumento(did,nom);};})(driveId,sf1.nombre);
     btnGrp.appendChild(vBtn);
 
     var dBtn=document.createElement('button');
     dBtn.className='btn btn-teal btn-sm';
     dBtn.style.cssText='white-space:nowrap';
-    dBtn.innerHTML='&#11015; Descargar';
+    dBtn.innerHTML='↓ Descargar';
     dBtn.onclick=(function(did,nom){return function(){descargarDocumento(did,nom);};})(driveId,sf1.nombre);
     btnGrp.appendChild(dBtn);
 
@@ -3991,7 +3991,7 @@ function renderEtapa1(cont, exp) {
       var rBtn=document.createElement('button');
       rBtn.className='btn btn-sm';
       rBtn.style.cssText='background:#F0F0F0;color:#374151;border:1px solid #D9D9D9;white-space:nowrap;font-size:11px';
-      rBtn.innerHTML='&#128260; Reemplazar';
+      rBtn.innerHTML='↻ Reemplazar';
       rBtn.onclick=function(){confirmarReemplazo('sf1',exp.id,'e1sf1','.pdf');};
       btnGrp.appendChild(rBtn);
     }
@@ -4030,20 +4030,20 @@ function renderEtapa2(cont, exp) {
   var dl1=document.createElement('div');dl1.style.cssText='background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px';
   dl1.innerHTML='<div><div style="font-size:12px;font-weight:700;color:#065f46">PASO 1 — Descarga el SCANFILE 1 para generar la Matriz</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">'+sf1meta.nombre+'</div></div>';
   var dlA1=document.createElement('a');
-  if(sf1url){dlA1.href=sf1url;dlA1.download=sf1meta.nombre||'scanfile1.pdf';dlA1.className='btn btn-teal btn-sm';dlA1.innerHTML='&#11015; SCANFILE 1';}
+  if(sf1url){dlA1.href=sf1url;dlA1.download=sf1meta.nombre||'scanfile1.pdf';dlA1.className='btn btn-teal btn-sm';dlA1.innerHTML='↓ SCANFILE 1';}
   else{dlA1.className='btn btn-sm';dlA1.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA1.textContent='No disponible';}
   dl1.appendChild(dlA1);sec.appendChild(dl1);
 
   // Matriz Excel
   var matrizMeta=exp.e2&&exp.e2.matrizExcel?exp.e2.matrizExcel:null;
   var matrizBox=document.createElement('div');matrizBox.className='doc-box'+(matrizMeta?' done':'');
-  matrizBox.innerHTML='<div class="doc-box-title">'+(matrizMeta?'&#10003;':'&#128202;')+' Matriz Excel FISE</div>';
+  matrizBox.innerHTML='<div class="doc-box-title">'+(matrizMeta?'&#10003;':'▦')+' Matriz Excel FISE</div>';
   if(matrizMeta){
     var murl=getFileUrl(exp.id,'matriz');
-    var mi=document.createElement('div');mi.innerHTML='<div class="meta-row"><span>&#128206;</span><span>'+matrizMeta.nombre+'</span></div><div class="meta-row"><span>&#128100;</span><span>Subido por: <strong>'+matrizMeta.subidoPor+'</strong></span></div><div class="meta-row"><span>&#128197;</span><span>'+matrizMeta.fecha+' '+matrizMeta.hora+'</span></div>';
+    var mi=document.createElement('div');mi.innerHTML='<div class="meta-row"><span>∷</span><span>'+matrizMeta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>Subido por: <strong>'+matrizMeta.subidoPor+'</strong></span></div><div class="meta-row"><span>▦</span><span>'+matrizMeta.fecha+' '+matrizMeta.hora+'</span></div>';
     matrizBox.appendChild(mi);
     var dlM=document.createElement('a');
-    if(murl){dlM.href=murl;dlM.download=matrizMeta.nombre;dlM.className='btn btn-teal btn-sm';dlM.style.marginTop='8px';dlM.innerHTML='&#11015; Descargar Matriz';}
+    if(murl){dlM.href=murl;dlM.download=matrizMeta.nombre;dlM.className='btn btn-teal btn-sm';dlM.style.marginTop='8px';dlM.innerHTML='↓ Descargar Matriz';}
     else{dlM.className='btn btn-sm';dlM.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlM.textContent='Re-subir para descargar';}
     matrizBox.appendChild(dlM);
   } else if(puedeSub){
@@ -4056,7 +4056,7 @@ function renderEtapa2(cont, exp) {
 
   // Datos del cliente (editables)
   var datosBox=document.createElement('div');datosBox.className='doc-box';datosBox.style.marginTop='14px';
-  datosBox.innerHTML='<div class="doc-box-title">&#128101; Datos del Cliente <span style="font-size:11px;font-weight:400;color:#6b82a0">(editables)</span></div>';
+  datosBox.innerHTML='<div class="doc-box-title">◯◯ Datos del Cliente <span style="font-size:11px;font-weight:400;color:#6b82a0">(editables)</span></div>';
   var campos=[
     {id:'dc_nombre',label:'Nombre completo',val:exp.nombre||'',req:true},
     {id:'dc_dni',label:'DNI/CE',val:exp.dni||'',req:true},
@@ -4242,7 +4242,7 @@ function renderEtapa3(cont, exp) {
     var dinfo=document.createElement('div');dinfo.innerHTML='<div style="font-size:12px;font-weight:700;color:#1e40af">'+String(di+1)+'. '+dk.label+'</div>'+(dk.meta?'<div style="font-size:11px;color:#6b82a0">'+dk.meta.nombre+' — '+dk.meta.subidoPor+' — '+dk.meta.fecha+' '+dk.meta.hora+'</div>':'<div style="font-size:11px;color:#9ca3af">No disponible</div>');
     drow.appendChild(dinfo);
     var dlA=document.createElement('a');
-    if(durl&&dk.meta){dlA.href=durl;dlA.download=dk.meta.nombre;dlA.className='btn btn-sm btn-teal';dlA.innerHTML='&#11015;';}
+    if(durl&&dk.meta){dlA.href=durl;dlA.download=dk.meta.nombre;dlA.className='btn btn-sm btn-teal';dlA.innerHTML='↓';}
     else{dlA.className='btn btn-sm';dlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA.textContent='N/D';}
     drow.appendChild(dlA);dlBox.appendChild(drow);
   }
@@ -4288,9 +4288,9 @@ function renderEtapa4(cont, exp) {
   var sf2url=getFileUrl(exp.id,'sf2');
   var sf2box=document.createElement('div');sf2box.className='doc-box done';
   sf2box.innerHTML='<div class="doc-box-title">1. SCANFILE 2 (referencia)</div>';
-  if(sf2meta){sf2box.innerHTML+='<div class="meta-row"><span>&#128206;</span><span>'+sf2meta.nombre+'</span></div><div class="meta-row"><span>&#128100;</span><span>'+sf2meta.subidoPor+' — '+sf2meta.fecha+' '+sf2meta.hora+'</span></div>';}
+  if(sf2meta){sf2box.innerHTML+='<div class="meta-row"><span>∷</span><span>'+sf2meta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>'+sf2meta.subidoPor+' — '+sf2meta.fecha+' '+sf2meta.hora+'</span></div>';}
   var dlSf2=document.createElement('a');
-  if(sf2url&&sf2meta){dlSf2.href=sf2url;dlSf2.download=sf2meta.nombre;dlSf2.className='btn btn-teal btn-sm';dlSf2.style.marginTop='8px';dlSf2.innerHTML='&#11015; Descargar SCANFILE 2';}
+  if(sf2url&&sf2meta){dlSf2.href=sf2url;dlSf2.download=sf2meta.nombre;dlSf2.className='btn btn-teal btn-sm';dlSf2.style.marginTop='8px';dlSf2.innerHTML='↓ Descargar SCANFILE 2';}
   else{dlSf2.className='btn btn-sm';dlSf2.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlSf2.textContent='Re-subir para descargar';}
   sf2box.appendChild(dlSf2);sec.appendChild(sf2box);
 
@@ -4321,7 +4321,7 @@ function renderEtapa4(cont, exp) {
     btnGuardarTodo.id = 'btnGuardarTecnico_' + exp.id;
     btnGuardarTodo.className = 'btn btn-primary';
     btnGuardarTodo.style.cssText = 'width:100%;justify-content:center;margin:12px 0;font-size:15px;padding:14px;background:#FFC165;border-color:#FFC165';
-    btnGuardarTodo.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS';
+    btnGuardarTodo.innerHTML = 'GUARDAR TODOS LOS DATOS TÉCNICOS';
     btnGuardarTodo.onclick = (function(eid){ return function(){ guardarTodosDatosTecnicos(eid); }; })(exp.id);
     sec.appendChild(btnGuardarTodo);
   }
@@ -4386,7 +4386,7 @@ function crearFotoCilindroCard(exp, canSub) {
   // ── CILINDRO 1 ──
   var c1 = document.createElement('div');
   c1.style.cssText = 'background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:10px;padding:14px;margin-bottom:12px';
-  c1.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🔵 Cilindro 1</div>';
+  c1.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Cilindro 1</div>';
 
   // 1. Foto cilindro 1
   c1.appendChild(crearBloquefoto(exp, 'fotoCilindro1', 'Foto del Cilindro 1', canSub));
@@ -4446,7 +4446,7 @@ function crearFotoCilindroCard(exp, canSub) {
     var btn1 = document.createElement('button');
     btn1.className = 'btn btn-teal btn-sm';
     btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    btn1.textContent = '💾 Grabar datos Cilindro 1';
+    btn1.textContent = 'Grabar datos Cilindro 1';
     btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
     c1.appendChild(btn1);
   }
@@ -4456,7 +4456,7 @@ function crearFotoCilindroCard(exp, canSub) {
   // ── CILINDRO 2 ──
   var c2header = document.createElement('div');
   c2header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px';
-  c2header.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;text-transform:uppercase;letter-spacing:.5px">🔵 Cilindro 2</div>';
+  c2header.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;text-transform:uppercase;letter-spacing:.5px">Cilindro 2</div>';
 
   if(canSub) {
     var noAplLab = document.createElement('label');
@@ -4538,7 +4538,7 @@ function crearFotoCilindroCard(exp, canSub) {
       var btn2 = document.createElement('button');
       btn2.className = 'btn btn-teal btn-sm';
       btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-      btn2.textContent = '💾 Grabar datos Cilindro 2';
+      btn2.textContent = 'Grabar datos Cilindro 2';
       btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
       c2.appendChild(btn2);
     }
@@ -4559,7 +4559,7 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
   if(meta && meta.completado) {
     var furl = getFileUrl(exp.id, fotoKey);
     wrap.style.cssText = 'background:#d1fae5;border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between';
-    wrap.innerHTML = '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#065f46">✅ ' + label + '</div>' +
+    wrap.innerHTML = '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#065f46">' + label + '</div>' +
       '<div style="font-size:11px;color:#6b82a0">' + (meta.subidoPor||'') + ' — ' + (meta.fecha||'') + '</div></div>';
     
     var btnWrap = document.createElement('div');
@@ -4589,7 +4589,7 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
     // Botón Ver — usa Blob URL para evitar crash en Android
     var btnVer = document.createElement('button');
     btnVer.className = 'btn btn-teal btn-sm';
-    btnVer.innerHTML = '👁 Ver';
+    btnVer.innerHTML = 'Ver';
     var _fotoNombre = (meta && meta.nombre) ? meta.nombre : 'foto.jpg';
     var _dataUrl = dataUrlFoto || furl;
     var _driveUrl = driveUrl;
@@ -4638,7 +4638,7 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
   var btnCam = document.createElement('button');
   btnCam.type = 'button';
   btnCam.style.cssText = 'flex:1;background:#131313;color:white;border:none;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px';
-  btnCam.innerHTML = '📷 Cámara';
+  btnCam.innerHTML = 'Cámara';
   btnCam.onclick = (function(eid, fk, lbl){ return function() {
     abrirCamaraParaFoto(eid, fk, lbl);
   }; })(exp.id, fotoKey, label);
@@ -4648,7 +4648,7 @@ function crearBloquefoto(exp, fotoKey, label, canSub) {
   wrapGal.style.cssText = 'flex:1;position:relative';
   var btnGal = document.createElement('div');
   btnGal.style.cssText = 'background:#FFC165;color:#131313;border-radius:8px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;height:100%;box-sizing:border-box';
-  btnGal.innerHTML = '🖼️ Galería';
+  btnGal.innerHTML = 'Galería';
   var inpGal = document.createElement('input');
   inpGal.type = 'file'; inpGal.accept = 'image/*';
   inpGal.style.cssText = 'position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
@@ -4699,15 +4699,15 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
 
   var btnRetomar = document.createElement('button');
   btnRetomar.style.cssText = 'flex:1;background:#374151;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
-  btnRetomar.textContent = '🔄 Retomar';
+  btnRetomar.textContent = 'Retomar';
 
   var btnUsar = document.createElement('button');
   btnUsar.style.cssText = 'flex:1;background:#22c55e;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
-  btnUsar.textContent = '✅ Usar foto';
+  btnUsar.textContent = 'Usar foto';
 
   var btnCancelar = document.createElement('button');
   btnCancelar.style.cssText = 'flex:1;background:#ef4444;color:white;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer';
-  btnCancelar.textContent = '❌ Cancelar';
+  btnCancelar.textContent = 'Cancelar';
 
   btnRow.appendChild(btnRetomar);
   btnRow.appendChild(btnUsar);
@@ -4730,7 +4730,7 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
   btnUsar.onclick = function() {
     // NO cerrar modal todavía — mostrar spinner
     btnUsar.disabled = true;
-    btnUsar.textContent = '⏳ Guardando...';
+    btnUsar.textContent = 'Guardando...';
     btnRetomar.disabled = true;
     btnCancelar.disabled = true;
 
@@ -4788,7 +4788,7 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
         
         // Ahora sí cerrar modal y refrescar
         cerrar();
-        showToast('✅ Foto guardada — subiendo a Drive...', 'success');
+        showToast('Foto guardada — subiendo a Drive...', 'success');
         
         // Refrescar vista según contexto
         if(isTecnico() && document.getElementById('tecModalExp') && 
@@ -4856,7 +4856,7 @@ function guardarTodosDatosTecnicos(expId, silencioso) {
   if(!GM_CONFIG.workerUrl) return;
   PENDING_SYNC = true;
   var btn = document.getElementById('btnGuardarTecnico_' + expId);
-  if(btn && !silencioso) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  if(btn && !silencioso) { btn.disabled = true; btn.textContent = 'Guardando...'; }
 
   fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
@@ -4867,14 +4867,14 @@ function guardarTodosDatosTecnicos(expId, silencioso) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     PENDING_SYNC = false;
-    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS'; }
-    if(!silencioso) showToast('✅ Datos técnicos guardados correctamente', 'success');
-    else showToast('✅ Auto-guardado', 'success');
+    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = 'GUARDAR TODOS LOS DATOS TÉCNICOS'; }
+    if(!silencioso) showToast('Datos técnicos guardados correctamente', 'success');
+    else showToast('Auto-guardado', 'success');
   })
   .catch(function(e){
     PENDING_SYNC = false;
-    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = '💾 GUARDAR TODOS LOS DATOS TÉCNICOS'; }
-    showToast('⚠️ Error guardando datos técnicos', 'error');
+    if(btn && !silencioso) { btn.disabled = false; btn.innerHTML = 'GUARDAR TODOS LOS DATOS TÉCNICOS'; }
+    showToast('! Error guardando datos técnicos', 'error');
   });
 }
 
@@ -4911,11 +4911,11 @@ function grabarDatosCilindro(id) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     PENDING_SYNC = false;
-    showToast('✅ Datos Cilindro 1 guardados en servidor', 'success');
+    showToast('Datos Cilindro 1 guardados en servidor', 'success');
   })
   .catch(function(e){
     PENDING_SYNC = false;
-    showToast('⚠️ Error guardando en servidor', 'error');
+    showToast('! Error guardando en servidor', 'error');
   });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
@@ -4954,11 +4954,11 @@ function grabarDatosCilindro2(id) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     PENDING_SYNC = false;
-    showToast('✅ Datos Cilindro 2 guardados en servidor', 'success');
+    showToast('Datos Cilindro 2 guardados en servidor', 'success');
   })
   .catch(function(e){
     PENDING_SYNC = false;
-    showToast('⚠️ Error guardando en servidor', 'error');
+    showToast('! Error guardando en servidor', 'error');
   });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
@@ -5010,11 +5010,11 @@ function grabarDatosReductor(id) {
   .then(function(r){ return r.json(); })
   .then(function(d){
     PENDING_SYNC = false;
-    showToast('✅ Datos Reductor guardados en servidor', 'success');
+    showToast('Datos Reductor guardados en servidor', 'success');
   })
   .catch(function(e){
     PENDING_SYNC = false;
-    showToast('⚠️ Error guardando en servidor', 'error');
+    showToast('! Error guardando en servidor', 'error');
   });
   if(isTecnico() && document.getElementById('tecModalExp') &&
      document.getElementById('tecModalExp').style.display !== 'none') {
@@ -5053,7 +5053,7 @@ function crearFotoReductorCard(exp, canSub) {
 
   var rWrap = document.createElement('div');
   rWrap.style.cssText = 'background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:10px;padding:14px';
-  rWrap.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🔧 Reductor</div>';
+  rWrap.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Reductor</div>';
 
   // 1. Foto reductor
   rWrap.appendChild(crearBloquefoto(exp, 'fotoReductor', 'Foto del Reductor', canSub));
@@ -5109,7 +5109,7 @@ function crearFotoReductorCard(exp, canSub) {
     var gBtn = document.createElement('button');
     gBtn.className = 'btn btn-teal btn-sm';
     gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    gBtn.textContent = '💾 Grabar datos Reductor';
+    gBtn.textContent = 'Grabar datos Reductor';
     gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
     rWrap.appendChild(gBtn);
   }
@@ -5166,7 +5166,7 @@ function renderEtapa5(cont, exp) {
   var mosaico = document.createElement('div');
   mosaico.id = 'mosaico_' + exp.id;
   mosaico.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;min-height:80px;padding:12px;background:#faf5ff;border:2px dashed #c4b5fd;border-radius:12px;margin-bottom:12px';
-  mosaico.innerHTML = '<div style="color:#a78bfa;font-size:13px;font-style:italic;width:100%;text-align:center;padding:20px 0">⏳ Cargando páginas...</div>';
+  mosaico.innerHTML = '<div style="color:#a78bfa;font-size:13px;font-style:italic;width:100%;text-align:center;padding:20px 0">Cargando páginas...</div>';
 
   g1.appendChild(mosaico);
 
@@ -5176,7 +5176,7 @@ function renderEtapa5(cont, exp) {
     var btnGuardar = document.createElement('button');
     btnGuardar.className = 'btn btn-primary';
     btnGuardar.style.cssText = 'width:100%;justify-content:center;margin-bottom:12px';
-    btnGuardar.innerHTML = '💾 Guardar orden en servidor';
+    btnGuardar.innerHTML = 'Guardar orden en servidor';
     btnGuardar.id = 'btnGuardarOrden_' + exp.id;
     btnGuardar.onclick = (function(eid){ return function(){ guardarOrdenEtapa5(eid); }; })(exp.id);
     g1.appendChild(btnGuardar);
@@ -5187,11 +5187,11 @@ function renderEtapa5(cont, exp) {
   videoSec.style.cssText = 'margin-top:16px;background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:12px;padding:16px';
   var e4video = exp.e4 && exp.e4.videoCompresiones ? exp.e4.videoCompresiones : null;
   var dfVideo = exp.driveFiles && exp.driveFiles['videoComp'] ? exp.driveFiles['videoComp'] : null;
-  videoSec.innerHTML = '<div style="font-size:13px;font-weight:700;color:#131313;margin-bottom:10px">🎥 Video de Compresiones</div>';
+  videoSec.innerHTML = '<div style="font-size:13px;font-weight:700;color:#131313;margin-bottom:10px">Video de Compresiones</div>';
   if(e4video && e4video.completado) {
     var videoMeta = document.createElement('div');
     videoMeta.style.cssText = 'font-size:12px;color:#8a8a8a;margin-bottom:10px';
-    videoMeta.innerHTML = '📎 ' + (e4video.nombre||'Video') + ' — subido por ' + (e4video.subidoPor||'') + ' el ' + (e4video.fecha||'');
+    videoMeta.innerHTML = '' + (e4video.nombre||'Video') + ' — subido por ' + (e4video.subidoPor||'') + ' el ' + (e4video.fecha||'');
     videoSec.appendChild(videoMeta);
     if(dfVideo && dfVideo.viewUrl) {
       var btnVerVideo = document.createElement('a');
@@ -5209,7 +5209,7 @@ function renderEtapa5(cont, exp) {
       btnDlVideo.innerHTML = '⬇ Descargar';
       videoSec.appendChild(btnDlVideo);
     } else {
-      videoSec.innerHTML += '<span style="font-size:12px;color:#f59e0b">⚠️ Video pendiente de sincronizar a Drive</span>';
+      videoSec.innerHTML += '<span style="font-size:12px;color:#f59e0b">! Video pendiente de sincronizar a Drive</span>';
     }
   } else {
     videoSec.innerHTML += '<div style="font-size:12px;color:#a8a8a8;font-style:italic">Video de compresiones no subido aún (Etapa 4)</div>';
@@ -5236,7 +5236,7 @@ function renderEtapa5(cont, exp) {
   g2.innerHTML = '<div style="font-size:14px;font-weight:800;color:#a8a8a8;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">' +
     '<span style="background:#D9D9D9;color:#a8a8a8;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 2</span>' +
     'ARCHIVOS PARA FISE</div>' +
-    '<div style="font-size:12px;color:#a8a8a8">🚧 Pendiente de desarrollo</div>';
+    '<div style="font-size:12px;color:#a8a8a8">Pendiente de desarrollo</div>';
   sec.appendChild(g2);
 
   cont.appendChild(sec);
@@ -5328,7 +5328,7 @@ function cargarPaginasEtapa5(exp) {
 
   if(docs.length === 0) {
     mosaico.innerHTML = '<div style="color:#f59e0b;font-size:13px;width:100%;text-align:center;padding:20px 0">' +
-      '⚠️ Completa los documentos de la Etapa 4 para ver las páginas aquí.</div>';
+      '! Completa los documentos de la Etapa 4 para ver las páginas aquí.</div>';
     return;
   }
 
@@ -5394,13 +5394,13 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
     card.draggable = true;
     card.style.cssText = 'background:white;border:2px solid #D9D9D9;border-radius:10px;padding:10px;width:140px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0';
 
-    var icono = '📄';
-    if(pg.docKey==='boletaInformativa') icono = '📋';
-    if(pg.docKey==='boletaVenta') icono = '🧾';
-    if(pg.docKey==='scanfile1') icono = '📁';
-    if(pg.docKey==='scanfile2') icono = '📂';
-    if(pg.docKey==='capturaPIT') icono = '💻';
-    if(pg.docKey==='dniTecnico') icono = '🪪';
+    var icono = '▣';
+    if(pg.docKey==='boletaInformativa') icono = '≡';
+    if(pg.docKey==='boletaVenta') icono = '';
+    if(pg.docKey==='scanfile1') icono = '';
+    if(pg.docKey==='scanfile2') icono = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+    if(pg.docKey==='capturaPIT') icono = '';
+    if(pg.docKey==='dniTecnico') icono = '';
 
     // Canvas para miniatura PDF.js
     var canvasId = 'pdfcanvas_' + pg.id;
@@ -5477,7 +5477,7 @@ function renderMosaicoPaginas(exp, docs, ordenGuardado) {
       btnVer.href = pg.driveFile.viewUrl;
       btnVer.target = '_blank';
       btnVer.style.cssText = 'display:block;margin-top:6px;font-size:9px;color:#FFC165;text-decoration:none';
-      btnVer.textContent = '👁 Ver';
+      btnVer.textContent = 'Ver';
       card.appendChild(btnVer);
     }
 
@@ -5531,7 +5531,7 @@ function expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado) {
 
   Promise.all(promesas).then(function(resultados) {
     // Reconstruir el mosaico con páginas expandidas
-    mosaico.innerHTML = '<div style="color:#a78bfa;font-size:12px;width:100%;text-align:center;padding:10px">⏳ Cargando miniaturas...</div>';
+    mosaico.innerHTML = '<div style="color:#a78bfa;font-size:12px;width:100%;text-align:center;padding:10px">Cargando miniaturas...</div>';
 
     var todasPaginas = [];
     for(var r=0; r<resultados.length; r++) {
@@ -5583,11 +5583,11 @@ function crearCardPagina(pg, numOrden, mosaico) {
   card.style.cssText = 'background:white;border:2px solid #D9D9D9;border-radius:10px;padding:8px;width:130px;cursor:grab;user-select:none;transition:transform .15s,box-shadow .15s;text-align:center;flex-shrink:0;position:relative';
 
   var iconos = {
-    boletaInformativa:'📋', boletaVenta:'🧾',
-    scanfile1:'📁', scanfile2:'📂',
-    capturaPIT:'💻', dniTecnico:'🪪'
+    boletaInformativa:'', boletaVenta:'',
+    scanfile1:'▤', scanfile2:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+    capturaPIT:'', dniTecnico:''
   };
-  var icono = iconos[pg.docKey] || '📄';
+  var icono = iconos[pg.docKey] || '▣';
 
   // Canvas para renderizar la página del PDF
   var canvasId = 'pdfp_' + pg.id.replace(/[^a-z0-9]/gi,'_');
@@ -5667,7 +5667,7 @@ function crearCardPagina(pg, numOrden, mosaico) {
     lnk.href = pg.driveFile.viewUrl;
     lnk.target = '_blank';
     lnk.style.cssText = 'display:block;margin-top:4px;font-size:9px;color:#FFC165;text-decoration:none';
-    lnk.textContent = '👁 Ver doc';
+    lnk.textContent = 'Ver doc';
     card.appendChild(lnk);
   }
 
@@ -5733,7 +5733,7 @@ function guardarOrdenEtapa5(expId) {
   }
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
   var btn = document.getElementById('btnGuardarOrden_' + expId);
-  if(btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
   fetch(GM_CONFIG.workerUrl + '?action=saveOrdenExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
@@ -5742,13 +5742,13 @@ function guardarOrdenEtapa5(expId) {
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
-    if(btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar orden en servidor'; }
-    if(d.ok) showToast('✅ Orden guardado correctamente', 'success');
-    else showToast('⚠️ Error guardando orden', 'error');
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Guardar orden en servidor'; }
+    if(d.ok) showToast('Orden guardado correctamente', 'success');
+    else showToast('! Error guardando orden', 'error');
   })
   .catch(function(){
-    if(btn) { btn.disabled = false; btn.innerHTML = '💾 Guardar orden en servidor'; }
-    showToast('⚠️ Error de conexión', 'error');
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Guardar orden en servidor'; }
+    showToast('! Error de conexión', 'error');
   });
 }
 
@@ -5765,10 +5765,10 @@ function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, accept
     var fileUrl=getFileUrl(expId,tipoKey);
     var doneRow=document.createElement('div');doneRow.style.cssText='display:flex;align-items:center;justify-content:space-between;background:#d1fae5;border-radius:8px;padding:10px 14px;margin-top:8px;gap:10px';
     var dLeft=document.createElement('div');
-    dLeft.innerHTML='<div style="font-size:12px;font-weight:600;color:#065f46">&#128206; '+meta.nombre+'</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">Subido por: <strong>'+meta.subidoPor+'</strong> — '+meta.fecha+' '+meta.hora+'</div>';
+    dLeft.innerHTML='<div style="font-size:12px;font-weight:600;color:#065f46">∷ '+meta.nombre+'</div><div style="font-size:11px;color:#6b82a0;margin-top:2px">Subido por: <strong>'+meta.subidoPor+'</strong> — '+meta.fecha+' '+meta.hora+'</div>';
     doneRow.appendChild(dLeft);
     var dlA=document.createElement('a');
-    if(fileUrl){dlA.href=fileUrl;dlA.download=meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='&#11015; Descargar';}
+    if(fileUrl){dlA.href=fileUrl;dlA.download=meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='↓ Descargar';}
     else{dlA.className='btn btn-sm';dlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA.textContent='Re-subir';}
     doneRow.appendChild(dlA);card.appendChild(doneRow);
   } else if(puedeSub){
@@ -5786,7 +5786,7 @@ function crearDocCard(expId, tipoKey, label, meta, puedeSub, storePrefix, accept
 function crearDropZone(expId, tipoKey, accept, storePrefix) {
   var div=document.createElement('div');
   div.style.cssText='position:relative;border:2px dashed #D9D9D9;border-radius:10px;padding:16px;text-align:center;background:#F7F7F2;cursor:pointer;transition:border-color .2s';
-  div.innerHTML='<div style="font-size:24px;margin-bottom:4px">&#128206;</div><div style="font-size:12px;color:#6b82a0">Haz clic para adjuntar y grabar</div>';
+  div.innerHTML='<div style="font-size:24px;margin-bottom:4px">∷</div><div style="font-size:12px;color:#6b82a0">Haz clic para adjuntar y grabar</div>';
   var inp=document.createElement('input');inp.type='file';inp.accept=accept;
   inp.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
   inp.onchange=(function(eid,tk,sp){
@@ -5877,7 +5877,7 @@ function renderUsuarios() {
     // Login box — cómo ingresar
     var correoTxt = u.correo ? u.correo : '(sin correo registrado)';
     var loginInfo='<div style="margin-top:8px;background:#F7F7F2;border:1px solid #D9D9D9;border-radius:8px;padding:8px 10px">'+
-      '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">📱 Cómo ingresar a la app:</div>'+
+      '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Cómo ingresar a la app:</div>'+
       '<div style="font-size:12px;color:#131313"><strong>Usuario:</strong> '+u.nombre+'</div>'+
       '<div style="font-size:12px;color:#131313;margin-top:2px"><strong>Correo:</strong> '+correoTxt+'</div>'+
       '<div style="font-size:12px;color:#131313;margin-top:2px"><strong>Contraseña:</strong> ••••••</div>'+
@@ -5900,20 +5900,20 @@ function renderUsuarios() {
 
     var eb=document.createElement('button');
     eb.style.cssText='background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
-    eb.textContent='✏️ Editar';
+    eb.textContent='Editar';
     eb.onclick=(function(uid){return function(){editarUsuario(uid);};})(id);
     btns.appendChild(eb);
 
     var cb=document.createElement('button');
     cb.style.cssText='background:#F0F0F0;color:#475569;border:1px solid #D9D9D9;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
-    cb.textContent='🔑 Cambiar clave';
+    cb.textContent='Cambiar clave';
     cb.onclick=(function(uid){return function(){resetPassUsuario(uid);};})(id);
     btns.appendChild(cb);
 
     if(id!=='iki'){
       var db=document.createElement('button');
       db.style.cssText='background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer';
-      db.textContent='🗑 Eliminar';
+      db.textContent='Eliminar';
       db.onclick=(function(uid){return function(){eliminarUsuario(uid);};})(id);
       btns.appendChild(db);
     }
@@ -5930,7 +5930,7 @@ function mostrarCambioPass(uid){
   if(!users[uid]){showAlert('alertUsuarios','Usuario no encontrado.','error');return;}
   users[uid].pass=nueva;
   saveUsers(users);
-  showAlert('alertUsuarios','✓ Contraseña actualizada para '+users[uid].nombre,'success');
+  showAlert('alertUsuarios','Contraseña actualizada para '+users[uid].nombre,'success');
 }
 function toggleNewUserForm(){var f=document.getElementById('newUserForm');f.style.display=f.style.display==='none'?'block':'none';}
 
@@ -6184,7 +6184,7 @@ function renderComentariosSection(expId,cont){
   sec.style.cssText='margin-top:22px;border-top:2px solid #D9D9D9;padding-top:16px';
   var ttl=document.createElement('div');
   ttl.style.cssText='font-size:13px;font-weight:700;color:#131313;margin-bottom:12px;display:flex;align-items:center;gap:8px';
-  ttl.innerHTML='<span style="font-size:17px">&#128172;</span> Comentarios e Incidencias <span style="font-size:11px;font-weight:400;color:#6b82a0">— visible para todos los usuarios</span>';
+  ttl.innerHTML='<span style="font-size:17px">▣</span> Comentarios e Incidencias <span style="font-size:11px;font-weight:400;color:#6b82a0">— visible para todos los usuarios</span>';
   sec.appendChild(ttl);
   var listDiv=document.createElement('div');
   listDiv.style.cssText='max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px';
@@ -6239,9 +6239,9 @@ function renderPanelClientes(){
   var stats=document.createElement('div');
   stats.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:22px';
   stats.innerHTML=
-    '<div class="stat-card s-teal"><div class="stat-icon">&#128661;</div><div class="stat-num">'+total+'</div><div class="stat-label">Clientes totales</div></div>'+
-    '<div class="stat-card s-green"><div class="stat-icon">&#9989;</div><div class="stat-num">'+comp+'</div><div class="stat-label">Conversiones OK</div></div>'+
-    '<div class="stat-card s-orange"><div class="stat-icon">&#8987;</div><div class="stat-num">'+(total-comp)+'</div><div class="stat-label">En proceso</div></div>';
+    '<div class="stat-card s-teal"><div class="stat-icon">▷</div><div class="stat-num">'+total+'</div><div class="stat-label">Clientes totales</div></div>'+
+    '<div class="stat-card s-green"><div class="stat-icon">✓</div><div class="stat-num">'+comp+'</div><div class="stat-label">Conversiones OK</div></div>'+
+    '<div class="stat-card s-orange"><div class="stat-icon">◷</div><div class="stat-num">'+(total-comp)+'</div><div class="stat-label">En proceso</div></div>';
   cont.appendChild(stats);
   // Buscador
   var sr=document.createElement('div');sr.className='search-bar';sr.style.marginBottom='16px';
@@ -6266,7 +6266,7 @@ function buildClienteCards(){
     if(mq)lista.push(e);
   }
   if(!lista.length){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af"><div style="font-size:40px;margin-bottom:10px">&#128661;</div><p style="font-weight:600">Sin clientes</p></div>';
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af"><div style="font-size:40px;margin-bottom:10px">▷</div><p style="font-weight:600">Sin clientes</p></div>';
     return;
   }
   for(var ri=0;ri<lista.length;ri++){
@@ -6326,14 +6326,14 @@ function buildClienteCard(exp){
   if(ahorro>0){
     var av=document.createElement('div');
     av.style.cssText='background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #a7f3d0;border-radius:10px;padding:12px;margin-bottom:12px';
-    av.innerHTML='<div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;margin-bottom:5px">&#128176; Ahorro Estimado en Gas</div>'+
+    av.innerHTML='<div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;margin-bottom:5px">◈ Ahorro Estimado en Gas</div>'+
       '<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:22px;font-weight:900;color:#059669">S/ '+ahorro.toLocaleString()+'</div><div style="font-size:11px;color:#6b82a0">aprox.</div></div>'+
       '<div style="font-size:11px;color:#065f46;margin-top:3px">Basado en '+km.toLocaleString()+' km recorridos</div>';
     body.appendChild(av);
   }
   // Agenda mantenimiento
   var ag=document.createElement('div');ag.style.cssText='background:#F7F7F2;border-radius:10px;padding:12px;margin-bottom:12px';
-  ag.innerHTML='<div style="font-size:11px;font-weight:700;color:#131313;text-transform:uppercase;margin-bottom:8px">&#128197; Agenda de Mantenimiento</div>';
+  ag.innerHTML='<div style="font-size:11px;font-weight:700;color:#131313;text-transform:uppercase;margin-bottom:8px">▦ Agenda de Mantenimiento</div>';
   var agit=[
     {l:'Cambio de filtros',v:'Cada 10,000 km o 6 meses',c:'#FFC165'},
     {l:'Certificacion anual',v:'Cada 12 meses',c:'#3b82f6'},
@@ -6360,7 +6360,7 @@ function buildClienteCard(exp){
   var ft=document.createElement('div');ft.style.cssText='display:flex;gap:8px';
   var pb=document.createElement('button');
   pb.style.cssText='flex:1;background:#fef2f2;color:#cc2200;border:1.5px solid #fca5a5;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
-  pb.innerHTML='&#128680; Soporte Urgente';
+  pb.innerHTML='! Soporte Urgente';
   pb.onclick=(function(eid){return function(ev){ev.stopPropagation();abrirGuiaSoporte(eid);};})(exp.id);
   var vb=document.createElement('button');
   vb.style.cssText='flex:1;background:#FFC165;color:#131313;border:none;border-radius:8px;padding:8px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer';
@@ -6372,8 +6372,8 @@ function buildClienteCard(exp){
 function abrirGuiaSoporte(expId){
   var w=window.open('','_blank','width=600,height=520');
   w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Soporte Urgente</title><style>body{font-family:Arial,sans-serif;margin:28px;color:#262626}.sos{background:#fef2f2;border:3px solid #cc2200;border-radius:12px;padding:20px;margin-bottom:16px}.sos h2{color:#cc2200;margin:0 0 12px}ul{line-height:2.2;padding-left:20px}.tel{display:inline-block;background:#cc2200;color:white;padding:12px 24px;border-radius:8px;font-weight:700;text-decoration:none;margin-top:14px;font-size:15px}</style></head><body>');
-  w.document.write('<div class="sos"><h2>&#128680; GUIA DE EMERGENCIA &mdash; OLOR A GAS</h2><ul><li>NO enciendas el motor ni ninguna fuente de calor</li><li>Apaga el vehiculo inmediatamente</li><li>Abre ventanas y puertas</li><li>Aleja el vehiculo de zonas cerradas</li><li>No uses el telefono cerca del vehiculo</li><li>Llama al taller desde un lugar seguro</li></ul></div>');
-  w.document.write('<h3>&#128222; Contacto Carrigas Peru</h3><p>Telefono: <strong>971 065 262</strong></p><a class="tel" href="tel:971065262">Llamar ahora</a>');
+  w.document.write('<div class="sos"><h2>! GUIA DE EMERGENCIA &mdash; OLOR A GAS</h2><ul><li>NO enciendas el motor ni ninguna fuente de calor</li><li>Apaga el vehiculo inmediatamente</li><li>Abre ventanas y puertas</li><li>Aleja el vehiculo de zonas cerradas</li><li>No uses el telefono cerca del vehiculo</li><li>Llama al taller desde un lugar seguro</li></ul></div>');
+  w.document.write('<h3>▷ Contacto Carrigas Peru</h3><p>Telefono: <strong>971 065 262</strong></p><a class="tel" href="tel:971065262">Llamar ahora</a>');
   w.document.write('</body></html>');w.document.close();
 }
 
@@ -6452,7 +6452,7 @@ function renderVistaTecnico() {
   if(!placas || placas.length === 0) {
     var empty = document.createElement('div');
     empty.style.cssText = 'text-align:center;padding:40px 20px;color:#8a8a8a;';
-    empty.innerHTML = '<div style="font-size:40px;margin-bottom:12px">✅</div>'+
+    empty.innerHTML = '<div style="font-size:40px;margin-bottom:12px">✓</div>'+
       '<div style="font-size:16px;font-weight:700;color:#374151">Sin tareas pendientes</div>'+
       '<div style="font-size:13px;margin-top:6px">El administrador te asignará tareas pronto</div>';
     cont.appendChild(empty);
@@ -6499,7 +6499,7 @@ function renderVistaTecnico() {
         var tDiv = document.createElement('div');
         tDiv.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;margin-bottom:4px;background:'+(tarea.completada?'#f0fdf4':'#F7F7F2')+';border:1px solid '+(tarea.completada?'#bbf7d0':'#D9D9D9');
         tDiv.innerHTML = 
-          '<span style="font-size:16px">'+(tarea.completada?'✅':tarea.icono)+'</span>'+
+          '<span style="font-size:16px">'+(tarea.completada?'✓':tarea.icono)+'</span>'+
           '<span style="font-size:13px;font-weight:500;color:'+(tarea.completada?'#15803d':'#374151')+'">'+tarea.label+'</span>'+
           (tarea.completada?'<span style="margin-left:auto;font-size:11px;color:#15803d;font-weight:600">Listo</span>':'<span style="margin-left:auto;font-size:11px;color:#f59e0b;font-weight:600">Pendiente</span>');
         grpDiv.appendChild(tDiv);
@@ -6526,12 +6526,12 @@ function renderVistaTecnico() {
         if(cilOk) {
           var okCil = document.createElement('div');
           okCil.style.cssText = 'background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#15803d';
-          okCil.innerHTML = '✅ Montaje cilindro culminado';
+          okCil.innerHTML = 'Montaje cilindro culminado';
           culminBox.appendChild(okCil);
         } else {
           var btnCil = document.createElement('button');
           btnCil.style.cssText = 'width:100%;background:#16a34a;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
-          btnCil.innerHTML = '🔧 Marcar montaje de CILINDRO culminado';
+          btnCil.innerHTML = 'Marcar montaje de CILINDRO culminado';
           btnCil.onclick = (function(eid){ return function(){
             if(confirm('¿Confirmas que terminaste el montaje del cilindro?')) marcarCulminadoTecnico(eid, 'cilindro');
           }; })(placa.expId);
@@ -6544,12 +6544,12 @@ function renderVistaTecnico() {
         if(elecOk) {
           var okElec = document.createElement('div');
           okElec.style.cssText = 'background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#2563eb';
-          okElec.innerHTML = '✅ Montaje electrónica culminado';
+          okElec.innerHTML = 'Montaje electrónica culminado';
           culminBox.appendChild(okElec);
         } else {
           var btnElec = document.createElement('button');
           btnElec.style.cssText = 'width:100%;background:#2563eb;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
-          btnElec.innerHTML = '⚡ Marcar montaje de ELECTRÓNICA culminado';
+          btnElec.innerHTML = 'Marcar montaje de ELECTRÓNICA culminado';
           btnElec.onclick = (function(eid){ return function(){
             if(confirm('¿Confirmas que terminaste el montaje de la electrónica?')) marcarCulminadoTecnico(eid, 'electronica');
           }; })(placa.expId);
@@ -6561,13 +6561,13 @@ function renderVistaTecnico() {
       if(esTecTanque && elecOk) {
         var infoE = document.createElement('div');
         infoE.style.cssText = 'font-size:11px;color:#8a8a8a;text-align:center';
-        infoE.innerHTML = '⚡ Electrónica ya culminada por el otro técnico';
+        infoE.innerHTML = 'Electrónica ya culminada por el otro técnico';
         culminBox.appendChild(infoE);
       }
       if(esTecDelantera && cilOk) {
         var infoC = document.createElement('div');
         infoC.style.cssText = 'font-size:11px;color:#8a8a8a;text-align:center';
-        infoC.innerHTML = '🔧 Cilindro ya culminado por el otro técnico';
+        infoC.innerHTML = 'Cilindro ya culminado por el otro técnico';
         culminBox.appendChild(infoC);
       }
 
@@ -6577,7 +6577,7 @@ function renderVistaTecnico() {
     // Botón para ir al expediente
     var btn = document.createElement('button');
     btn.style.cssText = 'width:100%;background:#131313;color:white;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;';
-    btn.textContent = pct >= 100 ? '✅ Ver expediente completado' : '📋 Completar tareas';
+    btn.textContent = pct >= 100 ? 'Ver expediente completado' : 'Completar tareas';
     btn.onclick = (function(eid) {
       return function() { abrirExpedienteDesdeId(eid); };
     })(placa.expId);
@@ -6671,7 +6671,7 @@ function abrirVistaTareasTecnico(expId) {
   // Botón enviar
   var btnEnv=document.createElement('button');
   btnEnv.style.cssText='width:100%;background:'+(pct.pct>=100?'#22c55e':'#FFC165')+';color:white;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px';
-  btnEnv.textContent=pct.pct>=100?'✅ Enviar para revisión':'💾 Guardar progreso';
+  btnEnv.textContent=pct.pct>=100?'Enviar para revisión':'Guardar progreso';
   btnEnv.onclick=(function(eid,p){return function(){
     if(p.pct>=100){
       for(var i=0;i<expedientes.length;i++){
@@ -6681,7 +6681,7 @@ function abrirVistaTareasTecnico(expId) {
           saveExp();break;
         }
       }
-      showToast('✅ Tareas enviadas para revisión','success');
+      showToast('Tareas enviadas para revisión','success');
       cerrarTecModal();
     } else {
       showToast('Completa todas las tareas antes de enviar','warning');
@@ -6755,17 +6755,17 @@ function getTareasTecnico() {
     if(exp.tecnicoDelantera === nombre) {
       placas[exp.id].tareas.push({
         tipo: 'fotoReductor', label: 'Foto del Reductor',
-        icono: '📸', grupo: 'Reductor',
+        icono: '', grupo: 'Reductor',
         completada: !!e4.fotoReductor
       });
       placas[exp.id].tareas.push({
         tipo: 'marcaReductor', label: 'Marca del Reductor',
-        icono: '🏷️', grupo: 'Reductor',
+        icono: '', grupo: 'Reductor',
         completada: !!(e4.marcaReductor && e4.marcaReductor.trim())
       });
       placas[exp.id].tareas.push({
         tipo: 'serieReductor', label: 'Serie del Reductor',
-        icono: '🔢', grupo: 'Reductor',
+        icono: '', grupo: 'Reductor',
         completada: !!(e4.serieReductor && e4.serieReductor.trim())
       });
     }
@@ -6774,34 +6774,34 @@ function getTareasTecnico() {
     if(exp.tecnicoTanque === nombre) {
       placas[exp.id].tareas.push({
         tipo: 'fotoCilindro1', label: 'Foto Cilindro 1',
-        icono: '📸', grupo: 'Cilindro 1',
+        icono: '', grupo: 'Cilindro 1',
         completada: !!e4.fotoCilindro1
       });
       placas[exp.id].tareas.push({
         tipo: 'serieCilindro', label: 'Serie Cilindro 1',
-        icono: '🔢', grupo: 'Cilindro 1',
+        icono: '', grupo: 'Cilindro 1',
         completada: !!(e4.serieCilindro && e4.serieCilindro.trim())
       });
       placas[exp.id].tareas.push({
         tipo: 'fechaFabCilindro', label: 'Fecha Fabricación Cil. 1',
-        icono: '📅', grupo: 'Cilindro 1',
+        icono: '', grupo: 'Cilindro 1',
         completada: !!(e4.fechaFabCilindro && e4.fechaFabCilindro.trim())
       });
       
       if(!e4.cilindro2NoAplica) {
         placas[exp.id].tareas.push({
           tipo: 'fotoCilindro2', label: 'Foto Cilindro 2',
-          icono: '📸', grupo: 'Cilindro 2',
+          icono: '', grupo: 'Cilindro 2',
           completada: !!e4.fotoCilindro2
         });
         placas[exp.id].tareas.push({
           tipo: 'serieCilindro2', label: 'Serie Cilindro 2',
-          icono: '🔢', grupo: 'Cilindro 2',
+          icono: '', grupo: 'Cilindro 2',
           completada: !!(e4.serieCilindro2 && e4.serieCilindro2.trim())
         });
         placas[exp.id].tareas.push({
           tipo: 'fechaFabCilindro2', label: 'Fecha Fabricación Cil. 2',
-          icono: '📅', grupo: 'Cilindro 2',
+          icono: '', grupo: 'Cilindro 2',
           completada: !!(e4.fechaFabCilindro2 && e4.fechaFabCilindro2.trim())
         });
       }
@@ -6837,7 +6837,7 @@ function buildTareaCard(t) {
 
   // Observación si existe
   if(t.observacion) {
-    html += '<div style="background:#fef2f2;border-left:3px solid #ef4444;border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7f1d1d"><strong>⚠️ Observado:</strong> '+t.observacion+'</div>';
+    html += '<div style="background:#fef2f2;border-left:3px solid #ef4444;border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#7f1d1d"><strong>! Observado:</strong> '+t.observacion+'</div>';
   }
 
   if(t.fechaEnvio) {
@@ -6856,7 +6856,7 @@ function buildTareaCard(t) {
   } else if(t.estado==='Enviado') {
     var info = document.createElement('div');
     info.style.cssText = 'text-align:center;padding:8px;font-size:12px;color:#FFC165;font-weight:600';
-    info.textContent = '✓ Enviado — esperando revisión del FISE';
+    info.textContent = 'Enviado — esperando revisión del FISE';
     card.appendChild(info);
   }
   return card;
@@ -6884,7 +6884,7 @@ function abrirTareaTecnica(expId, tipo) {
   var box = document.createElement('div');
   box.style.cssText = 'background:#F7F7F2;border-radius:24px 24px 0 0;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;box-shadow:0 -8px 40px rgba(0,0,0,.25)';
 
-  var tipoLabel = {reductor:'🔧 Reductor',cilindro1:'🔵 Cilindro 1',cilindro2:'🔵 Cilindro 2'}[tipo]||tipo;
+  var tipoLabel = {reductor:'Reductor',cilindro1:'Cilindro 1',cilindro2:'Cilindro 2'}[tipo]||tipo;
   var e4 = exp.e4 || {};
   var datos = e4[tipo] || {};
   var estado = datos.estado || 'Pendiente';
@@ -6907,7 +6907,7 @@ function abrirTareaTecnica(expId, tipo) {
   if(datos.observacion) {
     var obsDiv = document.createElement('div');
     obsDiv.style.cssText = 'background:#fef2f2;border-left:4px solid #ef4444;border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:16px';
-    obsDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#7f1d1d;margin-bottom:4px">⚠️ Observación del FISE</div><div style="font-size:13px;color:#991b1b">'+datos.observacion+'</div>';
+    obsDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#7f1d1d;margin-bottom:4px">! Observación del FISE</div><div style="font-size:13px;color:#991b1b">'+datos.observacion+'</div>';
     body.appendChild(obsDiv);
   }
 
@@ -6925,12 +6925,12 @@ function abrirTareaTecnica(expId, tipo) {
 
     var btnGuardar = document.createElement('button');
     btnGuardar.style.cssText = 'width:100%;padding:14px;background:#262626;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit';
-    btnGuardar.textContent = '💾 Guardar';
+    btnGuardar.textContent = 'Guardar';
     btnGuardar.onclick = (function(eid,tt){return function(){guardarTareaTecnica(eid,tt,false);};})(expId,tipo);
 
     var btnEnviar = document.createElement('button');
     btnEnviar.style.cssText = 'width:100%;padding:14px;background:#FFC165;color:#131313;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit';
-    btnEnviar.textContent = '✅ Enviar para revisión';
+    btnEnviar.textContent = 'Enviar para revisión';
     btnEnviar.onclick = (function(eid,tt){return function(){guardarTareaTecnica(eid,tt,true);};})(expId,tipo);
 
     btnWrap.appendChild(btnGuardar);
@@ -6949,7 +6949,7 @@ function buildReductorForm(exp, datos, canEdit) {
   // Sección foto
   var fotoSec = document.createElement('div');
   fotoSec.style.cssText = 'background:white;border:1px solid #D9D9D9;border-radius:12px;overflow:hidden;margin-bottom:14px';
-  fotoSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">📷 Foto del Reductor</div>';
+  fotoSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">Foto del Reductor</div>';
 
   var fotoBody = document.createElement('div');
   fotoBody.style.padding = '14px';
@@ -6965,7 +6965,7 @@ function buildReductorForm(exp, datos, canEdit) {
   if(canEdit) {
     var uploadWrap = document.createElement('div');
     uploadWrap.style.cssText = 'position:relative';
-    uploadWrap.innerHTML = '<div style="border:2px dashed #D9D9D9;border-radius:10px;padding:20px;text-align:center;background:#F7F7F2;cursor:pointer"><div style="font-size:36px;margin-bottom:6px">📷</div><div style="font-size:13px;font-weight:700;color:#131313">'+(fotoUrl?'Cambiar foto':'Tomar foto del reductor')+'</div><div style="font-size:11px;color:#8a8a8a;margin-top:4px">Toca para abrir la cámara trasera</div></div>';
+    uploadWrap.innerHTML = '<div style="border:2px dashed #D9D9D9;border-radius:10px;padding:20px;text-align:center;background:#F7F7F2;cursor:pointer"><div style="font-size:36px;margin-bottom:6px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:13px;font-weight:700;color:#131313">'+(fotoUrl?'Cambiar foto':'Tomar foto del reductor')+'</div><div style="font-size:11px;color:#8a8a8a;margin-top:4px">Toca para abrir la cámara trasera</div></div>';
     var inp = document.createElement('input');
     inp.type='file';inp.accept='image/*';inp.capture='environment';
     inp.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
@@ -6991,7 +6991,7 @@ function buildReductorForm(exp, datos, canEdit) {
   // Campos marca y serie
   var camposSec = document.createElement('div');
   camposSec.style.cssText = 'background:white;border:1px solid #D9D9D9;border-radius:12px;overflow:hidden';
-  camposSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">📝 Datos del Reductor</div>';
+  camposSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">Datos del Reductor</div>';
   var camposBody = document.createElement('div');
   camposBody.style.cssText = 'padding:14px;display:grid;gap:12px';
   camposBody.innerHTML = '<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Marca del Reductor *</label>'+
@@ -7011,7 +7011,7 @@ function buildCilindroForm(exp, cKey, datos, canEdit) {
   // Sección fotos
   var fotoSec = document.createElement('div');
   fotoSec.style.cssText = 'background:white;border:1px solid #D9D9D9;border-radius:12px;overflow:hidden;margin-bottom:14px';
-  fotoSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">📷 Foto del Cilindro '+num+' (máx. 2)</div>';
+  fotoSec.innerHTML = '<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">Foto del Cilindro '+num+' (máx. 2)</div>';
   var fotoBody = document.createElement('div');
   fotoBody.style.padding = '14px';
 
@@ -7034,7 +7034,7 @@ function buildCilindroForm(exp, cKey, datos, canEdit) {
   // Upload si puede editar y tiene menos de 2 fotos
   if(canEdit && fotos.length<2) {
     var uw=document.createElement('div');uw.style.cssText='position:relative';
-    uw.innerHTML='<div style="border:2px dashed #D9D9D9;border-radius:10px;padding:18px;text-align:center;background:#F7F7F2;cursor:pointer"><div style="font-size:34px;margin-bottom:6px">📷</div><div style="font-size:13px;font-weight:700;color:#131313">'+( fotos.length?'Agregar foto 2':'Tomar foto del cilindro')+'</div><div style="font-size:11px;color:#8a8a8a;margin-top:3px">Cámara trasera recomendada</div></div>';
+    uw.innerHTML='<div style="border:2px dashed #D9D9D9;border-radius:10px;padding:18px;text-align:center;background:#F7F7F2;cursor:pointer"><div style="font-size:34px;margin-bottom:6px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:13px;font-weight:700;color:#131313">'+( fotos.length?'Agregar foto 2':'Tomar foto del cilindro')+'</div><div style="font-size:11px;color:#8a8a8a;margin-top:3px">Cámara trasera recomendada</div></div>';
     var inpF=document.createElement('input');inpF.type='file';inpF.accept='image/*';inpF.capture='environment';
     inpF.style.cssText='position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%';
     inpF.onchange=(function(eid,ck){return function(){
@@ -7062,7 +7062,7 @@ function buildCilindroForm(exp, cKey, datos, canEdit) {
   // Campos serie y fecha fabricación (MM/AAAA)
   var camposSec=document.createElement('div');
   camposSec.style.cssText='background:white;border:1px solid #D9D9D9;border-radius:12px;overflow:hidden';
-  camposSec.innerHTML='<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">📝 Datos del Cilindro '+num+'</div>';
+  camposSec.innerHTML='<div style="background:#262626;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">Datos del Cilindro '+num+'</div>';
   var cb=document.createElement('div');cb.style.cssText='padding:14px;display:grid;gap:12px';
   cb.innerHTML='<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Serie del Cilindro *</label>'+
     '<input id="tc_serie_'+cKey+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;color:#131313;box-sizing:border-box;background:'+(canEdit?'white':'#F7F7F2')+'" value="'+(datos.serie||'')+'" placeholder="Número de serie del cilindro" '+(canEdit?'':'disabled')+'></div>'+
@@ -7136,7 +7136,7 @@ function guardarTareaTecnica(expId, tipo, enviar) {
     if(err.length){showToast(err[0],'error');return;}
     saveExp();
     cerrarTareaModal();
-    showToast(enviar?'✅ Enviado para revisión del FISE':'💾 Guardado correctamente','success');
+    showToast(enviar?'Enviado para revisión del FISE':'Guardado correctamente','success');
     break;
   }
 }
@@ -7147,7 +7147,7 @@ function renderAsignacionTecnicosEtapa3(cont, exp) {
 
   var sec=document.createElement('div');
   sec.style.cssText='background:white;border:1px solid #D9D9D9;border-radius:12px;overflow:hidden;margin-top:14px';
-  sec.innerHTML='<div style="background:#131313;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">🔧 Asignación de Técnicos</div>';
+  sec.innerHTML='<div style="background:#131313;padding:10px 14px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:.5px">Asignación de Técnicos</div>';
 
   var body=document.createElement('div');body.style.padding='14px';
 
@@ -7172,9 +7172,9 @@ function renderAsignacionTecnicosEtapa3(cont, exp) {
   }
 
   body.innerHTML='<div style="display:grid;gap:12px;margin-bottom:14px">'+
-    '<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">🔧 Técnico Parte Delantera</label>'+
+    '<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Técnico Parte Delantera</label>'+
     '<select id="sel_tec_del_'+exp.id+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;color:#131313;background:white">'+opts+'</select></div>'+
-    '<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">🔵 Técnico Montaje Tanque</label>'+
+    '<div><label style="display:block;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px">Técnico Montaje Tanque</label>'+
     '<select id="sel_tec_tan_'+exp.id+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;color:#131313;background:white">'+opts2+'</select></div></div>';
 
   var btnAsig=document.createElement('button');
@@ -7198,11 +7198,11 @@ function asignarTecnicosExpediente(expId) {
     expedientes[i].asignadoPor=CU?CU.nombre:'-';
     saveExp();
     // Forzar sync inmediato al asignar técnicos
-    showToast('✅ Técnicos asignados — sincronizando...','success');
+    showToast('Técnicos asignados — sincronizando...','success');
     setTimeout(function(){
       syncSheetsConFeedback(function(ok, total){
-        if(ok) showToast('☁️ Asignación guardada en servidor','success');
-        else showToast('⚠️ Guardado local. Sin conexión al servidor.','warning');
+        if(ok) showToast('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Asignación guardada en servidor','success');
+        else showToast('! Guardado local. Sin conexión al servidor.','warning');
       });
     }, 500);
     break;
@@ -7301,7 +7301,7 @@ function crearUsuario(){
   console.log('crearUsuario: localStorage después de saveUsers='+JSON.stringify(Object.keys(JSON.parse(localStorage.getItem('gm_users')||'{}'))));
   console.log('crearUsuario: USERS_CACHE tiene='+JSON.stringify(Object.keys(USERS_CACHE)));
   toggleNewUserForm();
-  showAlert('alertUsuarios','✓ Usuario '+nombre+' creado correctamente.','success');
+  showAlert('alertUsuarios','Usuario '+nombre+' creado correctamente.','success');
   // Forzar navegación al tab usuarios para garantizar render
   setTimeout(function(){
     // Activar tab usuarios directamente
@@ -7363,7 +7363,7 @@ function mostrarBannerInstalacion() {
   var banner = document.createElement('div');
   banner.id = 'installBanner';
   banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#131313;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;z-index:9999;box-shadow:0 -2px 10px rgba(0,0,0,.3)';
-  banner.innerHTML = '<div><div style="font-weight:700;font-size:13px">📱 Instalar Gasmotion</div><div style="font-size:11px;color:#a8a8a8">Acceso rápido desde tu pantalla</div></div><button onclick="instalarPWA()" style="background:#FFC165;color:#131313;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer">Instalar</button>';
+  banner.innerHTML = '<div><div style="font-weight:700;font-size:13px">Instalar Gasmotion</div><div style="font-size:11px;color:#a8a8a8">Acceso rápido desde tu pantalla</div></div><button onclick="instalarPWA()" style="background:#FFC165;color:#131313;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer">Instalar</button>';
   document.body.appendChild(banner);
 }
 
@@ -7374,7 +7374,7 @@ function instalarPWA() {
     if(result.outcome === 'accepted') {
       var banner = document.getElementById('installBanner');
       if(banner) banner.remove();
-      showToast('✅ Gasmotion instalada correctamente', 'success');
+      showToast('Gasmotion instalada correctamente', 'success');
     }
     deferredPrompt = null;
   });
@@ -7390,7 +7390,7 @@ window.addEventListener('appinstalled', function() {
   var banner = document.getElementById('installBanner');
   if(banner) banner.remove();
   deferredPrompt = null;
-  showToast('✅ App instalada exitosamente', 'success');
+  showToast('App instalada exitosamente', 'success');
 });
 
 // ═══════════════════════════════════════════════════════
@@ -7452,14 +7452,14 @@ function mostrarBtnSync() {
   var btn = document.createElement('button');
   btn.id = 'btnSyncManual';
   btn.style.cssText = 'background:#22c55e;color:white;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px;display:flex;align-items:center;gap:4px';
-  btn.innerHTML = '☁️ Guardar';
+  btn.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Guardar';
   btn.onclick = function() {
-    btn.textContent = '⏳ Guardando...';
+    btn.textContent = 'Guardando...';
     btn.disabled = true;
     sincronizarAhora(function(ok, total) {
-      btn.innerHTML = '✅ Guardado';
+      btn.innerHTML = 'Guardado';
       setTimeout(function(){
-        btn.innerHTML = '☁️ Guardar';
+        btn.innerHTML = '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Guardar';
         btn.disabled = false;
       }, 3000);
     });
