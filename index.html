@@ -4224,7 +4224,19 @@ function onMatrizChange(input, expId) {
 
 // ── ETAPA 3 ──
 function renderEtapa3(cont, exp) {
-  var canSubE3=CU&&(CU.role==='admin'||CU.role==='tecnico'||CU.role==='jefe');
+  var esVendedorSedeE3 = CU && CU.role==='vendedor' && (
+    exp.vendedorSede === CU.nombre ||
+    exp.registradoPor === CU.nombre ||
+    exp.vendedorServicio === CU.nombre ||
+    exp.sede === CU.sede
+  );
+  var canSubE3 = CU && (
+    CU.role==='admin' ||
+    CU.role==='tecnico' ||
+    CU.role==='jefe' ||
+    CU.role==='asistente_fise' ||
+    esVendedorSedeE3
+  );
   var sec=document.createElement('div');
   sec.innerHTML='<div class="etapa-header"><div class="etapa-num" style="background:#3b82f6">3</div><div><div class="etapa-title">ETAPA 3 — EMISION DE CONTRATOS</div><div class="etapa-sub">Descarga, firma y sube el SCANFILE 2 con todos los documentos firmados</div></div></div>';
   // Documentos para descargar
