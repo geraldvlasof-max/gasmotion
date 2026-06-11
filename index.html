@@ -425,7 +425,8 @@ input,select,textarea{font-size:16px!important}
       <nav class="sidebar-nav">
         <div class="nav-section">Principal</div>
         <button class="nav-item active" onclick="switchTab('panel',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> Panel de Control</button>
-        <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Bandeja SCANFILE 1</button>
+        <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Expedientes GNV FISE</button>
+        <button class="nav-item" id="navGLP" onclick="switchTab('glp',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg></span> Expedientes GLP</button>
         <button class="nav-item" onclick="switchTab('expedientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Mis Expedientes</button>
         <button class="nav-item" id="navClientes" onclick="switchTab('clientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Panel de Clientes</button>
         <button class="nav-item" id="navFise" onclick="switchTab('fise',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Panel FISE</button>
@@ -501,7 +502,7 @@ input,select,textarea{font-size:16px!important}
           <div id="alertBandeja" style="margin-bottom:12px"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
             <div>
-              <div style="font-size:17px;font-weight:800;color:#131313">Bandeja SCANFILE 1</div>
+              <div style="font-size:17px;font-weight:800;color:#131313">Expedientes GNV FISE</div>
               <div style="font-size:12px;color:#6b82a0;margin-top:2px">SCANFILE 1 pendientes — el Asistente FISE los descargara para generar la Matriz Excel</div>
             </div>
             <button class="btn btn-teal" onclick="toggleFormNuevo()">+ Subir nuevo SCANFILE 1</button>
@@ -557,7 +558,12 @@ input,select,textarea{font-size:16px!important}
           </div>
 
           <div id="bandejaGrid"></div>
-          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes de procesar.</p></div>
+          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes — GNV FISE.</p></div>
+        </div>
+
+        <!-- EXPEDIENTES GLP -->
+        <div class="tab-content" id="tab-glp">
+          <div id="alertGLP" style="margin-bottom:12px"></div>
         </div>
 
         <!-- EXPEDIENTES -->
@@ -703,17 +709,7 @@ input,select,textarea{font-size:16px!important}
   <div class="modal-exp" onclick="event.stopPropagation()">
     <div class="modal-exp-header">
       <div style="flex:1">
-        <div style="font-size:18px;font-weight:800;color:#131313" id="emPlaca">-</div>
-        <div style="font-size:12px;color:#6b82a0;margin-top:2px">Sede: <span id="emSede">-</span></div>
-        <div style="display:flex;align-items:center;gap:0;margin-top:10px" id="emPipeline"></div>
-      </div>
-      <button class="btn btn-outline btn-sm" onclick="cerrarExpModal()">Cerrar</button>
-    </div>
-    <div class="modal-exp-body" id="emContent"></div>
-  </div>
-</div>
-
-<script>
+        <d
 // ═══════════════════════════════════════════════════
 // HELPER: abrir foto sin crashear Chrome en Android
 // Convierte base64 a Blob URL antes de abrir
@@ -1992,7 +1988,8 @@ function editarNombreAdmin() {
 var TAB_TITLES={
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
   panel:['Panel de Control','Resumen de actividad'],
-  bandeja:['Bandeja SCANFILE 1','SCANFILE 1 pendientes de procesar'],
+  bandeja:['Expedientes GNV FISE','SCANFILE 1 pendientes — GNV FISE — Programa GNV'],
+  glp:['Expedientes GLP','SCANFILE 1 pendientes — GNV FISE — Programa GLP'],
   expedientes:['Mis Expedientes','Todos los expedientes registrados'],
   fise:['Panel FISE','Expedientes pendientes de procesar — Etapa 2'],
   usuarios:['Usuarios','Administra accesos al sistema'],
@@ -2018,6 +2015,7 @@ function switchTab(name, el) {
   if(name==='fise') renderPanelFise();
   if(name==='clientes'){renderPanelClientes();}
   if(name==='tecnico'){renderVistaTecnico();}
+  if(name==='glp'){renderTabGLP();}
   if(window.innerWidth<=768) toggleSidebar();
 }
 
@@ -2063,7 +2061,7 @@ function grabarSf1() {
   storeFile(id,'sf1',sf1FileNuevo,function(url,name){
     var exp={
       id:id, sede:sede, placa:placa, modeloVehiculo:modelo, comentarioVendedor:comentario,
-      vendedorServicio:vendServicio||(CU?CU.nombre:'-'), vendedorSede:getVendedorSede(sede), registradoPor:CU?CU.nombre:'-',
+      vendedorServicio:vendServicio||(CU?CU.nombre:'-'), vendedorSede:getVendedorSede(sede)||(CU&&CU.role==='vendedor'?CU.nombre:''), registradoPor:CU?CU.nombre:'-',
       fecha:nowFecha(), hora:nowHora(), timestamp:Date.now(),
       etapa:1,
       nombre:'',dni:'',direccion:'',distrito:'',celular:'',correo:'',
@@ -2169,7 +2167,13 @@ function renderBandeja() {
     if(sf1url){dlA.href=sf1url;dlA.download=sf1meta.nombre;dlA.className='btn btn-teal btn-sm';dlA.innerHTML='↓ Descargar SCANFILE 1';}
     else{dlA.className='btn btn-sm';dlA.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA.textContent='Re-subir para descargar';}
     acts.appendChild(dlA);
-    var canAvanzar=CU&&(CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe');
+    var esVendedorExp = CU && CU.role==='vendedor' && (
+      exp.registradoPor===CU.nombre ||
+      exp.vendedorSede===CU.nombre ||
+      exp.vendedorServicio===CU.nombre ||
+      exp.sede===CU.sede
+    );
+    var canAvanzar=CU&&(CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe'||esVendedorExp);
     if(canAvanzar){
       var avBtn=mkBtn('btn btn-navy btn-sm','width:100%;justify-content:center','avanzarEtapa2',exp.id,'Avanzar a Etapa 2 →');
       acts.appendChild(avBtn);
@@ -3702,6 +3706,85 @@ function responsablePorDocumento(exp, tipoDoc) {
   return badgeResponsable(r.nombre, r.nota);
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// EXPEDIENTES GLP — Etapa 1 inicial (en desarrollo)
+// ═══════════════════════════════════════════════════════════
+function renderTabGLP() {
+  var cont = document.getElementById('tab-glp');
+  if(!cont) return;
+  cont.innerHTML = '';
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'margin-bottom:20px';
+  header.innerHTML = '<div style="font-size:17px;font-weight:800;color:#131313;margin-bottom:4px">Expedientes GLP</div>' +
+    '<div style="font-size:12px;color:#8a8a8a">Programa de conversión a Gas Licuado de Petróleo</div>';
+  cont.appendChild(header);
+
+  // Botón crear expediente GLP
+  var canCreate = CU && (CU.role === 'admin' || CU.role === 'vendedor' || CU.role === 'supervisor');
+  if(canCreate) {
+    var btnCrear = document.createElement('button');
+    btnCrear.className = 'btn btn-navy';
+    btnCrear.style.cssText = 'margin-bottom:20px';
+    btnCrear.innerHTML = '+ Nuevo expediente GLP';
+    btnCrear.onclick = function(){ mostrarFormNuevoExpGLP(); };
+    cont.appendChild(btnCrear);
+  }
+
+  // Filtrar expedientes GLP
+  var expsGLP = [];
+  for(var i=0; i<expedientes.length; i++) {
+    if(expedientes[i].tipoGas === 'GLP' || expedientes[i].tipoPrograma === 'GLP') {
+      expsGLP.push(expedientes[i]);
+    }
+  }
+
+  if(expsGLP.length === 0) {
+    var empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:48px 20px;color:#8a8a8a';
+    empty.innerHTML = '<div style="font-size:36px;margin-bottom:12px">▣</div>' +
+      '<div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:6px">Sin expedientes GLP</div>' +
+      '<div style="font-size:13px">Los expedientes GLP creados aparecerán aquí</div>';
+    cont.appendChild(empty);
+    return;
+  }
+
+  // Cards de expedientes GLP
+  for(var j=0; j<expsGLP.length; j++) {
+    var exp = expsGLP[j];
+    var card = document.createElement('div');
+    card.className = 'doc-box';
+    card.style.cssText = 'margin-bottom:10px;cursor:pointer';
+    card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+      '<div>' +
+        '<div style="font-size:14px;font-weight:700;color:#131313">' + (exp.placa || 'Sin placa') + '</div>' +
+        '<div style="font-size:12px;color:#6b82a0;margin-top:2px">' + (exp.nombre || 'Sin nombre') + ' · ' + (exp.marca || '') + ' ' + (exp.modeloVehiculo || '') + '</div>' +
+      '</div>' +
+      '<span style="background:#FFC165;color:#131313;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">GLP</span>' +
+    '</div>';
+    card.onclick = (function(eid){ return function(){ abrirExpediente(eid); }; })(exp.id);
+    cont.appendChild(card);
+  }
+}
+
+function mostrarFormNuevoExpGLP() {
+  // Reutilizar el formulario de nuevo expediente con tipoGas forzado a GLP
+  var modal = document.getElementById('modalNuevoExp');
+  if(modal) {
+    // Marcar como GLP antes de mostrar
+    var tipoField = document.getElementById('ne_tipoGas');
+    if(!tipoField) {
+      // El campo aún no existe, lo inyectamos dinámicamente al crear
+      window._forzarGLP = true;
+    }
+    modal.style.display = 'flex';
+  } else {
+    abrirNuevoExpediente('GLP');
+  }
+}
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -4088,7 +4171,13 @@ function renderEtapa1(cont, exp) {
   sec.appendChild(box);
   var isAdmin=CU&&CU.role==='admin';
   var isFise=CU&&CU.role==='asistente_fise';
-  if(isAdmin||isFise){
+  var esVendedorModal = CU && CU.role==='vendedor' && (
+    exp.registradoPor===CU.nombre ||
+    exp.vendedorSede===CU.nombre ||
+    exp.vendedorServicio===CU.nombre ||
+    exp.sede===CU.sede
+  );
+  if(isAdmin||isFise||esVendedorModal){
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
     avBtn.textContent='Avanzar a Etapa 2 →';
@@ -4310,7 +4399,8 @@ function renderEtapa3(cont, exp) {
     exp.vendedorSede === CU.nombre ||
     exp.registradoPor === CU.nombre ||
     exp.vendedorServicio === CU.nombre ||
-    exp.sede === CU.sede
+    exp.sede === CU.sede ||
+    (exp.vendedorSede === '' && exp.registradoPor === CU.nombre)
   );
   var canSubE3 = CU && (
     CU.role==='admin' ||
@@ -7607,6 +7697,26 @@ document.addEventListener('visibilitychange', function() {
     }
   }
 });
+a 30s');
+}
+
+function detenerPolling() {
+  if(GM_POLLING_INTERVAL) {
+    clearInterval(GM_POLLING_INTERVAL);
+    GM_POLLING_INTERVAL = null;
+  }
+}
+
+// Actualizar cuando el usuario vuelve a la app (desde otra tab o pantalla)
+document.addEventListener('visibilitychange', function() {
+  if(document.visibilityState === 'visible' && CU) {
+    // Han pasado más de 10 segundos → actualizar
+    if(Date.now() - GM_LAST_SYNC > 10000) {
+      loadExpFromScript();
+    }
+  }
+});
+;
 </script>
 </body>
 </html>
