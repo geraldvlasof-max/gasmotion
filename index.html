@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.4.0';
+    var GM_VERSION = '3.5.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -425,7 +425,7 @@ input,select,textarea{font-size:16px!important}
       <nav class="sidebar-nav">
         <div class="nav-section">Principal</div>
         <button class="nav-item active" onclick="switchTab('panel',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> Panel de Control</button>
-        <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Expedientes GNV FISE</button>
+        <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Expedientes FISE GNV</button>
         <button class="nav-item" id="navGLP" onclick="switchTab('glp',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg></span> Expedientes GLP</button>
         <button class="nav-item" onclick="switchTab('expedientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Mis Expedientes</button>
         <button class="nav-item" id="navClientes" onclick="switchTab('clientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Panel de Clientes</button>
@@ -502,7 +502,7 @@ input,select,textarea{font-size:16px!important}
           <div id="alertBandeja" style="margin-bottom:12px"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
             <div>
-              <div style="font-size:17px;font-weight:800;color:#131313">Expedientes GNV FISE</div>
+              <div style="font-size:17px;font-weight:800;color:#131313">Bandeja SCANFILE 1</div>
               <div style="font-size:12px;color:#6b82a0;margin-top:2px">SCANFILE 1 pendientes — el Asistente FISE los descargara para generar la Matriz Excel</div>
             </div>
             <button class="btn btn-teal" onclick="toggleFormNuevo()">+ Subir nuevo SCANFILE 1</button>
@@ -558,12 +558,70 @@ input,select,textarea{font-size:16px!important}
           </div>
 
           <div id="bandejaGrid"></div>
-          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes — GNV FISE.</p></div>
+          <div class="empty-state" id="bandejaEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Bandeja vacia</p><p style="font-size:13px;color:#6b82a0">No hay SCANFILE 1 pendientes de procesar.</p></div>
         </div>
 
         <!-- EXPEDIENTES GLP -->
         <div class="tab-content" id="tab-glp">
           <div id="alertGLP" style="margin-bottom:12px"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:15px;font-weight:800;color:#131313">Programa GLP</div>
+              <div style="font-size:12px;color:#6b82a0;margin-top:2px">Expedientes de conversion a Gas Licuado de Petroleo</div>
+            </div>
+            <button class="btn btn-teal" onclick="toggleFormGLP()">+ Subir nuevo SCANFILE 1</button>
+          </div>
+
+          <!-- Formulario nuevo GLP -->
+          <div id="formNuevoGLP" style="display:none">
+            <div class="card" style="border-color:#FFC165;border-width:2px">
+              <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="card-title">Subir SCANFILE 1 — GLP</div><div class="card-sub">PDF con TIV + DNI (ambas caras) + Checklist en un solo archivo</div></div></div>
+              <div class="drop-zone" id="sf1GLPDrop" ondragover="dragOverSf1GLP(event)" ondragleave="dragLeaveSf1GLP(event)" ondrop="dropSf1GLP(event)" style="margin-bottom:16px">
+                <input type="file" id="sf1GLPInput" accept="image/*,.pdf" onchange="onSf1GLPChange(this)">
+                <div style="margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div style="font-size:14px;font-weight:700;color:#131313;margin-bottom:4px">Haz clic o arrastra el SCANFILE 1</div>
+                <div style="font-size:12px;color:#6b82a0">PDF unico con: TIV + DNI ambas caras + Checklist de taller</div>
+                <div class="loaded-msg" id="sf1GLPMsg"></div>
+              </div>
+              <div class="grid2" style="margin-bottom:14px">
+                <div class="field"><label>Placa del Vehiculo <span class="required">*</span></label><input type="text" id="glpPlaca" placeholder="Ej: CUD478" style="text-transform:uppercase"></div>
+                <div class="field"><label>Modelo del Vehiculo <span class="required">*</span></label><input type="text" id="glpModelo" placeholder="Ej: Toyota Avanza 2026"></div>
+              </div>
+              <div class="grid2" style="margin-bottom:14px">
+                <div class="field">
+                  <label>Sede <span class="required">*</span></label>
+                  <select id="glpSede" onchange="onGLPSedeChange()">
+                    <option value="">-- Seleccionar sede --</option>
+                    <option value="Santa Anita">Santa Anita</option>
+                    <option value="Chorrillos">Chorrillos</option>
+                    <option value="SMP">SMP</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Vendedor de Servicio <span class="required">*</span></label>
+                  <select id="glpVendServicio">
+                    <option value="">-- Seleccionar --</option>
+                  </select>
+                  <div style="font-size:11px;color:#6b82a0;margin-top:2px">Quien cierra la venta (puede ser de otra sede)</div>
+                </div>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;">
+                <div style="font-weight:700;color:#065f46;margin-bottom:3px">⊕ Vendedor de Sede (auto-asignado)</div>
+                <div id="glpVendedorSedeDisplay" style="color:#065f46;font-weight:600">Se asigna al seleccionar sede</div>
+              </div>
+              <div class="field" style="margin-bottom:14px">
+                <label>Comentario (opcional)</label>
+                <textarea id="glpComentario" rows="3" style="border:2px solid #D9D9D9;border-radius:8px;padding:10px;font-family:inherit;font-size:13px;width:100%;outline:none;resize:vertical" placeholder="Notas para el proceso GLP..."></textarea>
+              </div>
+              <div style="display:flex;gap:10px">
+                <button class="btn btn-teal" onclick="grabarSf1GLP()" style="font-size:14px;padding:12px 24px">Grabar SCANFILE 1 GLP</button>
+                <button class="btn btn-outline" onclick="toggleFormGLP()">Cancelar</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="glpGrid" class="bandeja-grid"></div>
+          <div id="glpEmpty" style="display:none;text-align:center;padding:40px;color:#8a8a8a"><p style="font-size:13px;color:#6b82a0">No hay expedientes GLP registrados.</p></div>
         </div>
 
         <!-- EXPEDIENTES -->
@@ -709,7 +767,17 @@ input,select,textarea{font-size:16px!important}
   <div class="modal-exp" onclick="event.stopPropagation()">
     <div class="modal-exp-header">
       <div style="flex:1">
-        <d
+        <div style="font-size:18px;font-weight:800;color:#131313" id="emPlaca">-</div>
+        <div style="font-size:12px;color:#6b82a0;margin-top:2px">Sede: <span id="emSede">-</span></div>
+        <div style="display:flex;align-items:center;gap:0;margin-top:10px" id="emPipeline"></div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="cerrarExpModal()">Cerrar</button>
+    </div>
+    <div class="modal-exp-body" id="emContent"></div>
+  </div>
+</div>
+
+<script>
 // ═══════════════════════════════════════════════════
 // HELPER: abrir foto sin crashear Chrome en Android
 // Convierte base64 a Blob URL antes de abrir
@@ -722,7 +790,7 @@ input,select,textarea{font-size:16px!important}
 function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
   if(!GM_CONFIG.workerUrl || !dataUrl) return;
   console.log('Subiendo foto a Drive:', fotoKey, 'exp:', expId);
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -944,8 +1012,7 @@ var GM_CONFIG={
   apiKey:        'AIzaSyBqV-R1W6TMXuwBcRwsbWR43rhBSlfcD1E',
   driveFolder:   '190IfSEViIZvn_78nIreo9M3u-o9qljyf',
   sheetsId:      '1rjDfZjdqWBbkclHPJJIY3v2Zg9wOE0iE8DPLzy34dYg',
-  workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev',
-  gmKey:         'gmk_369420912baf970a5c8f1dab6742674eb8bd94e8a6c4d37e'
+  workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
@@ -999,7 +1066,7 @@ function enviarCodigoVerificacion(uid, correoDestino, callback) {
 
   if(!GM_CONFIG.workerUrl) { callback(false, 'Sin conexión al servidor'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1096,7 +1163,7 @@ function saveUsers(u) {
   }
   // Subir al servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: u})
@@ -1108,7 +1175,7 @@ function saveUsers(u) {
 }
 
 function loadUsersFromSheets(callback) {
-  var url = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers';
+  var url = GM_CONFIG.workerUrl + '?action=getUsers';
   fetch(url)
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -1145,7 +1212,7 @@ function syncUsersToSheets(users, callback) {
   var usersObj = users || getUsers();
   USERS_CACHE = usersObj;
   try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({action:'saveUsers', users:usersObj})
@@ -1166,7 +1233,7 @@ function forzarSyncUsuarios() {
   var total = Object.keys(users).length;
   showToast('Subiendo ' + total + ' usuarios al servidor...', 'info');
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1272,7 +1339,7 @@ function storeFile(expId, tipoKey, file, callback) {
 function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha, hora) {
   if(!GM_CONFIG.workerUrl) return;
   showToast('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Subiendo ' + nombre + ' a Drive...', 'info');
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -1417,7 +1484,7 @@ function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
   if(PENDING_SYNC) { console.log('Sync pendiente — omitiendo polling'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getExp', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getExp', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(data){
     var remote = data.expedientes || [];
@@ -1479,7 +1546,7 @@ function saveExp(){
   if(GM_SYNC && GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
     var exps = limpiarExpParaSync(expedientes);
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
+    fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -1521,7 +1588,7 @@ function syncSheets(){
 function syncExpUnoAUno(exps, idx) {
   if(idx >= exps.length){ GM_SYNCING=false; return; }
   var exp = exps[idx];
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveOneExp', data:exp})
@@ -1543,7 +1610,7 @@ function syncSheetsConFeedback(callback){
   // Para asignación de técnicos, solo guardar el expediente modificado
   // Usar POST con JSON (no GET con URL gigante)
   var expsLimpios = limpiarExpParaSync(expedientes);
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1691,11 +1758,9 @@ function togglePassVis() {
 
 // ═══════════════════════════════════════════════════════════
 // SEGURIDAD: HASH DE CONTRASEÑAS SHA-256 (Web Crypto API)
-// Las contraseñas se guardan como hash irreversible de 64 hex.
-// Migración transparente: las passwords legacy en texto plano
-// se convierten a hash en el primer login exitoso.
+// Migración transparente: passwords legacy en texto plano se
+// convierten a hash en el primer login exitoso.
 // ═══════════════════════════════════════════════════════════
-
 function sha256Hex(texto, callback) {
   try {
     var enc = new TextEncoder();
@@ -1711,25 +1776,17 @@ function sha256Hex(texto, callback) {
     }).catch(function(){ callback(null); });
   } catch(e) { callback(null); }
 }
-
 function esHashSHA256(s) {
   return typeof s === 'string' && /^[a-f0-9]{64}$/.test(s);
 }
-
-// Verifica una contraseña escrita contra la almacenada (hash o texto plano legacy)
-// callback(ok, eraTextoPlano)
 function verificarPassword(escrita, almacenada, callback) {
   if(esHashSHA256(almacenada)) {
-    sha256Hex(escrita, function(h){
-      callback(h !== null && h === almacenada, false);
-    });
+    sha256Hex(escrita, function(h){ callback(h !== null && h === almacenada, false); });
   } else {
-    var ok = (escrita === almacenada);
-    callback(ok, ok);
+    var okp = (escrita === almacenada);
+    callback(okp, okp);
   }
 }
-
-// Migra la contraseña de un usuario a hash (tras login exitoso con texto plano)
 function migrarPasswordAHash(uid, passPlano) {
   sha256Hex(passPlano, function(h){
     if(!h) return;
@@ -1761,7 +1818,6 @@ function doLogin() {
   var found = buscarUsuario(rawUid, localUsers);
 
   if(found) {
-    // Usuario encontrado localmente — verificar password (hash o legacy)
     verificarPassword(pass, found.user.pass, function(okPass, eraPlano){
       if(!okPass) {
         setLoginBtn('Ingresar al sistema', false);
@@ -1775,7 +1831,6 @@ function doLogin() {
         }
         return;
       }
-      // Login OK local — migrar a hash si era texto plano
       if(eraPlano) migrarPasswordAHash(found.id, pass);
       completarLogin(found.id, found.user);
     });
@@ -1784,7 +1839,7 @@ function doLogin() {
 
   // Paso 2: no está local — buscar en servidor D1
   setLoginBtn('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Verificando...', true);
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers', { cache: 'no-store' })
+  fetch(GM_CONFIG.workerUrl + '?action=getUsers', { cache: 'no-store' })
   .then(function(r){ return r.json(); })
   .then(function(data){
     setLoginBtn('Ingresar al sistema', false);
@@ -1852,7 +1907,7 @@ function completarLogin(uid, u) {
   // Esto asegura que todos los dispositivos tengan los usuarios actualizados
   if(u.role === 'admin' && GM_CONFIG.workerUrl) {
     var localUsers = getUsers();
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: localUsers})
@@ -1902,8 +1957,8 @@ function guardarNuevaPassword(uid) {
   if(p1 !== p2) { errEl.textContent = 'Las contraseñas no coinciden.'; return; }
   // Actualizar usuario — guardar hasheada
   var users = getUsers();
-  if(!users[uid]) return;
-  sha256Hex(p1, function(hashP1){
+  if(users[uid]) {
+    sha256Hex(p1, function(hashP1){
     if(!hashP1) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; return; }
     users[uid].pass = hashP1;
     users[uid].mustChangePass = false;
@@ -1914,7 +1969,7 @@ function guardarNuevaPassword(uid) {
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     // Subir al servidor
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
@@ -1922,7 +1977,8 @@ function guardarNuevaPassword(uid) {
     }
     showToast('Contraseña actualizada correctamente', 'success');
     mostrarApp(); setupInactivity();
-  });
+    }); // fin sha256Hex
+  }
 }
 
 function setLoginError(msg) {
@@ -1988,8 +2044,8 @@ function editarNombreAdmin() {
 var TAB_TITLES={
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
   panel:['Panel de Control','Resumen de actividad'],
-  bandeja:['Expedientes GNV FISE','SCANFILE 1 pendientes — GNV FISE — Programa GNV'],
-  glp:['Expedientes GLP','SCANFILE 1 pendientes — GNV FISE — Programa GLP'],
+  bandeja:['Expedientes FISE GNV','Pendientes de procesar — Programa GNV FISE'],
+  glp:['Expedientes GLP','Pendientes de procesar — Programa GLP'],
   expedientes:['Mis Expedientes','Todos los expedientes registrados'],
   fise:['Panel FISE','Expedientes pendientes de procesar — Etapa 2'],
   usuarios:['Usuarios','Administra accesos al sistema'],
@@ -2087,7 +2143,7 @@ function grabarSf1() {
     // Subir expediente nuevo al servidor directamente (saveOneExp es más rápido)
     if(GM_CONFIG.workerUrl) {
       var expLimpio = JSON.parse(JSON.stringify(exp));
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         cache: 'no-store',
@@ -2141,6 +2197,7 @@ function renderBandeja() {
   for(var i=0;i<expedientes.length;i++){
     var e=expedientes[i];
     if(e.etapa!==1) continue;
+    if(e.tipoGas==='GLP') continue;
     if(CU&&CU.sede!=='Todas'&&CU.role!=='admin'&&e.sede!==CU.sede) continue;
     lista.push(e);
   }
@@ -2186,7 +2243,260 @@ function renderBandeja() {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// EXPEDIENTES GLP — SCANFILE 1 con flujo propio (en desarrollo)
+// ═══════════════════════════════════════════════════════════
+var sf1FileGLP = null;
+
+function toggleFormGLP() {
+  var f = document.getElementById('formNuevoGLP');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if(f.style.display === 'block') poblarGLPVendServicio();
+}
+
+function onSf1GLPChange(input) {
+  if(!input.files[0]) return;
+  sf1FileGLP = input.files[0];
+  var drop = document.getElementById('sf1GLPDrop');
+  drop.classList.add('loaded');
+  var msg = document.getElementById('sf1GLPMsg');
+  msg.style.display = 'block'; msg.textContent = 'Cargado: ' + sf1FileGLP.name;
+}
+function dragOverSf1GLP(e) { e.preventDefault(); document.getElementById('sf1GLPDrop').classList.add('dragover'); }
+function dragLeaveSf1GLP(e) { e.preventDefault(); document.getElementById('sf1GLPDrop').classList.remove('dragover'); }
+function dropSf1GLP(e) {
+  e.preventDefault(); document.getElementById('sf1GLPDrop').classList.remove('dragover');
+  if(e.dataTransfer.files[0]){ sf1FileGLP = e.dataTransfer.files[0]; onSf1GLPChange({files:[sf1FileGLP]}); }
+}
+
+function onGLPSedeChange() {
+  var sede = document.getElementById('glpSede').value;
+  var vs = getVendedorSede(sede) || (CU && CU.role === 'vendedor' ? CU.nombre : '');
+  var el = document.getElementById('glpVendedorSedeDisplay');
+  if(el) el.textContent = vs || (sede ? '(sin vendedor asignado para ' + sede + ')' : 'Se asigna al seleccionar sede');
+}
+
+function poblarGLPVendServicio() {
+  var sel = document.getElementById('glpVendServicio');
+  if(!sel) return;
+  var users = getUsers();
+  var html = '<option value="">-- Seleccionar --</option>';
+  var ids = Object.keys(users);
+  for(var i = 0; i < ids.length; i++) {
+    var u = users[ids[i]];
+    if(u.role === 'vendedor' || u.role === 'admin') {
+      html += '<option value="' + u.nombre + '">' + u.nombre + (u.sede ? ' (' + u.sede + ')' : '') + '</option>';
+    }
+  }
+  sel.innerHTML = html;
+  if(CU && CU.role === 'vendedor') sel.value = CU.nombre;
+}
+
+function grabarSf1GLP() {
+  var placa = document.getElementById('glpPlaca').value.trim().toUpperCase();
+  var modelo = document.getElementById('glpModelo').value.trim();
+  var sede = document.getElementById('glpSede').value;
+  var vsEl = document.getElementById('glpVendServicio');
+  var vendServicio = vsEl ? vsEl.value : '';
+  var comentario = document.getElementById('glpComentario').value.trim();
+  if(!sf1FileGLP){showAlert('alertGLP','Adjunta el SCANFILE 1.','error');return;}
+  if(!placa){showAlert('alertGLP','La placa es obligatoria.','error');return;}
+  if(!modelo){showAlert('alertGLP','El modelo es obligatorio.','error');return;}
+  if(!sede){showAlert('alertGLP','La sede es obligatoria.','error');return;}
+  var id = String(Date.now());
+  persistirArchivo(id,'sf1',sf1FileGLP);
+  storeFile(id,'sf1',sf1FileGLP,function(url,name){
+    var exp = {
+      id:id, sede:sede, placa:placa, modeloVehiculo:modelo, comentarioVendedor:comentario,
+      vendedorServicio:vendServicio||(CU?CU.nombre:'-'),
+      vendedorSede:getVendedorSede(sede)||(CU&&CU.role==='vendedor'?CU.nombre:''),
+      registradoPor:CU?CU.nombre:'-',
+      fecha:nowFecha(), hora:nowHora(), timestamp:Date.now(),
+      etapa:1, tipoGas:'GLP',
+      nombre:'',dni:'',direccion:'',distrito:'',celular:'',correo:'',
+      marca:'',modelo:'',anio:'',color:'',cilindrada:'',categoria:'',
+      kilometraje:'',conversion:'',precio:'',vinSerie:'',partida:'',
+      responsable:'',kitMarca:'', tipoPrograma:'GLP',
+      e1:{scanfile1:{nombre:name,subidoPor:CU?CU.nombre:'-',fecha:nowFecha(),hora:nowHora(),completado:true}},
+      e2:{matrizExcel:null,condDevolucion:null,declaracionJurada:null,cronograma:null,datosGuardados:false},
+      e3:{scanfile2:null},
+      e4:{videoCompresiones:null,fotoCilindro1:null,fotoCilindro2:null,
+          serieCilindro:'',fechaFabCilindro:'',
+          fotoReductor:null,marcaReductor:'',serieReductor:'',
+          capturaPIT:null,boletaInformativa:null,boletaVenta:null,
+          llevaBono:null,informeBono:null},
+      e5:{},
+      historial:[]
+    };
+    expedientes.push(exp);
+    try{localStorage.setItem('gm_exp',JSON.stringify(expedientes));}catch(e){}
+    PENDING_SYNC = true;
+    if(GM_CONFIG.workerUrl) {
+      var expLimpio = JSON.parse(JSON.stringify(exp));
+      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        cache: 'no-store',
+        body: JSON.stringify({action:'saveOneExp', data: expLimpio})
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ console.log('Expediente GLP guardado en servidor:', d.id); PENDING_SYNC = false; })
+      .catch(function(e){ console.warn('Error guardando exp GLP:', e); PENDING_SYNC = false; });
+    } else { PENDING_SYNC = false; }
+    resetFormGLP();
+    renderTabGLP();
+    showAlert('alertGLP','SCANFILE 1 GLP grabado — '+nowFecha()+' '+nowHora()+' — '+(CU?CU.nombre:''),'success');
+  });
+}
+
+function resetFormGLP() {
+  sf1FileGLP = null;
+  document.getElementById('sf1GLPInput').value = '';
+  document.getElementById('glpPlaca').value = '';
+  document.getElementById('glpModelo').value = '';
+  document.getElementById('glpSede').value = '';
+  document.getElementById('glpComentario').value = '';
+  var drop = document.getElementById('sf1GLPDrop');
+  drop.classList.remove('loaded','dragover');
+  var msg = document.getElementById('sf1GLPMsg');
+  msg.style.display = 'none'; msg.textContent = '';
+  var f = document.getElementById('formNuevoGLP');
+  if(f) f.style.display = 'none';
+}
+
+function renderTabGLP() {
+  var grid = document.getElementById('glpGrid');
+  var empty = document.getElementById('glpEmpty');
+  if(!grid) return;
+  grid.innerHTML = '';
+  var lista = [];
+  for(var i = 0; i < expedientes.length; i++) {
+    var e = expedientes[i];
+    if(e.tipoGas !== 'GLP') continue;
+    if(CU && CU.sede !== 'Todas' && CU.role !== 'admin' && CU.role !== 'asistente_fise' && e.sede !== CU.sede) continue;
+    lista.push(e);
+  }
+  if(!lista.length){ empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  for(var j = 0; j < lista.length; j++) {
+    var exp = lista[j];
+    var sf1meta = (exp.e1 && exp.e1.scanfile1) ? exp.e1.scanfile1 : {};
+    var card = document.createElement('div');
+    card.className = 'doc-box';
+    card.style.cssText = 'margin-bottom:10px';
+    card.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+        '<div>' +
+          '<div style="font-size:14px;font-weight:700;color:#131313">' + (exp.placa||'Sin placa') + ' — ' + (exp.modeloVehiculo||'') + '</div>' +
+          '<div style="font-size:11px;color:#6b82a0;margin-top:3px">⌂ ' + (exp.sede||'-') + ' · ◯ ' + (sf1meta.subidoPor||exp.registradoPor||'-') + ' · ▦ ' + (exp.fecha||'') + ' ' + (exp.hora||'') + '</div>' +
+          (exp.comentarioVendedor ? '<div style="font-size:11px;color:#8a8a8a;margin-top:2px;font-style:italic">' + exp.comentarioVendedor + '</div>' : '') +
+        '</div>' +
+        '<span style="background:#FFC165;color:#131313;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">GLP — Etapa ' + (exp.etapa||1) + '</span>' +
+      '</div>';
+    grid.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICACIONES — campana para el Asistente FISE
+// Pendientes = expedientes GNV en Etapa 2 aun no vistos
+// ═══════════════════════════════════════════════════════════
+function getNotifVistas() {
+  try { return JSON.parse(localStorage.getItem('gm_notif_vistas') || '[]'); } catch(e) { return []; }
+}
+function marcarNotifVista(id) {
+  var v = getNotifVistas();
+  if(v.indexOf(id) === -1) { v.push(id); try{ localStorage.setItem('gm_notif_vistas', JSON.stringify(v)); }catch(e){} }
+  actualizarCampanaNotif();
+}
+function getNotifPendientes() {
+  var vistas = getNotifVistas();
+  var pend = [];
+  for(var i = 0; i < expedientes.length; i++) {
+    var e = expedientes[i];
+    if(e.etapa === 2 && e.tipoGas !== 'GLP' && vistas.indexOf(e.id) === -1) pend.push(e);
+  }
+  return pend;
+}
+function initCampanaNotif() {
+  if(!CU || (CU.role !== 'asistente_fise' && CU.role !== 'admin')) return;
+  if(document.getElementById('gmCampana')) { actualizarCampanaNotif(); return; }
+  var btn = document.createElement('button');
+  btn.id = 'gmCampana';
+  btn.style.cssText = 'position:fixed;top:14px;right:18px;z-index:9000;background:#131313;color:#F5F5F0;border:1px solid #3a3a3a;border-radius:10px;padding:9px 13px;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.25)';
+  btn.innerHTML = '▲<span id="gmCampanaBadge" style="display:none;background:#E1272A;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:800"></span>';
+  btn.onclick = toggleNotifPanel;
+  document.body.appendChild(btn);
+  actualizarCampanaNotif();
+  setInterval(actualizarCampanaNotif, 30000);
+}
+function actualizarCampanaNotif() {
+  var badge = document.getElementById('gmCampanaBadge');
+  if(!badge) return;
+  var n = getNotifPendientes().length;
+  if(n > 0) { badge.style.display = 'inline-block'; badge.textContent = n; }
+  else { badge.style.display = 'none'; }
+}
+function toggleNotifPanel() {
+  var panel = document.getElementById('gmNotifPanel');
+  if(panel) { document.body.removeChild(panel); return; }
+  panel = document.createElement('div');
+  panel.id = 'gmNotifPanel';
+  panel.style.cssText = 'position:fixed;top:58px;right:18px;z-index:9001;background:white;border:1px solid #D9D9D9;border-radius:12px;width:340px;max-width:92vw;max-height:60vh;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,0.18)';
+  var pend = getNotifPendientes();
+  var html = '<div style="padding:12px 16px;border-bottom:1px solid #EFEFEA;font-size:13px;font-weight:800;color:#131313">Notificaciones (' + pend.length + ')</div>';
+  if(!pend.length) {
+    html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:#8a8a8a">Sin expedientes pendientes</div>';
+  } else {
+    for(var i = 0; i < pend.length; i++) {
+      var e = pend[i];
+      html += '<div onclick="abrirNotifExp(\'' + e.id + '\')" style="padding:11px 16px;border-bottom:1px solid #F5F5F0;cursor:pointer">' +
+        '<div style="font-size:12px;font-weight:700;color:#131313">' + (e.registradoPor||'Vendedor') + ' ingreso un expediente</div>' +
+        '<div style="font-size:11px;color:#6b82a0;margin-top:2px">' + (e.placa||'') + ' · ' + (e.sede||'') + ' · Pendiente Etapa 2 · ' + (e.fecha||'') + '</div>' +
+        '</div>';
+    }
+  }
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
+}
+function abrirNotifExp(id) {
+  marcarNotifVista(id);
+  var panel = document.getElementById('gmNotifPanel');
+  if(panel) document.body.removeChild(panel);
+  abrirExpediente(id);
+}
+
+// Correo de notificacion al avanzar a Etapa 2 (best-effort)
+// NOTA: mientras el dominio carrigasperu.com no este verificado en Resend,
+// el correo llega al buzon corporativo carrigasperu@gmail.com
+function notificarAvanceEtapa2(id) {
+  try {
+    var exp = null;
+    for(var i = 0; i < expedientes.length; i++) { if(expedientes[i].id === id) { exp = expedientes[i]; break; } }
+    if(!exp || !GM_CONFIG.workerUrl) return;
+    var quien = CU ? CU.nombre : 'Un vendedor';
+    var asunto = 'Gasmotion: expediente ' + (exp.placa||'') + ' pendiente en Etapa 2';
+    var cuerpo = '<div style="font-family:Arial,sans-serif;font-size:14px;color:#131313">' +
+      '<h2 style="margin:0 0 10px">Nuevo expediente pendiente</h2>' +
+      '<p><strong>' + quien + '</strong> acaba de avanzar un expediente a <strong>Etapa 2 — Documentos FISE</strong> y esta como pendiente.</p>' +
+      '<table style="font-size:13px;border-collapse:collapse">' +
+      '<tr><td style="padding:4px 12px 4px 0;color:#8a8a8a">Placa</td><td><strong>' + (exp.placa||'-') + '</strong></td></tr>' +
+      '<tr><td style="padding:4px 12px 4px 0;color:#8a8a8a">Modelo</td><td>' + (exp.modeloVehiculo||'-') + '</td></tr>' +
+      '<tr><td style="padding:4px 12px 4px 0;color:#8a8a8a">Sede</td><td>' + (exp.sede||'-') + '</td></tr>' +
+      '<tr><td style="padding:4px 12px 4px 0;color:#8a8a8a">Fecha</td><td>' + nowFecha() + ' ' + nowHora() + '</td></tr>' +
+      '</table>' +
+      '<p style="color:#8a8a8a;font-size:12px;margin-top:14px">Sistema Gasmotion · Carrigas Peru E.I.R.L.</p></div>';
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ to: 'carrigasperu@gmail.com', subject: asunto, html: cuerpo })
+    }).catch(function(){});
+  } catch(e) {}
+}
+
 function avanzarEtapa2(id) {
+  notificarAvanceEtapa2(id);
   for(var i=0;i<expedientes.length;i++){
     if(expedientes[i].id===id){expedientes[i].etapa=2;saveExp();break;}
   }
@@ -2304,7 +2614,7 @@ function eliminarExp(id) {
 
   // 4. Eliminar del servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=deleteExp', {
+    fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -2405,14 +2715,14 @@ function verificarCodigoRecuperacion() {
 
   // Código válido — cambiar contraseña (hasheada)
   var users = getUsers();
-  if(!users[uid]) return;
-  sha256Hex(newPass, function(hashNP){
+  if(users[uid]) {
+    sha256Hex(newPass, function(hashNP){
     if(!hashNP) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; return; }
     users[uid].pass = hashNP;
     users[uid].mustChangePass = false;
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -2420,7 +2730,8 @@ function verificarCodigoRecuperacion() {
     errEl.style.color = '#16a34a';
     errEl.textContent = 'Contraseña cambiada. Ahora puedes iniciar sesión.';
     setTimeout(function(){ mostrarLogin(); }, 2000);
-  });
+    }); // fin sha256Hex
+  }
 }
 
 function mostrarLogin() {
@@ -2568,20 +2879,20 @@ function resetPassUsuario(uid) {
   for(var i=0; i<8; i++) tempPass += chars[Math.floor(Math.random()*chars.length)];
   tempPass = 'G' + tempPass.substring(1,6) + '7' + tempPass.substring(7);
   sha256Hex(tempPass, function(hashTP){
-    if(!hashTP) { showToast('Error de seguridad. Intenta de nuevo.', 'error'); return; }
-    users[uid].pass = hashTP;
-    users[uid].mustChangePass = true;
-    saveUsers(users);
-    if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({users: users})
-      }).catch(function(){});
-    }
-    // Modal profesional — muestra la temporal en claro UNA vez
-    mostrarModalContrasenaReset(users[uid].nombre || uid, uid, tempPass);
-    renderGestionUsuarios();
-  });
+  if(!hashTP) { showToast('Error de seguridad. Intenta de nuevo.', 'error'); return; }
+  users[uid].pass = hashTP;
+  users[uid].mustChangePass = true;
+  saveUsers(users);
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({users: users})
+    }).catch(function(){});
+  }
+  // Modal profesional en lugar de alert
+  mostrarModalContrasenaReset(users[uid].nombre || uid, uid, tempPass);
+  renderGestionUsuarios();
+  }); // fin sha256Hex
 }
 
 function mostrarModalContrasenaReset(nombre, uid, tempPass) {
@@ -2712,7 +3023,7 @@ function mostrarCambiarMiPassword() {
           try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
           saveUsers(users);
           if(GM_CONFIG.workerUrl) {
-            fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+            fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
               method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({users: users})
             }).catch(function(){});
@@ -2735,7 +3046,7 @@ function mostrarCambiarMiPassword() {
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -2754,7 +3065,7 @@ function eliminarUsuario(uid) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
 
   // Eliminar en el servidor — la respuesta del servidor es la fuente de verdad
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
     method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
     body: JSON.stringify({deletedUser: uid})
   })
@@ -2787,21 +3098,21 @@ function crearNuevoUsuario() {
   // Generar contraseña temporal
   var tempPass = 'Pass' + String(Math.floor(1000 + Math.random()*9000)) + '!';
   sha256Hex(tempPass, function(hashTP){
-    if(!hashTP) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; errEl.style.color='#dc2626'; return; }
-    users[uid] = { nombre: nombre, role: rol, sede: sede, pass: hashTP, mustChangePass: true, especialidad: '' };
-    saveUsers(users);
-    if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({users: users})
-      }).catch(function(){});
-    }
-    errEl.style.color = '#16a34a';
-    errEl.textContent = 'Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
-    renderGestionUsuarios();
-    renderUsuarios();
-    poblarUserSelects();
-  });
+  if(!hashTP) { errEl.textContent = 'Error de seguridad. Intenta de nuevo.'; errEl.style.color='#dc2626'; return; }
+  users[uid] = { nombre: nombre, role: rol, sede: sede, pass: hashTP, mustChangePass: true, especialidad: '' };
+  saveUsers(users);
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({users: users})
+    }).catch(function(){});
+  }
+  errEl.style.color = '#16a34a';
+  errEl.textContent = 'Usuario @' + uid + ' creado. Contraseña temporal: ' + tempPass;
+  renderGestionUsuarios();
+  renderUsuarios();
+  poblarUserSelects();
+  }); // fin sha256Hex
 }
 
 
@@ -3178,7 +3489,7 @@ function renderEtapa6(cont, exp) {
 // ── Funciones de plantillas ──
 function cargarPlantillasEnSelect(sel, expId) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3200,7 +3511,7 @@ function aplicarPlantilla(val, expId) {
     return;
   }
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3216,12 +3527,12 @@ function guardarComoPlantilla(expId) {
   var ta = document.getElementById('e6_cuerpo_' + expId);
   var cuerpo = ta ? ta.value : '';
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
     plantillas.push({nombre: nombre, cuerpo: cuerpo});
-    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'email_plantillas', configValue: plantillas})
@@ -3234,7 +3545,7 @@ function guardarComoPlantilla(expId) {
 // ── Correos frecuentes ──
 function cargarCorreosFrecuentes(dataList) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
@@ -3250,14 +3561,14 @@ function cargarCorreosFrecuentes(dataList) {
 function guardarCorreoFrecuente(email) {
   if(!email || email.indexOf('@') === -1) return;
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
     if(correos.indexOf(email) !== -1) return;
     correos.unshift(email);
     if(correos.length > 20) correos = correos.slice(0,20);
-    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'correos_frecuentes', configValue: correos})
@@ -3326,7 +3637,7 @@ function enviarCorreoCertificadora(expId) {
     return;
   }
 
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -3612,7 +3923,7 @@ function marcarCulminado(expId, tipo) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   if(GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+    fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -3704,85 +4015,6 @@ function responsablePorDocumento(exp, tipoDoc) {
   var r = mapa[tipoDoc];
   if(!r) return '';
   return badgeResponsable(r.nombre, r.nota);
-}
-
-
-// ═══════════════════════════════════════════════════════════
-// EXPEDIENTES GLP — Etapa 1 inicial (en desarrollo)
-// ═══════════════════════════════════════════════════════════
-function renderTabGLP() {
-  var cont = document.getElementById('tab-glp');
-  if(!cont) return;
-  cont.innerHTML = '';
-
-  // Header
-  var header = document.createElement('div');
-  header.style.cssText = 'margin-bottom:20px';
-  header.innerHTML = '<div style="font-size:17px;font-weight:800;color:#131313;margin-bottom:4px">Expedientes GLP</div>' +
-    '<div style="font-size:12px;color:#8a8a8a">Programa de conversión a Gas Licuado de Petróleo</div>';
-  cont.appendChild(header);
-
-  // Botón crear expediente GLP
-  var canCreate = CU && (CU.role === 'admin' || CU.role === 'vendedor' || CU.role === 'supervisor');
-  if(canCreate) {
-    var btnCrear = document.createElement('button');
-    btnCrear.className = 'btn btn-navy';
-    btnCrear.style.cssText = 'margin-bottom:20px';
-    btnCrear.innerHTML = '+ Nuevo expediente GLP';
-    btnCrear.onclick = function(){ mostrarFormNuevoExpGLP(); };
-    cont.appendChild(btnCrear);
-  }
-
-  // Filtrar expedientes GLP
-  var expsGLP = [];
-  for(var i=0; i<expedientes.length; i++) {
-    if(expedientes[i].tipoGas === 'GLP' || expedientes[i].tipoPrograma === 'GLP') {
-      expsGLP.push(expedientes[i]);
-    }
-  }
-
-  if(expsGLP.length === 0) {
-    var empty = document.createElement('div');
-    empty.style.cssText = 'text-align:center;padding:48px 20px;color:#8a8a8a';
-    empty.innerHTML = '<div style="font-size:36px;margin-bottom:12px">▣</div>' +
-      '<div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:6px">Sin expedientes GLP</div>' +
-      '<div style="font-size:13px">Los expedientes GLP creados aparecerán aquí</div>';
-    cont.appendChild(empty);
-    return;
-  }
-
-  // Cards de expedientes GLP
-  for(var j=0; j<expsGLP.length; j++) {
-    var exp = expsGLP[j];
-    var card = document.createElement('div');
-    card.className = 'doc-box';
-    card.style.cssText = 'margin-bottom:10px;cursor:pointer';
-    card.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
-      '<div>' +
-        '<div style="font-size:14px;font-weight:700;color:#131313">' + (exp.placa || 'Sin placa') + '</div>' +
-        '<div style="font-size:12px;color:#6b82a0;margin-top:2px">' + (exp.nombre || 'Sin nombre') + ' · ' + (exp.marca || '') + ' ' + (exp.modeloVehiculo || '') + '</div>' +
-      '</div>' +
-      '<span style="background:#FFC165;color:#131313;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">GLP</span>' +
-    '</div>';
-    card.onclick = (function(eid){ return function(){ abrirExpediente(eid); }; })(exp.id);
-    cont.appendChild(card);
-  }
-}
-
-function mostrarFormNuevoExpGLP() {
-  // Reutilizar el formulario de nuevo expediente con tipoGas forzado a GLP
-  var modal = document.getElementById('modalNuevoExp');
-  if(modal) {
-    // Marcar como GLP antes de mostrar
-    var tipoField = document.getElementById('ne_tipoGas');
-    if(!tipoField) {
-      // El campo aún no existe, lo inyectamos dinámicamente al crear
-      window._forzarGLP = true;
-    }
-    modal.style.display = 'flex';
-  } else {
-    abrirNuevoExpediente('GLP');
-  }
 }
 
 function renderRadar() {
@@ -4399,8 +4631,7 @@ function renderEtapa3(cont, exp) {
     exp.vendedorSede === CU.nombre ||
     exp.registradoPor === CU.nombre ||
     exp.vendedorServicio === CU.nombre ||
-    exp.sede === CU.sede ||
-    (exp.vendedorSede === '' && exp.registradoPor === CU.nombre)
+    exp.sede === CU.sede
   );
   var canSubE3 = CU && (
     CU.role==='admin' ||
@@ -5042,7 +5273,7 @@ function guardarTodosDatosTecnicos(expId, silencioso) {
   var btn = document.getElementById('btnGuardarTecnico_' + expId);
   if(btn && !silencioso) { btn.disabled = true; btn.textContent = 'Guardando...'; }
 
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5086,7 +5317,7 @@ function grabarDatosCilindro(id) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   // Bloquear polling y subir al servidor con saveOneExp
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5129,7 +5360,7 @@ function grabarDatosCilindro2(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5185,7 +5416,7 @@ function grabarDatosReductor(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5518,7 +5749,7 @@ function cargarPaginasEtapa5(exp) {
 
   // Cargar orden guardado del servidor
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
+    fetch(GM_CONFIG.workerUrl + '?action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
       var ordenGuardado = d.orden || null;
@@ -5696,7 +5927,7 @@ function expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado) {
       var esPDF = nombre.indexOf('.pdf') !== -1 || nombre === '';
       if(!esPDF) return;
 
-      var proxyUrl = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + doc.driveFile.id;
+      var proxyUrl = GM_CONFIG.workerUrl + '?action=proxyFile&fileId=' + doc.driveFile.id;
       var loadTask = pdfjsLib.getDocument(proxyUrl);
       var p = loadTask.promise.then(function(pdf) {
         var totalPages = pdf.numPages;
@@ -5918,7 +6149,7 @@ function guardarOrdenEtapa5(expId) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
   var btn = document.getElementById('btnGuardarOrden_' + expId);
   if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOrdenExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveOrdenExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -7427,6 +7658,7 @@ function mostrarApp(){
   hideEl('loginScreen');
   document.getElementById('app').style.display='block';
   actualizarSidebarUser();
+  initCampanaNotif();
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
@@ -7604,13 +7836,13 @@ function buildSyncUrl() {
     action: 'saveExp',
     expedientes: exps
   }));
-  return GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp&data=' + data;
+  return GM_CONFIG.workerUrl + '?action=saveExp&data=' + data;
 }
 
 function sincronizarAhora(callback) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length === 0) { if(callback) callback(true, 0); return; }
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveExp', expedientes:exps})
@@ -7633,7 +7865,7 @@ window.addEventListener('beforeunload', function(e) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length > 0) {
     navigator.sendBeacon(
-      GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp',
+      GM_CONFIG.workerUrl + '?action=saveExp',
       new Blob([JSON.stringify({action:'saveExp', expedientes:exps})], {type:'application/json'})
     );
   }
@@ -7697,26 +7929,6 @@ document.addEventListener('visibilitychange', function() {
     }
   }
 });
-a 30s');
-}
-
-function detenerPolling() {
-  if(GM_POLLING_INTERVAL) {
-    clearInterval(GM_POLLING_INTERVAL);
-    GM_POLLING_INTERVAL = null;
-  }
-}
-
-// Actualizar cuando el usuario vuelve a la app (desde otra tab o pantalla)
-document.addEventListener('visibilitychange', function() {
-  if(document.visibilityState === 'visible' && CU) {
-    // Han pasado más de 10 segundos → actualizar
-    if(Date.now() - GM_LAST_SYNC > 10000) {
-      loadExpFromScript();
-    }
-  }
-});
-;
 </script>
 </body>
 </html>
