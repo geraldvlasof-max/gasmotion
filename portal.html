@@ -132,7 +132,7 @@ function nowHora() {
 }
 
 function portalLogin() {
-  var placa = document.getElementById('inPlaca').value.trim().toUpperCase();
+  var placa = document.getElementById('inPlaca').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   var codigo = document.getElementById('inCodigo').value.trim().toUpperCase();
   var msg = document.getElementById('loginMsg');
   var btn = document.getElementById('btnEntrar');
