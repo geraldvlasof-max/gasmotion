@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.5.0';
+    var GM_VERSION = '3.6.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -790,7 +790,7 @@ input,select,textarea{font-size:16px!important}
 function subirFotoADrive(expId, fotoKey, dataUrl, nombre) {
   if(!GM_CONFIG.workerUrl || !dataUrl) return;
   console.log('Subiendo foto a Drive:', fotoKey, 'exp:', expId);
-  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -1066,7 +1066,7 @@ function enviarCodigoVerificacion(uid, correoDestino, callback) {
 
   if(!GM_CONFIG.workerUrl) { callback(false, 'Sin conexión al servidor'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1163,7 +1163,7 @@ function saveUsers(u) {
   }
   // Subir al servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: u})
@@ -1175,7 +1175,7 @@ function saveUsers(u) {
 }
 
 function loadUsersFromSheets(callback) {
-  var url = GM_CONFIG.workerUrl + '?action=getUsers';
+  var url = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers';
   fetch(url)
   .then(function(r){ return r.json(); })
   .then(function(data){
@@ -1212,7 +1212,7 @@ function syncUsersToSheets(users, callback) {
   var usersObj = users || getUsers();
   USERS_CACHE = usersObj;
   try{ localStorage.setItem('gm_users', JSON.stringify(usersObj)); }catch(e){}
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({action:'saveUsers', users:usersObj})
@@ -1233,7 +1233,7 @@ function forzarSyncUsuarios() {
   var total = Object.keys(users).length;
   showToast('Subiendo ' + total + ' usuarios al servidor...', 'info');
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1339,7 +1339,7 @@ function storeFile(expId, tipoKey, file, callback) {
 function subirArchivoViaDrive(expId, tipoKey, dataUrl, nombre, subidoPor, fecha, hora) {
   if(!GM_CONFIG.workerUrl) return;
   showToast('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Subiendo ' + nombre + ' a Drive...', 'info');
-  fetch(GM_CONFIG.workerUrl + '?action=saveFotoDrive', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveFotoDrive', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
@@ -1484,7 +1484,7 @@ function loadExpFromScript(){
   if(!GM_CONFIG.workerUrl) return;
   if(PENDING_SYNC) { console.log('Sync pendiente — omitiendo polling'); return; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=getExp', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getExp', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(data){
     var remote = data.expedientes || [];
@@ -1546,7 +1546,7 @@ function saveExp(){
   if(GM_SYNC && GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
     var exps = limpiarExpParaSync(expedientes);
-    fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -1588,7 +1588,7 @@ function syncSheets(){
 function syncExpUnoAUno(exps, idx) {
   if(idx >= exps.length){ GM_SYNCING=false; return; }
   var exp = exps[idx];
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveOneExp', data:exp})
@@ -1610,7 +1610,7 @@ function syncSheetsConFeedback(callback){
   // Para asignación de técnicos, solo guardar el expediente modificado
   // Usar POST con JSON (no GET con URL gigante)
   var expsLimpios = limpiarExpParaSync(expedientes);
-  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -1839,7 +1839,7 @@ function doLogin() {
 
   // Paso 2: no está local — buscar en servidor D1
   setLoginBtn('<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> Verificando...', true);
-  fetch(GM_CONFIG.workerUrl + '?action=getUsers', { cache: 'no-store' })
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getUsers', { cache: 'no-store' })
   .then(function(r){ return r.json(); })
   .then(function(data){
     setLoginBtn('Ingresar al sistema', false);
@@ -1907,7 +1907,7 @@ function completarLogin(uid, u) {
   // Esto asegura que todos los dispositivos tengan los usuarios actualizados
   if(u.role === 'admin' && GM_CONFIG.workerUrl) {
     var localUsers = getUsers();
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({users: localUsers})
@@ -1969,7 +1969,7 @@ function guardarNuevaPassword(uid) {
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     // Subir al servidor
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
@@ -2143,7 +2143,7 @@ function grabarSf1() {
     // Subir expediente nuevo al servidor directamente (saveOneExp es más rápido)
     if(GM_CONFIG.workerUrl) {
       var expLimpio = JSON.parse(JSON.stringify(exp));
-      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         cache: 'no-store',
@@ -2334,7 +2334,7 @@ function grabarSf1GLP() {
     PENDING_SYNC = true;
     if(GM_CONFIG.workerUrl) {
       var expLimpio = JSON.parse(JSON.stringify(exp));
-      fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         cache: 'no-store',
@@ -2413,14 +2413,31 @@ function marcarNotifVista(id) {
 function getNotifPendientes() {
   var vistas = getNotifVistas();
   var pend = [];
+  var esFiseOAdmin = CU && (CU.role === 'asistente_fise' || CU.role === 'admin');
   for(var i = 0; i < expedientes.length; i++) {
     var e = expedientes[i];
-    if(e.etapa === 2 && e.tipoGas !== 'GLP' && vistas.indexOf(e.id) === -1) pend.push(e);
+    // Expedientes pendientes Etapa 2 — solo asistente FISE y admin
+    if(esFiseOAdmin && e.etapa === 2 && e.tipoGas !== 'GLP' && vistas.indexOf(e.id) === -1) {
+      pend.push({ tipo:'etapa2', notifId: e.id, expId: e.id,
+        titulo: (e.registradoPor||'Vendedor') + ' ingreso un expediente',
+        detalle: (e.placa||'') + ' · ' + (e.sede||'') + ' · Pendiente Etapa 2 · ' + (e.fecha||'') });
+    }
+    // Incidencias del cliente — todos los roles excepto tecnico
+    var incs = e.incidenciasCliente || [];
+    for(var k = 0; k < incs.length; k++) {
+      var inc = incs[k];
+      var nid = 'inc_' + inc.id;
+      if(vistas.indexOf(nid) === -1) {
+        pend.push({ tipo:'incidencia', notifId: nid, expId: e.id,
+          titulo: 'Incidencia del cliente — ' + (e.placa||''),
+          detalle: (inc.texto||'').slice(0,80) + ((inc.texto||'').length > 80 ? '...' : '') + ' · ' + (inc.fecha||'') });
+      }
+    }
   }
   return pend;
 }
 function initCampanaNotif() {
-  if(!CU || (CU.role !== 'asistente_fise' && CU.role !== 'admin')) return;
+  if(!CU || CU.role === 'tecnico') return;
   if(document.getElementById('gmCampana')) { actualizarCampanaNotif(); return; }
   var btn = document.createElement('button');
   btn.id = 'gmCampana';
@@ -2447,24 +2464,25 @@ function toggleNotifPanel() {
   var pend = getNotifPendientes();
   var html = '<div style="padding:12px 16px;border-bottom:1px solid #EFEFEA;font-size:13px;font-weight:800;color:#131313">Notificaciones (' + pend.length + ')</div>';
   if(!pend.length) {
-    html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:#8a8a8a">Sin expedientes pendientes</div>';
+    html += '<div style="padding:24px 16px;text-align:center;font-size:12px;color:#8a8a8a">Sin notificaciones pendientes</div>';
   } else {
     for(var i = 0; i < pend.length; i++) {
-      var e = pend[i];
-      html += '<div onclick="abrirNotifExp(\'' + e.id + '\')" style="padding:11px 16px;border-bottom:1px solid #F5F5F0;cursor:pointer">' +
-        '<div style="font-size:12px;font-weight:700;color:#131313">' + (e.registradoPor||'Vendedor') + ' ingreso un expediente</div>' +
-        '<div style="font-size:11px;color:#6b82a0;margin-top:2px">' + (e.placa||'') + ' · ' + (e.sede||'') + ' · Pendiente Etapa 2 · ' + (e.fecha||'') + '</div>' +
+      var n = pend[i];
+      var icono = n.tipo === 'incidencia' ? '▣' : '≡';
+      html += '<div onclick="abrirNotifExp(\'' + n.notifId + '\',\'' + n.expId + '\')" style="padding:11px 16px;border-bottom:1px solid #F5F5F0;cursor:pointer">' +
+        '<div style="font-size:12px;font-weight:700;color:#131313">' + icono + ' ' + n.titulo + '</div>' +
+        '<div style="font-size:11px;color:#6b82a0;margin-top:2px">' + n.detalle + '</div>' +
         '</div>';
     }
   }
   panel.innerHTML = html;
   document.body.appendChild(panel);
 }
-function abrirNotifExp(id) {
-  marcarNotifVista(id);
+function abrirNotifExp(notifId, expId) {
+  marcarNotifVista(notifId);
   var panel = document.getElementById('gmNotifPanel');
   if(panel) document.body.removeChild(panel);
-  abrirExpediente(id);
+  abrirExpediente(expId || notifId);
 }
 
 // Correo de notificacion al avanzar a Etapa 2 (best-effort)
@@ -2614,7 +2632,7 @@ function eliminarExp(id) {
 
   // 4. Eliminar del servidor D1
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=deleteExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=deleteExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -2722,7 +2740,7 @@ function verificarCodigoRecuperacion() {
     users[uid].mustChangePass = false;
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -2884,7 +2902,7 @@ function resetPassUsuario(uid) {
   users[uid].mustChangePass = true;
   saveUsers(users);
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({users: users})
     }).catch(function(){});
@@ -3023,7 +3041,7 @@ function mostrarCambiarMiPassword() {
           try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
           saveUsers(users);
           if(GM_CONFIG.workerUrl) {
-            fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+            fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
               method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({users: users})
             }).catch(function(){});
@@ -3046,7 +3064,7 @@ function mostrarCambiarMiPassword() {
     try{ sessionStorage.setItem('gm_session', JSON.stringify(CU)); }catch(e){}
     saveUsers(users);
     if(GM_CONFIG.workerUrl) {
-      fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({users: users})
       }).catch(function(){});
@@ -3065,7 +3083,7 @@ function eliminarUsuario(uid) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
 
   // Eliminar en el servidor — la respuesta del servidor es la fuente de verdad
-  fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
     method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
     body: JSON.stringify({deletedUser: uid})
   })
@@ -3102,7 +3120,7 @@ function crearNuevoUsuario() {
   users[uid] = { nombre: nombre, role: rol, sede: sede, pass: hashTP, mustChangePass: true, especialidad: '' };
   saveUsers(users);
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=saveUsers', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveUsers', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({users: users})
     }).catch(function(){});
@@ -3489,7 +3507,7 @@ function renderEtapa6(cont, exp) {
 // ── Funciones de plantillas ──
 function cargarPlantillasEnSelect(sel, expId) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3511,7 +3529,7 @@ function aplicarPlantilla(val, expId) {
     return;
   }
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
@@ -3527,12 +3545,12 @@ function guardarComoPlantilla(expId) {
   var ta = document.getElementById('e6_cuerpo_' + expId);
   var cuerpo = ta ? ta.value : '';
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=email_plantillas', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=email_plantillas', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var plantillas = d.value || [];
     plantillas.push({nombre: nombre, cuerpo: cuerpo});
-    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'email_plantillas', configValue: plantillas})
@@ -3545,7 +3563,7 @@ function guardarComoPlantilla(expId) {
 // ── Correos frecuentes ──
 function cargarCorreosFrecuentes(dataList) {
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
@@ -3561,14 +3579,14 @@ function cargarCorreosFrecuentes(dataList) {
 function guardarCorreoFrecuente(email) {
   if(!email || email.indexOf('@') === -1) return;
   if(!GM_CONFIG.workerUrl) return;
-  fetch(GM_CONFIG.workerUrl + '?action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getConfig&configKey=correos_frecuentes', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
     var correos = d.value || [];
     if(correos.indexOf(email) !== -1) return;
     correos.unshift(email);
     if(correos.length > 20) correos = correos.slice(0,20);
-    return fetch(GM_CONFIG.workerUrl + '?action=saveConfig', {
+    return fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveConfig', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({configKey:'correos_frecuentes', configValue: correos})
@@ -3637,7 +3655,7 @@ function enviarCorreoCertificadora(expId) {
     return;
   }
 
-  fetch(GM_CONFIG.workerUrl + '?action=sendEmail', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -3923,7 +3941,7 @@ function marcarCulminado(expId, tipo) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   if(GM_CONFIG.workerUrl) {
     PENDING_SYNC = true;
-    fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       cache: 'no-store',
@@ -4282,6 +4300,79 @@ function renderPanel() {
 // ==================
 var expModalId = null;
 
+
+// ═══════════════════════════════════════════════════════════
+// PORTAL DEL CLIENTE — código de acceso + incidencias
+// El código se genera automáticamente desde Etapa 3
+// ═══════════════════════════════════════════════════════════
+var PORTAL_URL = 'https://geraldvlasof-max.github.io/gasmotion/portal.html';
+
+function generarCodigoAcceso() {
+  // 6 caracteres sin ambiguos (sin 0/O/1/I/L)
+  var chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  var c = '';
+  for(var i=0; i<6; i++) c += chars.charAt(Math.floor(Math.random()*chars.length));
+  return c;
+}
+
+function ensureCodigoAcceso(exp) {
+  if(!exp || exp.etapa < 3 || exp.codigoAcceso) return;
+  exp.codigoAcceso = generarCodigoAcceso();
+  try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
+  if(GM_CONFIG.workerUrl) {
+    var expLimpio = JSON.parse(JSON.stringify(exp));
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+      method:'POST', headers:{'Content-Type':'application/json'}, cache:'no-store',
+      body: JSON.stringify({action:'saveOneExp', data: expLimpio})
+    }).catch(function(){});
+  }
+}
+
+function renderBloquePortal(exp, cont) {
+  // Solo staff (no técnicos) y solo desde Etapa 3
+  if(!CU || CU.role === 'tecnico') return;
+  if(exp.etapa < 3) return;
+  ensureCodigoAcceso(exp);
+  if(!exp.codigoAcceso) return;
+
+  var box = document.createElement('div');
+  box.className = 'doc-box';
+  box.style.cssText = 'margin-bottom:14px;border:1px solid #FFC165;background:#FFFCF5';
+
+  var celular = (exp.celular||'').replace(/[^0-9]/g,'');
+  var waNum = celular ? (celular.length === 9 ? '51' + celular : celular) : '';
+  var msg = 'Hola' + (exp.nombre ? ' ' + exp.nombre : '') + ', le saluda Carrigas Peru. ' +
+    'Puede seguir el avance de la conversion de su vehiculo aqui: ' + PORTAL_URL +
+    ' — Placa: ' + (exp.placa||'') + ' — Codigo de acceso: ' + exp.codigoAcceso;
+  var waUrl = 'https://wa.me/' + waNum + '?text=' + encodeURIComponent(msg);
+
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+    '<div>' +
+      '<div style="font-size:12px;font-weight:800;color:#131313">◈ Portal del Cliente</div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin-top:2px">Codigo de acceso: <strong style="font-size:14px;color:#131313;letter-spacing:2px">' + exp.codigoAcceso + '</strong></div>' +
+    '</div>' +
+    '<a href="' + waUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#131313;color:#F5F5F0;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">▷ Enviar por WhatsApp</a>' +
+    '</div>';
+
+  // Historial de incidencias del cliente
+  var incs = exp.incidenciasCliente || [];
+  if(incs.length > 0) {
+    html += '<div style="margin-top:12px;border-top:1px solid #F0E6D2;padding-top:10px">' +
+      '<div style="font-size:11px;font-weight:800;color:#131313;margin-bottom:6px">Incidencias reportadas por el cliente (' + incs.length + ')</div>';
+    for(var i = incs.length - 1; i >= 0; i--) {
+      var inc = incs[i];
+      html += '<div style="background:white;border:1px solid #EFEFEA;border-radius:8px;padding:8px 12px;margin-bottom:6px">' +
+        '<div style="font-size:10px;color:#8a8a8a">▦ ' + (inc.fecha||'') + ' ' + (inc.hora||'') + '</div>' +
+        '<div style="font-size:12px;color:#131313;margin-top:3px">' + (inc.texto||'') + '</div>' +
+        (inc.fotoUrl ? '<a href="' + inc.fotoUrl + '" target="_blank" style="font-size:11px;color:#5C8CF5;text-decoration:none">⊡ Ver foto adjunta</a>' : '') +
+        '</div>';
+    }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+  cont.appendChild(box);
+}
+
 function abrirExpediente(id) {
   expModalId=id;
   var exp=null;
@@ -4308,6 +4399,7 @@ function renderModalExp(exp) {
   }
   var content=document.getElementById('emContent');
   content.innerHTML='';
+  renderBloquePortal(exp, content);
 
   // Roles que pueden ver etapas anteriores para descargar
   var puedeVerHistorial = CU && (
@@ -5273,7 +5365,7 @@ function guardarTodosDatosTecnicos(expId, silencioso) {
   var btn = document.getElementById('btnGuardarTecnico_' + expId);
   if(btn && !silencioso) { btn.disabled = true; btn.textContent = 'Guardando...'; }
 
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5317,7 +5409,7 @@ function grabarDatosCilindro(id) {
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   // Bloquear polling y subir al servidor con saveOneExp
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5360,7 +5452,7 @@ function grabarDatosCilindro2(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5416,7 +5508,7 @@ function grabarDatosReductor(id) {
   if(!expTarget) return;
   try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(e){}
   PENDING_SYNC = true;
-  fetch(GM_CONFIG.workerUrl + '?action=saveOneExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -5749,7 +5841,7 @@ function cargarPaginasEtapa5(exp) {
 
   // Cargar orden guardado del servidor
   if(GM_CONFIG.workerUrl) {
-    fetch(GM_CONFIG.workerUrl + '?action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=getOrdenExp&expId=' + exp.id, {cache:'no-store'})
     .then(function(r){ return r.json(); })
     .then(function(d){
       var ordenGuardado = d.orden || null;
@@ -5927,7 +6019,7 @@ function expandirPaginasConPDFjs(exp, docs, mosaico, ordenGuardado) {
       var esPDF = nombre.indexOf('.pdf') !== -1 || nombre === '';
       if(!esPDF) return;
 
-      var proxyUrl = GM_CONFIG.workerUrl + '?action=proxyFile&fileId=' + doc.driveFile.id;
+      var proxyUrl = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + doc.driveFile.id;
       var loadTask = pdfjsLib.getDocument(proxyUrl);
       var p = loadTask.promise.then(function(pdf) {
         var totalPages = pdf.numPages;
@@ -6149,7 +6241,7 @@ function guardarOrdenEtapa5(expId) {
   if(!GM_CONFIG.workerUrl) { showToast('Sin conexión al servidor', 'error'); return; }
   var btn = document.getElementById('btnGuardarOrden_' + expId);
   if(btn) { btn.disabled = true; btn.textContent = 'Guardando...'; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveOrdenExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOrdenExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
@@ -6260,7 +6352,13 @@ function grabarArchivoEnExp(expId, tipoKey, name, etapaKey) {
 
 function avanzarEtapaNum(id, num) {
   for(var i=0;i<expedientes.length;i++){
-    if(expedientes[i].id===id){expedientes[i].etapa=num;saveExp();break;}
+    if(expedientes[i].id===id){
+      expedientes[i].etapa=num;
+      // Portal del cliente: generar codigo de acceso desde Etapa 3
+      if(num >= 3) ensureCodigoAcceso(expedientes[i]);
+      saveExp();
+      break;
+    }
   }
   abrirExpediente(id);
   renderPanel();
@@ -7836,13 +7934,13 @@ function buildSyncUrl() {
     action: 'saveExp',
     expedientes: exps
   }));
-  return GM_CONFIG.workerUrl + '?action=saveExp&data=' + data;
+  return GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp&data=' + data;
 }
 
 function sincronizarAhora(callback) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length === 0) { if(callback) callback(true, 0); return; }
-  fetch(GM_CONFIG.workerUrl + '?action=saveExp', {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({action:'saveExp', expedientes:exps})
@@ -7865,7 +7963,7 @@ window.addEventListener('beforeunload', function(e) {
   var exps = limpiarExpParaSync(expedientes);
   if(exps.length > 0) {
     navigator.sendBeacon(
-      GM_CONFIG.workerUrl + '?action=saveExp',
+      GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveExp',
       new Blob([JSON.stringify({action:'saveExp', expedientes:exps})], {type:'application/json'})
     );
   }
