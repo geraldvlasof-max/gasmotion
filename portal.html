@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Carrigas Perú — Portal del Cliente</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: #F5F5F0; color: #131313; min-height: 100vh; }
+.wrap { max-width: 480px; margin: 0 auto; padding: 24px 18px 48px; }
+.logo { display: flex; justify-content: center; margin: 18px 0 26px; }
+.card { background: white; border: 1px solid #D9D9D9; border-radius: 14px; padding: 22px 20px; margin-bottom: 14px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.field input, .field textarea { width: 100%; border: 2px solid #D9D9D9; border-radius: 9px; padding: 12px; font-size: 15px; font-family: inherit; outline: none; }
+.field input:focus, .field textarea:focus { border-color: #FFC165; }
+.btn { width: 100%; padding: 14px; background: #131313; color: #F5F5F0; border: none; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.btn:disabled { opacity: 0.5; }
+.btn-amber { background: #FFC165; color: #131313; }
+.msg { font-size: 13px; margin: 10px 0; text-align: center; }
+.chip { display: inline-block; background: #FFC165; color: #131313; border-radius: 6px; padding: 3px 10px; font-size: 11px; font-weight: 800; }
+.step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F0F0EA; }
+.step:last-child { border-bottom: none; }
+.step-dot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.inc-item { background: #FAFAF7; border: 1px solid #EFEFEA; border-radius: 9px; padding: 10px 13px; margin-bottom: 8px; }
+.foto-preview { max-width: 100%; border-radius: 8px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">
+    <svg width="220" height="64" viewBox="0 0 380 110" xmlns="http://www.w3.org/2000/svg">
+      <g transform="translate(40, 28)">
+        <path d="M 28 2 L 48 13 L 48 37 L 28 48 L 8 37 L 8 13 Z" fill="none" stroke="#FFC165" stroke-width="2.5"/>
+        <path d="M 38 17 A 13 13 0 1 0 41 28 L 28 28" fill="none" stroke="#FFC165" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="28" cy="25" r="2" fill="#131313"/>
+      </g>
+      <text x="92" y="62" font-family="'Plus Jakarta Sans',Arial,sans-serif" font-size="30" font-weight="800" letter-spacing="1" fill="#131313">GAS<tspan fill="#FFC165">MOTION</tspan></text>
+      <text x="94" y="80" font-family="Arial,sans-serif" font-size="9" font-weight="600" letter-spacing="3" fill="#8a8a8a">PORTAL DEL CLIENTE</text>
+    </svg>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="vistaLogin">
+    <div class="card">
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px">Consulta tu conversión</div>
+      <div style="font-size:12px;color:#8a8a8a;margin-bottom:18px">Ingresa la placa de tu vehículo y el código que te entregó Carrigas Perú</div>
+      <div class="field">
+        <label>Placa del vehículo</label>
+        <input type="text" id="inPlaca" placeholder="Ej: CUD478" style="text-transform:uppercase" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Código de acceso</label>
+        <input type="text" id="inCodigo" placeholder="6 caracteres" style="text-transform:uppercase;letter-spacing:3px" maxlength="6" autocomplete="off">
+      </div>
+      <div class="msg" id="loginMsg"></div>
+      <button class="btn" id="btnEntrar" onclick="portalLogin()">Consultar mi vehículo</button>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#a8a8a8;margin-top:10px">Carrigas Perú E.I.R.L. · Conversiones GNV / GLP</div>
+  </div>
+
+  <!-- PANEL -->
+  <div id="vistaPanel" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:18px;font-weight:800" id="pPlaca"></div>
+          <div style="font-size:13px;color:#6b82a0;margin-top:2px" id="pModelo"></div>
+        </div>
+        <span class="chip" id="pTipo"></span>
+      </div>
+      <div style="font-size:11px;color:#8a8a8a;margin-top:8px" id="pSede"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:800;margin-bottom:10px">Estado de tu conversión</div>
+      <div id="pPasos"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:800;margin-bottom:4px">¿Tienes alguna consulta o incidencia?</div>
+      <div style="font-size:11px;color:#8a8a8a;margin-bottom:14px">Escríbenos y quedará registrado en tu expediente. Nuestro equipo lo revisará.</div>
+      <div class="field">
+        <textarea id="inIncidencia" rows="4" placeholder="Describe tu consulta o incidencia..." maxlength="1000"></textarea>
+      </div>
+      <div class="field">
+        <label>Foto (opcional)</label>
+        <input type="file" id="inFoto" accept="image/*" onchange="previsualizarFoto(this)">
+        <img id="fotoPreview" class="foto-preview" alt="Vista previa">
+      </div>
+      <div class="msg" id="incMsg"></div>
+      <button class="btn btn-amber" id="btnEnviarInc" onclick="enviarIncidencia()">Enviar incidencia</button>
+    </div>
+
+    <div class="card">
+      <div style="font-size:13px;font-weight:800;margin-bottom:10px">Historial de tus incidencias</div>
+      <div id="pIncidencias"><div style="font-size:12px;color:#a8a8a8;text-align:center;padding:10px">Sin incidencias registradas</div></div>
+    </div>
+
+    <button class="btn" style="background:#F0F0F0;color:#374151" onclick="cerrarSesionPortal()">Salir</button>
+  </div>
+</div>
+
+<script>
+var WORKER_URL = 'https://gasmotion-sync.geraldvlasof.workers.dev';
+var SESION = null; // { placa, codigo, expediente }
+var fotoDataUrl = null;
+
+var ETAPAS_CLIENTE = [
+  { n: 1, nombre: 'Recepción de documentos' },
+  { n: 2, nombre: 'Proceso documentario' },
+  { n: 3, nombre: 'Contratos y programación' },
+  { n: 4, nombre: 'Instalación en taller' },
+  { n: 5, nombre: 'Verificación y armado final' },
+  { n: 6, nombre: 'Certificación enviada' }
+];
+
+function nowFecha() {
+  var d = new Date();
+  var dd = d.getDate(); if(dd < 10) dd = '0' + dd;
+  var mm = d.getMonth() + 1; if(mm < 10) mm = '0' + mm;
+  return dd + '/' + mm + '/' + d.getFullYear();
+}
+function nowHora() {
+  var d = new Date();
+  var h = d.getHours(); var m = d.getMinutes(); if(m < 10) m = '0' + m;
+  var ap = h >= 12 ? 'pm' : 'am';
+  var h12 = h % 12; if(h12 === 0) h12 = 12;
+  return h12 + ':' + m + ap;
+}
+
+function portalLogin() {
+  var placa = document.getElementById('inPlaca').value.trim().toUpperCase();
+  var codigo = document.getElementById('inCodigo').value.trim().toUpperCase();
+  var msg = document.getElementById('loginMsg');
+  var btn = document.getElementById('btnEntrar');
+  if(!placa || !codigo) { msg.style.color = '#dc2626'; msg.textContent = 'Completa la placa y el código.'; return; }
+  btn.disabled = true; btn.textContent = 'Consultando...';
+  msg.style.color = '#8a8a8a'; msg.textContent = '';
+  fetch(WORKER_URL + '?action=portalLogin', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ placa: placa, codigo: codigo })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    btn.disabled = false; btn.textContent = 'Consultar mi vehículo';
+    if(!d.ok) { msg.style.color = '#dc2626'; msg.textContent = d.error || 'No se pudo consultar.'; return; }
+    SESION = { placa: placa, codigo: codigo, expediente: d.expediente };
+    mostrarPanel();
+  })
+  .catch(function(){
+    btn.disabled = false; btn.textContent = 'Consultar mi vehículo';
+    msg.style.color = '#dc2626'; msg.textContent = 'Error de conexión. Intenta de nuevo.';
+  });
+}
+
+function mostrarPanel() {
+  var e = SESION.expediente;
+  document.getElementById('vistaLogin').style.display = 'none';
+  document.getElementById('vistaPanel').style.display = 'block';
+  document.getElementById('pPlaca').textContent = e.placa;
+  document.getElementById('pModelo').textContent = (e.marca ? e.marca + ' ' : '') + (e.modelo || '');
+  document.getElementById('pTipo').textContent = e.tipoGas;
+  document.getElementById('pSede').textContent = '⌂ Sede ' + (e.sede || '') + (e.fecha ? ' · Ingreso: ' + e.fecha : '');
+  renderPasos(e.etapa);
+  renderIncidencias(e.incidencias || []);
+}
+
+function renderPasos(etapaActual) {
+  var cont = document.getElementById('pPasos');
+  cont.innerHTML = '';
+  for(var i = 0; i < ETAPAS_CLIENTE.length; i++) {
+    var et = ETAPAS_CLIENTE[i];
+    var done = et.n < etapaActual;
+    var actual = et.n === etapaActual;
+    var color = done ? '#10b981' : (actual ? '#FFC165' : '#E5E5E0');
+    var txtColor = done || actual ? '#131313' : '#a8a8a8';
+    var div = document.createElement('div');
+    div.className = 'step';
+    div.innerHTML =
+      '<div class="step-dot" style="background:' + color + ';color:' + (done || actual ? 'white' : '#8a8a8a') + '">' + (done ? '✓' : et.n) + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:13px;font-weight:' + (actual ? '800' : '600') + ';color:' + txtColor + '">' + et.nombre + '</div>' +
+        (actual ? '<div style="font-size:11px;color:#BA7517;margin-top:2px">● En este paso actualmente</div>' : '') +
+      '</div>';
+    cont.appendChild(div);
+  }
+}
+
+function previsualizarFoto(input) {
+  fotoDataUrl = null;
+  var img = document.getElementById('fotoPreview');
+  img.style.display = 'none';
+  if(!input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    // Comprimir con canvas (max 1280px, JPEG 0.7) para no superar límites
+    var image = new Image();
+    image.onload = function() {
+      var max = 1280;
+      var w = image.width, h = image.height;
+      if(w > max || h > max) {
+        if(w > h) { h = Math.round(h * max / w); w = max; }
+        else { w = Math.round(w * max / h); h = max; }
+      }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(image, 0, 0, w, h);
+      fotoDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      img.src = fotoDataUrl;
+      img.style.display = 'block';
+    };
+    image.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function enviarIncidencia() {
+  if(!SESION) return;
+  var texto = document.getElementById('inIncidencia').value.trim();
+  var msg = document.getElementById('incMsg');
+  var btn = document.getElementById('btnEnviarInc');
+  if(!texto) { msg.style.color = '#dc2626'; msg.textContent = 'Escribe tu consulta o incidencia.'; return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  msg.style.color = '#8a8a8a'; msg.textContent = '';
+  fetch(WORKER_URL + '?action=portalIncidencia', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      placa: SESION.placa,
+      codigo: SESION.codigo,
+      texto: texto,
+      fotoDataUrl: fotoDataUrl,
+      fecha: nowFecha(),
+      hora: nowHora()
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    btn.disabled = false; btn.textContent = 'Enviar incidencia';
+    if(!d.ok) { msg.style.color = '#dc2626'; msg.textContent = d.error || 'No se pudo enviar.'; return; }
+    msg.style.color = '#16a34a'; msg.textContent = '✓ Incidencia registrada. Nuestro equipo la revisará.';
+    document.getElementById('inIncidencia').value = '';
+    document.getElementById('inFoto').value = '';
+    document.getElementById('fotoPreview').style.display = 'none';
+    fotoDataUrl = null;
+    SESION.expediente.incidencias = d.incidencias || [];
+    renderIncidencias(SESION.expediente.incidencias);
+    setTimeout(function(){ msg.textContent = ''; }, 4000);
+  })
+  .catch(function(){
+    btn.disabled = false; btn.textContent = 'Enviar incidencia';
+    msg.style.color = '#dc2626'; msg.textContent = 'Error de conexión. Intenta de nuevo.';
+  });
+}
+
+function renderIncidencias(incs) {
+  var cont = document.getElementById('pIncidencias');
+  if(!incs || !incs.length) {
+    cont.innerHTML = '<div style="font-size:12px;color:#a8a8a8;text-align:center;padding:10px">Sin incidencias registradas</div>';
+    return;
+  }
+  cont.innerHTML = '';
+  for(var i = incs.length - 1; i >= 0; i--) {
+    var inc = incs[i];
+    var div = document.createElement('div');
+    div.className = 'inc-item';
+    div.innerHTML =
+      '<div style="font-size:10px;color:#8a8a8a">' + (inc.fecha || '') + ' ' + (inc.hora || '') + '</div>' +
+      '<div style="font-size:13px;margin-top:3px">' + (inc.texto || '') + '</div>' +
+      (inc.fotoUrl ? '<a href="' + inc.fotoUrl + '" target="_blank" style="font-size:11px;color:#5C8CF5;text-decoration:none">Ver foto adjunta</a>' : '');
+    cont.appendChild(div);
+  }
+}
+
+function cerrarSesionPortal() {
+  SESION = null;
+  fotoDataUrl = null;
+  document.getElementById('vistaPanel').style.display = 'none';
+  document.getElementById('vistaLogin').style.display = 'block';
+  document.getElementById('inCodigo').value = '';
+  document.getElementById('loginMsg').textContent = '';
+}
+</script>
+</body>
+</html>
