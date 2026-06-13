@@ -375,7 +375,7 @@ input,select,textarea{font-size:16px!important}
 </div>
 
 <!-- BANNER MINI (para quienes saltaron) -->
-<div id="notifBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#E1272A;color:white;padding:10px 16px;z-index:9998;display:none;align-items:center;justify-content:space-between;gap:10px">
+<div id="notifBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#E1272A;color:white;padding:10px 16px;z-index:9998;align-items:center;justify-content:space-between;gap:10px">
   <span style="font-size:12px;font-weight:600">⚠ Notificaciones desactivadas — puedes perder avisos importantes</span>
   <button onclick="mostrarBloqueoNotif()" style="background:white;color:#E1272A;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Activar</button>
 </div>
@@ -1578,6 +1578,19 @@ function loadExpFromScript(){
     try{ localStorage.setItem('gm_exp', JSON.stringify(expedientes)); }catch(ex){}
 
     GM_LAST_SYNC = Date.now();
+
+    // Detección de cambios — solo re-renderiza si algo cambió
+    var firma = '';
+    for(var fi=0; fi<remote.length; fi++){
+      var rex = remote[fi];
+      firma += rex.id + ':' + rex.etapa + ':' + (rex.timestamp||'') + '|';
+    }
+    if(firma === GM_LAST_FIRMA) {
+      console.log('Sin cambios — omitiendo re-render');
+      return;
+    }
+    GM_LAST_FIRMA = firma;
+
     var app = document.getElementById('app');
     if(app && app.style.display !== 'none'){
       if(isTecnico()) {
@@ -8060,7 +8073,7 @@ function mostrarApp(){
   initCampanaNotif();
   registrarPushUsuario();
   mostrarAvisoIOS();
-  setTimeout(chequearNotificaciones, 2000);
+  if(!window._notifChequeada){ window._notifChequeada=true; setTimeout(chequearNotificaciones, 2000); }
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
@@ -8302,6 +8315,7 @@ function mostrarBtnSync() {
 // ═══════════════════════════════════════════════════════
 var GM_POLLING_INTERVAL = null;
 var GM_LAST_SYNC = 0;
+var GM_LAST_FIRMA = '';
 
 function iniciarPolling() {
   if(GM_POLLING_INTERVAL) clearInterval(GM_POLLING_INTERVAL);
@@ -8310,9 +8324,15 @@ function iniciarPolling() {
   // Luego cada 30 segundos
   GM_POLLING_INTERVAL = setInterval(function() {
     if(!CU) { detenerPolling(); return; }
+    // Pausar si el bloqueo de notificaciones está visible
+    var bloqueo = document.getElementById('notifBloqueo');
+    if(bloqueo && bloqueo.style.display !== 'none') return;
+    // Pausar si hay modal de expediente abierto
+    var modal = document.getElementById('expModal');
+    if(modal && modal.style.display !== 'none') return;
     loadExpFromScript();
-  }, 15000);
-  console.log('Polling iniciado — actualización cada 30s');
+  }, 45000);
+  console.log('Polling iniciado — actualización cada 45s');
 }
 
 function detenerPolling() {
