@@ -5,6 +5,19 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+<link rel="manifest" href="/gasmotion/manifest.json">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: '44a75c28-3c9b-4d1b-ad3a-1e7677d7768c',
+      serviceWorkerPath: '/gasmotion/OneSignalSDKWorker.js',
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true
+    });
+  });
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Gasmotion — Software Automotriz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2514,11 +2527,104 @@ function notificarAvanceEtapa2(id) {
   } catch(e) {}
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// NOTIFICACIONES PUSH — OneSignal
+// ═══════════════════════════════════════════════════════════
+
+// Registra al usuario en OneSignal con su uid como external_id
+function registrarPushUsuario() {
+  if(!CU || typeof OneSignalDeferred === 'undefined') return;
+  OneSignalDeferred.push(function(OneSignal) {
+    OneSignal.login(CU.id).catch(function(){});
+    // Suscribir si aún no está
+    OneSignal.Notifications.requestPermission().then(function(granted){
+      if(granted) console.log('Push activado para:', CU.nombre);
+    }).catch(function(){});
+  });
+}
+
+// Envía notificación push a usuarios con roles específicos
+// roles: array de strings ej ['asistente_fise', 'admin', 'supervisor']
+// excludeUid: uid a excluir (quien dispara el evento)
+function enviarPushPorRol(roles, titulo, mensaje, excludeUid) {
+  if(!GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendPush', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      roles: roles,
+      titulo: titulo,
+      mensaje: mensaje,
+      excludeUid: excludeUid || null,
+      users: getUsers()
+    })
+  }).catch(function(){});
+}
+
+// Evento 1: Vendedor avanza a Etapa 2 → notifica a asistente_fise y admin
+function pushAvanceEtapa2(exp) {
+  var placa = exp ? (exp.placa || 'Sin placa') : 'Sin placa';
+  var quien = CU ? CU.nombre : 'Un vendedor';
+  enviarPushPorRol(
+    ['asistente_fise', 'admin', 'supervisor'],
+    'Nuevo expediente pendiente',
+    quien + ' ingresó ' + placa + ' — pendiente en Etapa 2',
+    CU ? CU.id : null
+  );
+}
+
+// Evento 2: Asistente avanza a Etapa 4 → notifica a técnicos asignados
+function pushAvanceEtapa4(exp) {
+  var placa = exp ? (exp.placa || 'Sin placa') : 'Sin placa';
+  var uids = [];
+  var users = getUsers();
+  var ids = Object.keys(users);
+  for(var i=0; i<ids.length; i++) {
+    if(users[ids[i]].role === 'tecnico') uids.push(ids[i]);
+  }
+  if(!uids.length || !GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendPush', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      uids: uids,
+      titulo: 'Expediente listo para instalación',
+      mensaje: placa + ' está en Etapa 4 — listo para taller',
+      users: getUsers()
+    })
+  }).catch(function(){});
+}
+
+// Evento 3: Incidencia del cliente → notifica a todos excepto técnicos
+function pushIncidenciaCliente(placa) {
+  enviarPushPorRol(
+    ['admin', 'supervisor', 'vendedor', 'asistente_fise'],
+    'Incidencia del cliente',
+    'El cliente de ' + (placa||'un vehículo') + ' dejó un comentario',
+    null
+  );
+}
+
+// Mostrar instrucción para iPhone
+function mostrarAvisoIOS() {
+  var esIOS = /iP(hone|ad|od)/.test(navigator.userAgent);
+  var esSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+  if(!esIOS || !esSafari) return;
+  if(localStorage.getItem('gm_ios_aviso')) return;
+  setTimeout(function(){
+    showToast('iPhone: para recibir notificaciones, agrega Gasmotion a tu pantalla de inicio (compartir → Añadir a pantalla de inicio)', 'info');
+    localStorage.setItem('gm_ios_aviso','1');
+  }, 3000);
+}
+
 function avanzarEtapa2(id) {
   notificarAvanceEtapa2(id);
+  var expRef2 = null;
   for(var i=0;i<expedientes.length;i++){
-    if(expedientes[i].id===id){expedientes[i].etapa=2;saveExp();break;}
+    if(expedientes[i].id===id){expedientes[i].etapa=2;expRef2=expedientes[i];saveExp();break;}
   }
+  if(expRef2) pushAvanceEtapa2(expRef2);
   renderBandeja();
   showAlert('alertBandeja','Expediente avanzado a Etapa 2 — FISE notificado.','success');
 }
@@ -6357,6 +6463,7 @@ function avanzarEtapaNum(id, num) {
       expedientes[i].etapa=num;
       // Portal del cliente: generar codigo de acceso desde Etapa 3
       if(num >= 3) ensureCodigoAcceso(expedientes[i]);
+      if(num === 4) pushAvanceEtapa4(expedientes[i]);
       saveExp();
       break;
     }
@@ -7758,6 +7865,8 @@ function mostrarApp(){
   document.getElementById('app').style.display='block';
   actualizarSidebarUser();
   initCampanaNotif();
+  registrarPushUsuario();
+  mostrarAvisoIOS();
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
