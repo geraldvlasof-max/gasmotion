@@ -1,5 +1,5 @@
-// Gasmotion Service Worker v4.8
-const CACHE_NAME = 'gasmotion-v48';
+// Gasmotion Service Worker v4.9
+const CACHE_NAME = 'gasmotion-v49';
 const WORKER_DOMAIN = 'gasmotion-sync.geraldvlasof.workers.dev';
 self.addEventListener('install', function(e) { self.skipWaiting(); });
 self.addEventListener('activate', function(e) {
