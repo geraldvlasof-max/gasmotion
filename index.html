@@ -339,6 +339,47 @@ input,select,textarea{font-size:16px!important}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
+
+<!-- BLOQUEO NOTIFICACIONES -->
+<div id="notifBloqueo" style="display:none;position:fixed;inset:0;background:rgba(19,19,19,0.97);z-index:99999;overflow-y:auto;padding:20px 16px 40px">
+  <div style="max-width:480px;margin:0 auto">
+    <!-- Logo -->
+    <div style="text-align:center;margin:24px 0 20px">
+      <svg width="48" height="48" viewBox="0 0 56 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 28 2 L 48 13 L 48 37 L 28 48 L 8 37 L 8 13 Z" fill="none" stroke="#FFC165" stroke-width="2.5"/>
+        <path d="M 38 17 A 13 13 0 1 0 41 28 L 28 28" fill="none" stroke="#FFC165" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="28" cy="25" r="2" fill="#F5F5F0"/>
+      </svg>
+    </div>
+
+    <!-- Título -->
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:22px;font-weight:800;color:#F5F5F0;margin-bottom:8px">Activa las notificaciones</div>
+      <div style="font-size:14px;color:#8a8a8a;line-height:1.5">Gasmotion te avisa cuando tienes tareas pendientes.<br>Sin notificaciones, puedes perder casos importantes.</div>
+    </div>
+
+    <!-- Guía por navegador -->
+    <div id="guiaNotif" style="background:#1e1e1e;border:1px solid #3a3a3a;border-radius:14px;padding:20px;margin-bottom:16px"></div>
+
+    <!-- Botones -->
+    <button onclick="verificarYRecargar()" style="width:100%;background:#FFC165;color:#131313;border:none;border-radius:10px;padding:15px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;font-family:inherit">
+      ✓ Ya lo activé — Recargar ahora
+    </button>
+    <button onclick="saltarNotifBloqueo()" style="width:100%;background:transparent;color:#6b82a0;border:1px solid #3a3a3a;border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+      Saltar por ahora (no recomendado)
+    </button>
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:#4a4a4a">
+      Si tienes problemas, pide ayuda a tu supervisor o a Iki.
+    </div>
+  </div>
+</div>
+
+<!-- BANNER MINI (para quienes saltaron) -->
+<div id="notifBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#E1272A;color:white;padding:10px 16px;z-index:9998;display:none;align-items:center;justify-content:space-between;gap:10px">
+  <span style="font-size:12px;font-weight:600">⚠ Notificaciones desactivadas — puedes perder avisos importantes</span>
+  <button onclick="mostrarBloqueoNotif()" style="background:white;color:#E1272A;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer">Activar</button>
+</div>
+
 <div id="gmLoadingOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:9999;align-items:center;justify-content:center">
   <div style="background:white;border-radius:16px;padding:32px 40px;text-align:center;max-width:280px">
     <div style="font-size:40px;margin-bottom:12px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></div>
@@ -2527,6 +2568,158 @@ function notificarAvanceEtapa2(id) {
   } catch(e) {}
 }
 
+
+
+// ═══════════════════════════════════════════════════════════
+// BLOQUEO DE NOTIFICACIONES — Guía didáctica por navegador
+// ═══════════════════════════════════════════════════════════
+
+function detectarNavegador() {
+  var ua = navigator.userAgent;
+  if(/Edg\//.test(ua)) return 'edge';
+  if(/Chrome\//.test(ua) && !/Chromium/.test(ua)) return 'chrome';
+  if(/Firefox\//.test(ua)) return 'firefox';
+  if(/Safari\//.test(ua) && !/Chrome/.test(ua)) return 'safari';
+  return 'chrome'; // default
+}
+
+function guiaPorNavegador() {
+  var nav = detectarNavegador();
+  var esMovil = /Android|iPhone|iPad/.test(navigator.userAgent);
+  var esIOS = /iPhone|iPad/.test(navigator.userAgent);
+
+  if(esIOS) {
+    return '<div style="color:#F5F5F0">' +
+      '<div style="font-size:13px;font-weight:800;color:#FFC165;margin-bottom:14px">📱 Estás en iPhone o iPad</div>' +
+      '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">Los iPhones necesitan un paso extra para recibir notificaciones:</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        pasoHTML('1', 'Toca el botón de compartir', '(el cuadradito con una flecha hacia arriba que está abajo de tu pantalla)', '📤') +
+        pasoHTML('2', 'Busca la opción que dice', '"Añadir a pantalla de inicio"', '➕') +
+        pasoHTML('3', 'Toca "Añadir"', 'Gasmotion aparecerá como una app en tu pantalla', '✓') +
+        pasoHTML('4', 'Abre Gasmotion desde ese ícono', 'y acepta las notificaciones', '🔔') +
+      '</div></div>';
+  }
+
+  if(esMovil && nav === 'chrome') {
+    return '<div style="color:#F5F5F0">' +
+      '<div style="font-size:13px;font-weight:800;color:#FFC165;margin-bottom:14px">📱 Chrome en Android</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        pasoHTML('1', 'Mira la barra de arriba de tu pantalla', 'Toca los 3 puntitos ⋮ que están a la derecha', '⋮') +
+        pasoHTML('2', 'Toca "Configuración"', 'o "Settings"', '⚙') +
+        pasoHTML('3', 'Toca "Configuración del sitio"', 'o "Site settings"', '🌐') +
+        pasoHTML('4', 'Toca "Notificaciones"', 'y cámbialo a PERMITIR', '🔔') +
+        pasoHTML('5', 'Regresa a Gasmotion', 'y toca el botón amarillo de abajo', '↩') +
+      '</div></div>';
+  }
+
+  if(nav === 'chrome') {
+    return '<div style="color:#F5F5F0">' +
+      '<div style="font-size:13px;font-weight:800;color:#FFC165;margin-bottom:14px">🖥 Google Chrome (computadora)</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        pasoHTML('1', 'Mira la barra donde escribes la dirección web', '(la barra de arriba donde dice "github.io/gasmotion")', '🔍') +
+        pasoHTML('2', 'A la IZQUIERDA de esa barra verás un candado 🔒', 'Haz clic en ese candado', '🔒') +
+        pasoHTML('3', 'Aparece un menú. Busca donde dice "Notificaciones"', 'Al lado derecho verá una cajita que dice "Bloquear"', '📋') +
+        pasoHTML('4', 'Haz clic en esa cajita y selecciona "Permitir"', '', '✓') +
+        pasoHTML('5', 'Haz clic en el botón amarillo de abajo', 'que dice "Ya lo activé — Recargar ahora"', '↩') +
+      '</div></div>';
+  }
+
+  if(nav === 'edge') {
+    return '<div style="color:#F5F5F0">' +
+      '<div style="font-size:13px;font-weight:800;color:#FFC165;margin-bottom:14px">🖥 Microsoft Edge (computadora)</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        pasoHTML('1', 'Mira la barra donde escribes la dirección web', '(la barra de arriba)', '🔍') +
+        pasoHTML('2', 'A la IZQUIERDA verás un candado 🔒 o un ícono de información', 'Haz clic ahí', '🔒') +
+        pasoHTML('3', 'Busca "Permisos para este sitio"', 'y luego "Notificaciones"', '📋') +
+        pasoHTML('4', 'Cámbialo de "Bloquear" a "Permitir"', '', '✓') +
+        pasoHTML('5', 'Haz clic en el botón amarillo de abajo', '', '↩') +
+      '</div></div>';
+  }
+
+  if(nav === 'firefox') {
+    return '<div style="color:#F5F5F0">' +
+      '<div style="font-size:13px;font-weight:800;color:#FFC165;margin-bottom:14px">🖥 Mozilla Firefox (computadora)</div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        pasoHTML('1', 'Mira la barra donde escribes la dirección web', '', '🔍') +
+        pasoHTML('2', 'A la IZQUIERDA verás un candado 🔒', 'Haz clic en ese candado', '🔒') +
+        pasoHTML('3', 'Haz clic en "Más información"', '', '📋') +
+        pasoHTML('4', 'Ve a la pestaña "Permisos"', 'Busca "Recibir notificaciones" y desmarca "Bloquear"', '✓') +
+        pasoHTML('5', 'Haz clic en el botón amarillo de abajo', '', '↩') +
+      '</div></div>';
+  }
+
+  return '<div style="color:#8a8a8a;font-size:13px">Busca el candado 🔒 en la barra de direcciones de tu navegador → Notificaciones → Permitir. Luego toca el botón amarillo.</div>';
+}
+
+function pasoHTML(num, titulo, detalle, icono) {
+  return '<div style="display:flex;gap:12px;align-items:flex-start">' +
+    '<div style="background:#FFC165;color:#131313;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;margin-top:1px">' + num + '</div>' +
+    '<div>' +
+      '<div style="font-size:13px;font-weight:700;color:#F5F5F0">' + icono + ' ' + titulo + '</div>' +
+      (detalle ? '<div style="font-size:12px;color:#8a8a8a;margin-top:2px">' + detalle + '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function mostrarBloqueoNotif() {
+  var el = document.getElementById('notifBloqueo');
+  if(!el) return;
+  // Poblar guía según navegador
+  var guia = document.getElementById('guiaNotif');
+  if(guia) guia.innerHTML = guiaPorNavegador();
+  el.style.display = 'block';
+  // Ocultar banner mini
+  var banner = document.getElementById('notifBanner');
+  if(banner) banner.style.display = 'none';
+}
+
+function verificarYRecargar() {
+  if(Notification.permission === 'granted') {
+    location.reload();
+    return;
+  }
+  // Intentar pedir permiso de nuevo
+  Notification.requestPermission().then(function(perm) {
+    if(perm === 'granted') {
+      location.reload();
+    } else {
+      // Sigue bloqueado — animar el paso 1 para que lo intente de nuevo
+      var guia = document.getElementById('guiaNotif');
+      if(guia) {
+        guia.style.border = '2px solid #E1272A';
+        guia.style.transition = 'border 0.3s';
+        setTimeout(function(){ guia.style.border = '1px solid #3a3a3a'; }, 1500);
+      }
+      showToast('Aún están bloqueadas. Sigue los pasos del recuadro y vuelve a intentarlo.', 'error');
+    }
+  }).catch(function(){
+    showToast('Sigue los pasos del recuadro para activarlas manualmente.', 'error');
+  });
+}
+
+function saltarNotifBloqueo() {
+  var el = document.getElementById('notifBloqueo');
+  if(el) el.style.display = 'none';
+  // Mostrar banner mini persistente
+  var banner = document.getElementById('notifBanner');
+  if(banner) { banner.style.display = 'flex'; }
+  try{ localStorage.setItem('gm_notif_saltada','1'); }catch(e){}
+}
+
+function chequearNotificaciones() {
+  // No aplica si el navegador no soporta notificaciones
+  if(!('Notification' in window)) return;
+  // Si ya están concedidas, todo bien
+  if(Notification.permission === 'granted') return;
+  // Si saltó antes, mostrar solo el banner mini
+  if(localStorage.getItem('gm_notif_saltada') === '1') {
+    var banner = document.getElementById('notifBanner');
+    if(banner) banner.style.display = 'flex';
+    return;
+  }
+  // Mostrar bloqueo completo
+  mostrarBloqueoNotif();
+}
 
 // ═══════════════════════════════════════════════════════════
 // NOTIFICACIONES PUSH — OneSignal
@@ -7867,6 +8060,7 @@ function mostrarApp(){
   initCampanaNotif();
   registrarPushUsuario();
   mostrarAvisoIOS();
+  setTimeout(chequearNotificaciones, 2000);
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
