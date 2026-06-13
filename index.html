@@ -2886,12 +2886,16 @@ function chequearNotificaciones() {
 // Registra al usuario en OneSignal con su uid como external_id
 function registrarPushUsuario() {
   if(!CU || typeof OneSignalDeferred === 'undefined') return;
+  // No pedir permiso si ya está bloqueado — el bloqueo de notificaciones lo maneja
+  if(Notification && Notification.permission === 'denied') return;
   OneSignalDeferred.push(function(OneSignal) {
     OneSignal.login(CU.id).catch(function(){});
-    // Suscribir si aún no está
-    OneSignal.Notifications.requestPermission().then(function(granted){
-      if(granted) console.log('Push activado para:', CU.nombre);
-    }).catch(function(){});
+    // Solo pedir permiso si aún no se ha decidido
+    if(Notification && Notification.permission === 'default') {
+      OneSignal.Notifications.requestPermission().then(function(granted){
+        if(granted) console.log('Push activado para:', CU.nombre);
+      }).catch(function(){});
+    }
   });
 }
 
