@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.6.0';
+    var GM_VERSION = '3.7.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -323,6 +323,114 @@ input,select,textarea{font-size:16px!important}
 .gm-logo-text{display:flex;flex-direction:column;line-height:1}
 .gm-logo-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#F5F5F0;letter-spacing:0.04em}
 .gm-logo-sub{font-size:7.5px;font-weight:600;color:#8a8a8a;letter-spacing:0.18em;margin-top:3px}
+
+/* ═══════════════════════════════════════════════════
+   COCKPIT PANEL — Panel de Control estilo instrumento
+═══════════════════════════════════════════════════ */
+.cockpit-panel{background:#0d0f14;border:1px solid #1e2330;border-radius:16px;padding:20px;margin-bottom:20px;position:relative;overflow:hidden}
+.cockpit-panel::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,193,101,0.06) 0%,transparent 65%);pointer-events:none}
+.cockpit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #1e2330}
+.cockpit-title{display:flex;flex-direction:column;gap:3px}
+.cockpit-label{font-size:13px;font-weight:800;color:#FFC165;letter-spacing:.18em}
+.cockpit-sub{font-size:10px;color:#4a5568;letter-spacing:.06em}
+.cockpit-status{display:flex;align-items:center;gap:6px}
+.cockpit-dot{width:7px;height:7px;border-radius:50%;background:#4a9d6f;box-shadow:0 0 6px #4a9d6f;animation:pulse-green 2s infinite}
+@keyframes pulse-green{0%,100%{opacity:1}50%{opacity:.4}}
+.cockpit-gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.cockpit-gauge{display:flex;flex-direction:column;align-items:center;gap:8px}
+.gauge-ring{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+.gauge-ring::before{content:'';position:absolute;inset:4px;border-radius:50%;background:#0d0f14}
+.gauge-amber{box-shadow:0 0 0 3px #FFC165,0 0 16px rgba(255,193,101,0.25);border:3px solid #FFC165}
+.gauge-orange{box-shadow:0 0 0 3px #FC682F,0 0 16px rgba(252,104,47,0.25);border:3px solid #FC682F}
+.gauge-blue{box-shadow:0 0 0 3px #5C8CF5,0 0 16px rgba(92,140,245,0.25);border:3px solid #5C8CF5}
+.gauge-green{box-shadow:0 0 0 3px #4a9d6f,0 0 16px rgba(74,157,111,0.25);border:3px solid #4a9d6f}
+.gauge-inner{position:relative;z-index:1;text-align:center}
+.gauge-num{font-size:22px;font-weight:800;color:#F5F5F0;line-height:1}
+.gauge-unit{font-size:8px;color:#4a5568;font-weight:700;letter-spacing:.12em;margin-top:2px}
+.gauge-label{font-size:9px;font-weight:700;color:#6b82a0;letter-spacing:.12em;text-align:center}
+.cockpit-progress-wrap{display:flex;flex-direction:column;gap:5px}
+.cockpit-progress-label{display:flex;justify-content:space-between;align-items:center}
+.cockpit-progress-bar{height:4px;background:#1e2330;border-radius:2px;overflow:hidden}
+.cockpit-progress-fill{height:100%;background:linear-gradient(90deg,#FFC165,#FC682F);border-radius:2px;transition:width 0.8s ease}
+@media(max-width:768px){
+  .cockpit-gauges{grid-template-columns:repeat(2,1fr);gap:10px}
+  .gauge-ring{width:70px;height:70px}
+  .gauge-num{font-size:20px}
+}
+@media(max-width:480px){
+  .cockpit-gauges{grid-template-columns:repeat(4,1fr);gap:6px}
+  .gauge-ring{width:58px;height:58px}
+  .gauge-num{font-size:17px}
+  .cockpit-label{font-size:11px}
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE MÓVIL — Adaptaciones específicas
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Panel de control - tabla recientes */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap table { min-width: 480px; font-size: 12px; }
+  .table-wrap th, .table-wrap td { padding: 8px 10px; }
+
+  /* Stats grid en panel */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* Radar de conversiones */
+  .radar-grid, #radarGrid { grid-template-columns: 1fr !important; }
+
+  /* Expedientes - tabla a cards */
+  #expBody tr { display: flex; flex-direction: column; border-bottom: 1px solid #D9D9D9; padding: 10px 0; }
+  #expBody td { border: none !important; padding: 2px 0 !important; font-size: 12px; }
+  #expBody td:first-child { font-size: 14px; font-weight: 700; }
+  .table-head-exp { display: none !important; }
+
+  /* Modal expediente full screen en móvil */
+  .modal-exp { border-radius: 0 !important; max-height: 100vh !important; height: 100vh !important; }
+  #expModal { padding: 0 !important; }
+
+  /* Botones más grandes para touch */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 36px; padding: 6px 12px !important; font-size: 12px !important; }
+
+  /* Mis Ventas KPI grid */
+  #mvKpi { grid-template-columns: 1fr 1fr 1fr !important; }
+
+  /* Clientes grid - 1 columna */
+  #clientesGrid { grid-template-columns: 1fr !important; }
+
+  /* Panel de clientes stats */
+  .stat-card { padding: 12px !important; }
+  .stat-num { font-size: 28px !important; }
+
+  /* Drop zones más grandes */
+  .drop-zone { padding: 20px 10px !important; }
+
+  /* Grid2 en formularios */
+  .grid2 { grid-template-columns: 1fr !important; }
+
+  /* Etapas pipeline scroll */
+  .etapa-content { padding: 12px !important; }
+  .doc-box { padding: 12px !important; }
+
+  /* Botones de acción en doc-box */
+  .doc-box [style*="display:flex"] { flex-wrap: wrap !important; }
+}
+
+@media (max-width: 480px) {
+  /* Panel Cockpit en móvil pequeño */
+  .cockpit-gauges { grid-template-columns: repeat(2,1fr) !important; }
+  .gauge-ring { width: 65px !important; height: 65px !important; }
+  .gauge-num { font-size: 18px !important; }
+
+  /* Topbar */
+  .topbar-title { font-size: 14px !important; }
+
+  /* Mis Ventas KPI en 1 fila */
+  #mvKpi { gap: 6px !important; }
+  #mvKpi > div { padding: 8px 6px !important; }
+  #mvKpi .gauge-num, #mvKpi div[style*="font-size:22px"] { font-size: 18px !important; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -470,6 +578,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Expedientes FISE GNV</button>
         <button class="nav-item" id="navGLP" onclick="switchTab('glp',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg></span> Expedientes GLP</button>
         <button class="nav-item" onclick="switchTab('expedientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Mis Expedientes</button>
+        <button class="nav-item" id="navMisVentas" onclick="switchTab('misventas',this)" style="display:none"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Mis Ventas</button>
         <button class="nav-item" id="navClientes" onclick="switchTab('clientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span> Panel de Clientes</button>
         <button class="nav-item" id="navFise" onclick="switchTab('fise',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> Panel FISE</button>
         <div class="nav-section" id="navAdminLabel">Administracion</div>
@@ -505,26 +614,66 @@ input,select,textarea{font-size:16px!important}
 
         <!-- PANEL -->
         <div class="tab-content active" id="tab-panel">
-          <div class="stats-grid">
-            <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Total expedientes</div><div class="stat-chip chip-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div></div>
-              <div class="stat-num" id="st-total">0</div>
-              <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-amber" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFC165" stop-opacity="0.35"/><stop offset="100%" stop-color="#FFC165" stop-opacity="0"/></linearGradient></defs><path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,8 L120,12 L120,36 L0,36 Z" fill="url(#grad-amber)"/><path d="M0,28 L20,22 L40,25 L60,14 L80,18 L100,8 L120,12" fill="none" stroke="#FFC165" stroke-width="2"/></svg>
+          <div class="cockpit-panel">
+            <!-- Barra superior tipo HUD -->
+            <div class="cockpit-header">
+              <div class="cockpit-title">
+                <span class="cockpit-label">GASMOTION</span>
+                <span class="cockpit-sub">PANEL DE CONTROL · <span id="cockpit-fecha"></span></span>
+              </div>
+              <div class="cockpit-status">
+                <span class="cockpit-dot"></span>
+                <span style="font-size:10px;color:#4a9d6f;font-weight:700;letter-spacing:.1em">SISTEMA ACTIVO</span>
+              </div>
             </div>
-            <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">En Etapa 1</div><div class="stat-chip chip-orange"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div></div>
-              <div class="stat-num" id="st-e1">0</div>
-              <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-orange" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FC682F" stop-opacity="0.3"/><stop offset="100%" stop-color="#FC682F" stop-opacity="0"/></linearGradient></defs><path d="M0,20 L20,24 L40,16 L60,22 L80,12 L100,18 L120,10 L120,36 L0,36 Z" fill="url(#grad-orange)"/><path d="M0,20 L20,24 L40,16 L60,22 L80,12 L100,18 L120,10" fill="none" stroke="#FC682F" stroke-width="2"/></svg>
+            <!-- Instrumentos -->
+            <div class="cockpit-gauges">
+              <div class="cockpit-gauge">
+                <div class="gauge-ring gauge-amber">
+                  <div class="gauge-inner">
+                    <div class="gauge-num" id="st-total">0</div>
+                    <div class="gauge-unit">EXP</div>
+                  </div>
+                </div>
+                <div class="gauge-label">TOTAL</div>
+              </div>
+              <div class="cockpit-gauge">
+                <div class="gauge-ring gauge-orange">
+                  <div class="gauge-inner">
+                    <div class="gauge-num" id="st-e1">0</div>
+                    <div class="gauge-unit">EXP</div>
+                  </div>
+                </div>
+                <div class="gauge-label">ETAPA 1</div>
+              </div>
+              <div class="cockpit-gauge">
+                <div class="gauge-ring gauge-blue">
+                  <div class="gauge-inner">
+                    <div class="gauge-num" id="st-e2">0</div>
+                    <div class="gauge-unit">EXP</div>
+                  </div>
+                </div>
+                <div class="gauge-label">PEND. FISE</div>
+              </div>
+              <div class="cockpit-gauge">
+                <div class="gauge-ring gauge-green">
+                  <div class="gauge-inner">
+                    <div class="gauge-num" id="st-comp">0</div>
+                    <div class="gauge-unit">EXP</div>
+                  </div>
+                </div>
+                <div class="gauge-label">COMPLETADOS</div>
+              </div>
             </div>
-            <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Pendiente FISE</div><div class="stat-chip chip-blue">◷</div></div>
-              <div class="stat-num" id="st-e2">0</div>
-              <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-blue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5C8CF5" stop-opacity="0.3"/><stop offset="100%" stop-color="#5C8CF5" stop-opacity="0"/></linearGradient></defs><path d="M0,16 L20,20 L40,14 L60,18 L80,22 L100,15 L120,20 L120,36 L0,36 Z" fill="url(#grad-blue)"/><path d="M0,16 L20,20 L40,14 L60,18 L80,22 L100,15 L120,20" fill="none" stroke="#5C8CF5" stroke-width="2"/></svg>
-            </div>
-            <div class="stat-card nexr">
-              <div class="stat-top"><div class="stat-label">Completados</div><div class="stat-chip chip-green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div></div>
-              <div class="stat-num" id="st-comp">0</div>
-              <svg class="stat-spark" viewBox="0 0 120 36" preserveAspectRatio="none"><defs><linearGradient id="grad-green" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e" stop-opacity="0.3"/><stop offset="100%" stop-color="#22c55e" stop-opacity="0"/></linearGradient></defs><path d="M0,30 L20,26 L40,28 L60,20 L80,22 L100,12 L120,8 L120,36 L0,36 Z" fill="url(#grad-green)"/><path d="M0,30 L20,26 L40,28 L60,20 L80,22 L100,12 L120,8" fill="none" stroke="#22c55e" stroke-width="2"/></svg>
+            <!-- Barra de progreso global -->
+            <div class="cockpit-progress-wrap">
+              <div class="cockpit-progress-label">
+                <span style="font-size:10px;color:#6b82a0;letter-spacing:.08em">PROGRESO GLOBAL</span>
+                <span id="cockpit-pct" style="font-size:10px;color:#FFC165;font-weight:800">0%</span>
+              </div>
+              <div class="cockpit-progress-bar">
+                <div class="cockpit-progress-fill" id="cockpit-fill" style="width:0%"></div>
+              </div>
             </div>
           </div>
           <div class="card">
@@ -698,6 +847,9 @@ input,select,textarea{font-size:16px!important}
         </div>
 
         <!-- USUARIOS -->
+        <div class="tab-content" id="tab-misventas">
+          <div id="misVentasContent"></div>
+        </div>
         <div class="tab-content" id="tab-usuarios">
           <div id="alertUsuarios"></div>
           <div class="card">
@@ -2078,7 +2230,10 @@ function editarNombreAdmin() {
   n=n.trim();
   var users=getUsers(); users[CU.id].nombre=n; saveUsers(users);
   CU.nombre=n; sessionStorage.setItem('gm_session',JSON.stringify(CU));
-  actualizarSidebarUser(); poblarUserSelects();
+  actualizarSidebarUser();
+  // Mostrar Mis Ventas solo para vendedor y admin
+  var navMV = document.getElementById('navMisVentas');
+  if(navMV) navMV.style.display = (CU&&(CU.role==='vendedor'||CU.role==='admin'||CU.role==='supervisor'))?'':'none'; poblarUserSelects();
 }
 
 (function(){
@@ -2102,6 +2257,7 @@ var TAB_TITLES={
   panel:['Panel de Control','Resumen de actividad'],
   bandeja:['Expedientes FISE GNV','Pendientes de procesar — Programa GNV FISE'],
   glp:['Expedientes GLP','Pendientes de procesar — Programa GLP'],
+  misventas:['Mis Ventas','Tus expedientes del mes como Vendedor de Servicio'],
   expedientes:['Mis Expedientes','Todos los expedientes registrados'],
   fise:['Panel FISE','Expedientes pendientes de procesar — Etapa 2'],
   usuarios:['Usuarios','Administra accesos al sistema'],
@@ -2128,6 +2284,7 @@ function switchTab(name, el) {
   if(name==='clientes'){renderPanelClientes();}
   if(name==='tecnico'){renderVistaTecnico();}
   if(name==='glp'){renderTabGLP();}
+  if(name==='misventas'){renderMisVentas();}
   if(window.innerWidth<=768) toggleSidebar();
 }
 
@@ -4336,6 +4493,151 @@ function responsablePorDocumento(exp, tipoDoc) {
   return badgeResponsable(r.nombre, r.nota);
 }
 
+
+// ═══════════════════════════════════════════════════════════
+// MIS VENTAS — Vista del vendedor de sus expedientes del mes
+// Filtra por vendedorServicio === CU.nombre
+// ═══════════════════════════════════════════════════════════
+function renderMisVentas() {
+  var cont = document.getElementById('misVentasContent');
+  if(!cont) return;
+  cont.innerHTML = '';
+
+  // Calcular mes/año actual por defecto
+  var hoy = new Date();
+  var mesActual = hoy.getMonth() + 1;
+  var anioActual = hoy.getFullYear();
+
+  // Header con filtros
+  var header = document.createElement('div');
+  header.style.cssText = 'margin-bottom:18px';
+  header.innerHTML =
+    '<div style="font-size:17px;font-weight:800;color:#131313;margin-bottom:4px">Mis Ventas</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Expedientes donde figuras como Vendedor de Servicio</div>' +
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">' +
+      '<div class="field" style="margin:0;flex:1;min-width:120px">' +
+        '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase">Mes</label>' +
+        '<select id="mvMes" onchange="filtrarMisVentas()" style="border:2px solid #D9D9D9;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;width:100%">' +
+          '<option value="1"' + (mesActual===1?' selected':'') + '>Enero</option>' +
+          '<option value="2"' + (mesActual===2?' selected':'') + '>Febrero</option>' +
+          '<option value="3"' + (mesActual===3?' selected':'') + '>Marzo</option>' +
+          '<option value="4"' + (mesActual===4?' selected':'') + '>Abril</option>' +
+          '<option value="5"' + (mesActual===5?' selected':'') + '>Mayo</option>' +
+          '<option value="6"' + (mesActual===6?' selected':'') + '>Junio</option>' +
+          '<option value="7"' + (mesActual===7?' selected':'') + '>Julio</option>' +
+          '<option value="8"' + (mesActual===8?' selected':'') + '>Agosto</option>' +
+          '<option value="9"' + (mesActual===9?' selected':'') + '>Septiembre</option>' +
+          '<option value="10"' + (mesActual===10?' selected':'') + '>Octubre</option>' +
+          '<option value="11"' + (mesActual===11?' selected':'') + '>Noviembre</option>' +
+          '<option value="12"' + (mesActual===12?' selected':'') + '>Diciembre</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="field" style="margin:0;flex:1;min-width:90px">' +
+        '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase">Año</label>' +
+        '<select id="mvAnio" onchange="filtrarMisVentas()" style="border:2px solid #D9D9D9;border-radius:8px;padding:8px;font-family:inherit;font-size:13px;width:100%">' +
+          '<option value="2024"' + (anioActual===2024?' selected':'') + '>2024</option>' +
+          '<option value="2025"' + (anioActual===2025?' selected':'') + '>2025</option>' +
+          '<option value="2026"' + (anioActual===2026?' selected':'') + '>2026</option>' +
+          '<option value="2027"' + (anioActual===2027?' selected':'') + '>2027</option>' +
+        '</select>' +
+      '</div>' +
+    '</div>';
+  cont.appendChild(header);
+
+  // KPI rápido
+  var kpi = document.createElement('div');
+  kpi.id = 'mvKpi';
+  kpi.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px';
+  cont.appendChild(kpi);
+
+  // Lista
+  var lista = document.createElement('div');
+  lista.id = 'mvLista';
+  cont.appendChild(lista);
+
+  filtrarMisVentas();
+}
+
+function filtrarMisVentas() {
+  if(!CU) return;
+  var mesEl = document.getElementById('mvMes');
+  var anioEl = document.getElementById('mvAnio');
+  var mes = mesEl ? parseInt(mesEl.value) : new Date().getMonth()+1;
+  var anio = anioEl ? parseInt(anioEl.value) : new Date().getFullYear();
+
+  var lista = [];
+  for(var i=0; i<expedientes.length; i++) {
+    var e = expedientes[i];
+    // Filtrar por vendedorServicio
+    if((e.vendedorServicio || '') !== CU.nombre) continue;
+    // Filtrar por mes y año
+    if(!e.fecha) continue;
+    // fecha formato DD/MM/YYYY
+    var parts = (e.fecha||'').split('/');
+    if(parts.length < 3) continue;
+    var eMes = parseInt(parts[1]);
+    var eAnio = parseInt(parts[2]);
+    if(eMes !== mes || eAnio !== anio) continue;
+    lista.push(e);
+  }
+
+  // Actualizar KPI
+  var kpiEl = document.getElementById('mvKpi');
+  if(kpiEl) {
+    var comp = 0;
+    for(var j=0; j<lista.length; j++) { if(lista[j].etapa >= 5) comp++; }
+    kpiEl.innerHTML =
+      '<div style="background:#131313;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:22px;font-weight:800;color:#FFC165">' + lista.length + '</div>' +
+        '<div style="font-size:10px;color:#8a8a8a;margin-top:2px;font-weight:600">TOTAL MES</div>' +
+      '</div>' +
+      '<div style="background:#131313;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:22px;font-weight:800;color:#4a9d6f">' + comp + '</div>' +
+        '<div style="font-size:10px;color:#8a8a8a;margin-top:2px;font-weight:600">COMPLETADAS</div>' +
+      '</div>' +
+      '<div style="background:#131313;border-radius:10px;padding:12px;text-align:center">' +
+        '<div style="font-size:22px;font-weight:800;color:#5C8CF5">' + (lista.length-comp) + '</div>' +
+        '<div style="font-size:10px;color:#8a8a8a;margin-top:2px;font-weight:600">EN PROCESO</div>' +
+      '</div>';
+  }
+
+  // Lista de expedientes
+  var listaEl = document.getElementById('mvLista');
+  if(!listaEl) return;
+  listaEl.innerHTML = '';
+
+  if(!lista.length) {
+    listaEl.innerHTML = '<div style="text-align:center;padding:40px;color:#8a8a8a">' +
+      '<div style="font-size:32px;margin-bottom:10px">▣</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#374151">Sin ventas en este periodo</div>' +
+      '<div style="font-size:12px;margin-top:4px">No hay expedientes donde figures como Vendedor de Servicio en ' +
+      ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][mes] + ' ' + anio + '</div></div>';
+    return;
+  }
+
+  for(var k=0; k<lista.length; k++) {
+    var exp = lista[k];
+    var row = document.createElement('div');
+    row.className = 'doc-box';
+    row.style.cssText = 'margin-bottom:8px;cursor:pointer';
+    var etColor = ETAPA_COLORS[exp.etapa] || '#6b7280';
+    var etLabel = ETAPA_LABELS[exp.etapa] || ('Etapa '+exp.etapa);
+    row.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:14px;font-weight:800;color:#131313">' + (exp.placa||'Sin placa') + '</div>' +
+          '<div style="font-size:11px;color:#6b82a0;margin-top:2px">' +
+            (exp.nombre||'Sin nombre') + ' · ' + (exp.modeloVehiculo||'-') + ' · ' + (exp.sede||'-') +
+          '</div>' +
+          '<div style="font-size:10px;color:#a8a8a8;margin-top:2px">▦ ' + (exp.fecha||'') + '</div>' +
+        '</div>' +
+        '<span style="background:' + etColor + '20;color:' + etColor + ';border:1px solid ' + etColor + '60;border-radius:6px;padding:3px 10px;font-size:10px;font-weight:700;white-space:nowrap">' + etLabel + '</span>' +
+      '</div>';
+    row.onclick = (function(eid){ return function(){ abrirExpediente(eid); }; })(exp.id);
+    listaEl.appendChild(row);
+  }
+}
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -4568,13 +4870,21 @@ function renderPanel() {
   for(var i=0;i<expedientes.length;i++){
     if(expedientes[i].etapa===1)e1++;
     if(expedientes[i].etapa===2)e2++;
-    if(expedientes[i].etapa===5)comp++;
+    if(expedientes[i].etapa===5||expedientes[i].etapa===6)comp++;
   }
   var el;
   el=document.getElementById('st-total');if(el)el.textContent=total;
   el=document.getElementById('st-e1');if(el)el.textContent=e1;
   el=document.getElementById('st-e2');if(el)el.textContent=e2;
   el=document.getElementById('st-comp');if(el)el.textContent=comp;
+  // Cockpit extras
+  var fechaEl=document.getElementById('cockpit-fecha');
+  if(fechaEl)fechaEl.textContent=nowFecha();
+  var pct = total>0?Math.round((comp/total)*100):0;
+  var pctEl=document.getElementById('cockpit-pct');
+  if(pctEl)pctEl.textContent=pct+'%';
+  var fillEl=document.getElementById('cockpit-fill');
+  if(fillEl)fillEl.style.width=pct+'%';
   var tbody=document.getElementById('recentBody');
   var empty=document.getElementById('recentEmpty');
   if(!tbody) return;
@@ -4679,11 +4989,58 @@ function abrirExpediente(id) {
   var exp=null;
   for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===id){exp=expedientes[i];break;}}
   if(!exp) return;
-  renderModalExp(exp);
-  showFlex('expModal');
+  // Abrir en panel amplio en lugar de modal
+  renderPanelExpediente(exp);
 }
 
-function cerrarExpModal() { hideEl('expModal'); expModalId=null; }
+function renderPanelExpediente(exp) {
+  // Usar el panel principal (app) para mostrar el expediente completo
+  var panel = document.getElementById('panelExpediente');
+  if(!panel) {
+    panel = document.createElement('div');
+    panel.id = 'panelExpediente';
+    panel.style.cssText = 'display:none;position:fixed;inset:0;background:#F5F5F0;z-index:8000;overflow-y:auto;-webkit-overflow-scrolling:touch';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = '';
+  // Header con botón volver
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'position:sticky;top:0;background:#131313;color:#F5F5F0;padding:12px 16px;display:flex;align-items:center;gap:12px;z-index:1';
+  hdr.innerHTML = '<button onclick="cerrarPanelExp()" style="background:rgba(255,255,255,0.1);color:#F5F5F0;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Volver</button>' +
+    '<div style="flex:1"><div style="font-size:15px;font-weight:800">' + (exp.placa||'') + ' — ' + (exp.modeloVehiculo||'') + '</div>' +
+    '<div style="font-size:11px;color:#8a8a8a">' + (exp.sede||'') + ' · Etapa ' + (exp.etapa||1) + '</div></div>';
+  panel.appendChild(hdr);
+  // Contenido del expediente
+  var cont = document.createElement('div');
+  cont.style.cssText = 'padding:16px;max-width:800px;margin:0 auto';
+  renderModalExpContent(cont, exp);
+  panel.appendChild(cont);
+  panel.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarPanelExp() {
+  var panel = document.getElementById('panelExpediente');
+  if(panel) panel.style.display = 'none';
+  document.body.style.overflow = '';
+  expModalId = null;
+}
+
+function cerrarExpModal() { hideEl('expModal'); cerrarPanelExp(); expModalId=null; }
+
+function renderModalExpContent(cont, exp) {
+  // Renderiza el contenido del expediente en un contenedor dado
+  var innerCont = document.createElement('div');
+  cont.appendChild(innerCont);
+  renderEtapaActual(innerCont, exp);
+  // Historial de etapas anteriores
+  for(var ei=1; ei<exp.etapa; ei++){
+    var section = document.createElement('div');
+    section.style.cssText = 'opacity:0.7;margin-top:10px';
+    renderEtapaNum(section, exp, ei);
+    cont.appendChild(section);
+  }
+}
 
 function renderModalExp(exp) {
   document.getElementById('emPlaca').textContent=exp.placa+' — '+exp.modeloVehiculo;
@@ -7099,8 +7456,7 @@ function buildClienteCards(){
 function buildClienteCard(exp){
   var etColor=ETAPA_COLORS[exp.etapa]||'#6b7280';
   var etLabel=ETAPA_LABELS[exp.etapa]||('Etapa '+exp.etapa);
-  var km=parseFloat(exp.kilometraje||0);
-  var ahorro=km>0?Math.round(km*0.09):0;
+
   var card=document.createElement('div');
   card.style.cssText='background:white;border:1.5px solid #D9D9D9;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);transition:all .2s;cursor:pointer';
   card.onmouseover=function(){this.style.boxShadow='0 8px 24px rgba(0,0,0,0.13)';this.style.borderColor='#FFC165';};
@@ -7144,15 +7500,7 @@ function buildClienteCard(exp){
     '<div><div style="font-size:10px;font-weight:600;color:#6b82a0;text-transform:uppercase">Celular</div><div style="font-size:13px;color:#131313">'+(exp.celular||'—')+'</div></div>'+
     '<div><div style="font-size:10px;font-weight:600;color:#6b82a0;text-transform:uppercase">Registro</div><div style="font-size:13px;color:#131313">'+(exp.fecha||'—')+'</div></div>';
   body.appendChild(ig);
-  // Ahorro
-  if(ahorro>0){
-    var av=document.createElement('div');
-    av.style.cssText='background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #a7f3d0;border-radius:10px;padding:12px;margin-bottom:12px';
-    av.innerHTML='<div style="font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;margin-bottom:5px">◈ Ahorro Estimado en Gas</div>'+
-      '<div style="display:flex;align-items:baseline;gap:6px"><div style="font-size:22px;font-weight:900;color:#059669">S/ '+ahorro.toLocaleString()+'</div><div style="font-size:11px;color:#6b82a0">aprox.</div></div>'+
-      '<div style="font-size:11px;color:#065f46;margin-top:3px">Basado en '+km.toLocaleString()+' km recorridos</div>';
-    body.appendChild(av);
-  }
+
   // Agenda mantenimiento
   var ag=document.createElement('div');ag.style.cssText='background:#F7F7F2;border-radius:10px;padding:12px;margin-bottom:12px';
   ag.innerHTML='<div style="font-size:11px;font-weight:700;color:#131313;text-transform:uppercase;margin-bottom:8px">▦ Agenda de Mantenimiento</div>';
@@ -8304,6 +8652,17 @@ function mostrarBtnSync() {
 var GM_POLLING_INTERVAL = null;
 var GM_LAST_SYNC = 0;
 var GM_LAST_FIRMA = '';
+
+
+// Registrar canal de alarma Android al suscribirse
+function registrarCanalAlarma() {
+  if(typeof OneSignalDeferred === 'undefined') return;
+  OneSignalDeferred.push(function(OneSignal) {
+    // El canal se configura desde OneSignal dashboard
+    // Aquí solo aseguramos que el usuario esté suscrito
+    OneSignal.User.PushSubscription.optIn().catch(function(){});
+  });
+}
 
 function iniciarPolling() {
   if(GM_POLLING_INTERVAL) clearInterval(GM_POLLING_INTERVAL);
