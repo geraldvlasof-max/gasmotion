@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.7.0';
+    var GM_VERSION = '3.8.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -3024,8 +3024,8 @@ function renderPanelFise() {
 // ==================
 // EXPEDIENTES
 // ==================
-var ETAPA_LABELS={1:'Etapa 1 — SCANFILE 1',2:'Etapa 2 — Matriz FISE',3:'Etapa 3 — Emision',4:'Etapa 4 — Documentos',5:'Etapa 5 — Certificacion'};
-var ETAPA_COLORS={1:'#f59e0b',2:'#eab308',3:'#3b82f6',4:'#FFC165',5:'#8b5cf6'};
+var ETAPA_LABELS={1:'Etapa 1 — SCANFILE 1',2:'Etapa 2 — Matriz FISE',3:'Etapa 3 — Emision',4:'Etapa 4 — Documentos',5:'Etapa 5 — Certificacion',6:'Etapa 6 — Certificación'};
+var ETAPA_COLORS={1:'#f59e0b',2:'#eab308',3:'#3b82f6',4:'#FFC165',5:'#8b5cf6',6:'#10b981'};
 
 function etapaBadge(etapa) {
   var color=ETAPA_COLORS[etapa]||'#6b7280';
@@ -5033,16 +5033,51 @@ function cerrarPanelExp() {
 function cerrarExpModal() { hideEl('expModal'); cerrarPanelExp(); expModalId=null; }
 
 function renderModalExpContent(cont, exp) {
-  // Renderiza el contenido del expediente en un contenedor dado
-  var innerCont = document.createElement('div');
-  cont.appendChild(innerCont);
-  renderEtapaActual(innerCont, exp);
-  // Historial de etapas anteriores
-  for(var ei=1; ei<exp.etapa; ei++){
-    var section = document.createElement('div');
-    section.style.cssText = 'opacity:0.7;margin-top:10px';
-    renderEtapaNum(section, exp, ei);
-    cont.appendChild(section);
+  // Pipeline visual de etapas (1-6)
+  var pipe = document.createElement('div');
+  pipe.style.cssText = 'display:flex;margin-bottom:20px;background:white;border:1px solid #D9D9D9;border-radius:12px;padding:16px 12px';
+  for(var i=1;i<=6;i++){
+    var step=document.createElement('div');step.style.cssText='flex:1;text-align:center;position:relative';
+    var color=i===exp.etapa?(ETAPA_COLORS[i]||'#3b82f6'):i<exp.etapa?'#10b981':'#d1d5db';
+    if(i<6)step.innerHTML+='<div style="position:absolute;top:13px;left:50%;width:100%;height:2px;background:'+(i<exp.etapa?'#10b981':'#e5e7eb')+';z-index:0"></div>';
+    step.innerHTML+='<div style="width:26px;height:26px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin:0 auto;position:relative;z-index:1">'+(i<exp.etapa?'&#10003;':String(i))+'</div>';
+    step.innerHTML+='<div style="font-size:9px;color:'+color+';margin-top:3px;font-weight:'+(i===exp.etapa?'700':'500')+'">E'+i+'</div>';
+    pipe.appendChild(step);
+  }
+  cont.appendChild(pipe);
+
+  // Contenedor del contenido de etapas
+  var contInner = document.createElement('div');
+  cont.appendChild(contInner);
+
+  // Bloque del portal del cliente (código de acceso, etapa 3+)
+  renderBloquePortal(exp, contInner);
+
+  var puedeVerHistorial = CU && (
+    CU.role==='admin' || CU.role==='supervisor' ||
+    CU.role==='vendedor' || CU.role==='asistente_fise'
+  );
+
+  try{
+    if(puedeVerHistorial && exp.etapa > 1) {
+      if(exp.etapa===2) renderEtapa2(contInner,exp);
+      else if(exp.etapa===3) renderEtapa3(contInner,exp);
+      else if(exp.etapa===4) renderEtapa4(contInner,exp);
+      else if(exp.etapa===5) renderEtapa5(contInner,exp);
+      else if(exp.etapa===6) renderEtapa6(contInner,exp);
+      for(var etapaAnterior=exp.etapa-1; etapaAnterior>=1; etapaAnterior--) {
+        renderEtapaHistorial(contInner, exp, etapaAnterior);
+      }
+    } else {
+      if(exp.etapa===1) renderEtapa1(contInner,exp);
+      else if(exp.etapa===2) renderEtapa2(contInner,exp);
+      else if(exp.etapa===3) renderEtapa3(contInner,exp);
+      else if(exp.etapa===4) renderEtapa4(contInner,exp);
+      else renderEtapa5(contInner,exp);
+    }
+    renderComentariosSection(exp.id,contInner);
+  }catch(err){
+    contInner.innerHTML='<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:16px;color:#991b1b;font-size:13px"><strong>Error:</strong> '+err.message+'</div>';
   }
 }
 
