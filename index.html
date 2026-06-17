@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.3';
+    var GM_VERSION = '3.9.5';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -4695,245 +4695,317 @@ function generarPDFSeries(expId) {
 function _buildPDFSeries(exp) {
   try {
     var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-    if(!jsPDF){showToast('Error inicializando jsPDF','error');return;}
+    if(!jsPDF){ showToast('Error inicializando jsPDF','error'); return; }
 
     var e4 = exp.e4 || {};
     var doc = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
-    var W = 210, H = 297;
-    var margin = 14;
-    var y = margin;
+    var W = 210, H = 297, M = 12;
 
-    // ── PALETA ──
+    // ── PALETA CLARA ──
     var AMBER  = [255,193,101];
-    var BLACK  = [19,19,19];
-    var GRAY   = [100,100,100];
-    var LGRAY  = [240,240,240];
+    var DARK   = [50,50,50];
+    var GRAY   = [110,110,110];
+    var LGRAY  = [245,245,245];
+    var MGRAY  = [220,220,220];
     var WHITE  = [255,255,255];
-    var BORDER = [200,200,200];
+    var AMBER2 = [255,240,200];
 
-    // ── CABECERA ──
-    // Fondo negro header
-    doc.setFillColor.apply(doc, BLACK);
-    doc.rect(0,0,W,28,'F');
+    // ── CABECERA: franja ámbar superior + contenido claro ──
+    // Franja ámbar superior
+    doc.setFillColor.apply(doc, AMBER);
+    doc.rect(0, 0, W, 8, 'F');
+    // Fondo blanco principal
+    doc.setFillColor.apply(doc, WHITE);
+    doc.rect(0, 8, W, 24, 'F');
+    // Línea divisora inferior suave
+    doc.setFillColor(220, 220, 220);
+    doc.rect(0, 31, W, 0.5, 'F');
 
-    // Logo hexagonal (SVG → canvas no disponible en jsPDF, usamos texto)
-    doc.setTextColor.apply(doc, AMBER);
-    doc.setFontSize(16);
+    // Logo texto en la franja ámbar
+    doc.setTextColor(19, 19, 19);
+    doc.setFontSize(9);
     doc.setFont('helvetica','bold');
-    doc.text('CARRIGAS PERU', margin, 11);
+    doc.text('CARRIGAS PERU E.I.R.L.', M, 5.5);
+
+    // Nombre empresa
+    doc.setTextColor.apply(doc, DARK);
+    doc.setFontSize(13);
+    doc.setFont('helvetica','bold');
+    doc.text('CARRIGAS PERU E.I.R.L.', M, 16);
 
     doc.setFontSize(7);
     doc.setFont('helvetica','normal');
-    doc.setTextColor(180,180,180);
-    doc.text('RUC: 20612345678  |  Santa Anita · Chorrillos · SMP  |  Telf: 971 065 262', margin, 17);
+    doc.setTextColor.apply(doc, GRAY);
+    doc.text('Conversion vehicular GNV · Santa Anita · Chorrillos · SMP · Telf: 971 065 262', M, 22);
 
-    // Título del documento
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setFont('helvetica','bold');
-    doc.setTextColor.apply(doc, WHITE);
-    doc.text('REGISTRO FOTOGRAFICO DE SERIES DEL KIT DE CONVERSION GNV', W/2, 24, {align:'center'});
+    doc.setTextColor(80, 80, 80);
+    doc.text('REGISTRO FOTOGRAFICO DE SERIES — KIT DE CONVERSION GNV', W/2, 28, {align:'center'});
 
-    y = 35;
+    var y = 36;
 
     // ── PLACA ──
     doc.setFillColor.apply(doc, AMBER);
-    doc.roundedRect(margin, y, W-margin*2, 13, 3, 3, 'F');
-    doc.setTextColor.apply(doc, BLACK);
-    doc.setFontSize(14);
+    doc.roundedRect(M, y, W-M*2, 12, 2, 2, 'F');
+    doc.setTextColor.apply(doc, DARK);
+    doc.setFontSize(13);
     doc.setFont('helvetica','bold');
-    doc.text('PLACA: ' + (exp.placa||'').toUpperCase(), W/2, y+8.5, {align:'center'});
-    y += 18;
+    doc.text('PLACA: ' + (exp.placa||'—').toUpperCase(), W/2, y+8, {align:'center'});
+    y += 16;
 
     // Datos vehículo
     doc.setFillColor.apply(doc, LGRAY);
-    doc.rect(margin, y, W-margin*2, 10, 'F');
+    doc.setDrawColor.apply(doc, MGRAY);
+    doc.rect(M, y, W-M*2, 9, 'FD');
     doc.setTextColor.apply(doc, GRAY);
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setFont('helvetica','normal');
-    var datosVeh = [
-      (exp.marca||'') + ' ' + (exp.modeloVehiculo||''),
-      exp.nombre||'',
-      exp.dni||'',
-      'Sede: ' + (exp.sede||''),
-      exp.fecha||''
-    ].filter(function(s){return s.trim();}).join('   |   ');
-    doc.text(datosVeh, W/2, y+6.5, {align:'center', maxWidth: W-margin*2-4});
-    y += 15;
+    var datVeh = [(exp.nombre||''),(exp.modeloVehiculo||''),(exp.sede?'Sede: '+exp.sede:''),exp.fecha||''].filter(function(s){return s.trim();}).join('   ·   ');
+    doc.text(datVeh, W/2, y+5.5, {align:'center', maxWidth: W-M*2-6});
+    y += 13;
 
-    // ══════════════════════════════════════════
-    // BLOQUE 1 — REDUCTOR
-    // ══════════════════════════════════════════
-    y = _pdfSeccionHeader(doc, 'BLOQUE 1 — REDUCTOR', y, margin, W, AMBER, BLACK);
-    y += 2;
+    // Pré-cargar TODAS las fotos antes de generar el PDF
+    // para evitar el encadenamiento asíncrono difícil de mantener
+    var fotos = {
+      reductor:   getDrivePreviewUrl(exp.id, 'fotoReductor'),
+      cilindro1:  getDrivePreviewUrl(exp.id, 'fotoCilindro1'),
+      cilindro2:  getDrivePreviewUrl(exp.id, 'fotoCilindro2')
+    };
 
-    var redDatos = [
-      ['Tipo / Marca', e4.marcaReductor || '—'],
-      ['N° de Serie',  e4.serieReductor || '—'],
-      ['N° de Produce', e4.nroProductoReductor || '—'],
-    ];
+    // Cargar todas las fotos en paralelo como dataURL
+    _cargarTodasFotos(fotos, function(dataUrls) {
+      _renderPDFCompleto(doc, exp, e4, y, M, W, H, AMBER, AMBER2, DARK, GRAY, LGRAY, MGRAY, WHITE, dataUrls);
+    });
 
-    // Columna izquierda: datos
-    var colW = (W - margin*2) * 0.45;
-    var imgW = (W - margin*2) * 0.52;
-    var imgX = margin + colW + 4;
-
-    _pdfTabla(doc, redDatos, margin, y, colW, LGRAY, BLACK, GRAY, BORDER);
-
-    // Foto reductor
-    var redFotoUrl = getDrivePreviewUrl(exp.id, 'fotoReductor');
-    if(redFotoUrl) {
-      _pdfImgFromDrive(doc, redFotoUrl, imgX, y, imgW, 36, function(){
-        _continuarPDF(doc, exp, e4, y+42, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW);
-      });
-    } else {
-      _pdfPlaceholderImg(doc, imgX, y, imgW, 36, '[ Sin foto del reductor ]', LGRAY, GRAY);
-      _continuarPDF(doc, exp, e4, y+42, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW);
-    }
   } catch(err) {
     showToast('Error generando PDF: ' + err.message, 'error');
     console.error(err);
   }
 }
 
-function _continuarPDF(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW) {
+// Carga todas las fotos en paralelo y devuelve un objeto { key: dataUrl }
+function _cargarTodasFotos(fotos, callback) {
+  // Carga cada foto y captura dimensiones reales en el mismo paso
+  // result[k] = { dataUrl, w, h } o null
+  var keys = Object.keys(fotos);
+  var result = {};
+  var pendiente = 0;
+
+  keys.forEach(function(k) {
+    if(!fotos[k]) { result[k] = null; return; }
+    pendiente++;
+    var key = k; // closure
+    fetch(fotos[key])
+      .then(function(r){ return r.blob(); })
+      .then(function(blob){
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var dataUrl = ev.target.result;
+          // Cargar en Image para obtener dimensiones reales
+          var img = new Image();
+          img.onload = function() {
+            result[key] = { dataUrl: dataUrl, w: img.naturalWidth, h: img.naturalHeight };
+            pendiente--;
+            if(pendiente === 0) callback(result);
+          };
+          img.onerror = function() {
+            result[key] = { dataUrl: dataUrl, w: 3, h: 4 }; // fallback portrait
+            pendiente--;
+            if(pendiente === 0) callback(result);
+          };
+          img.src = dataUrl;
+        };
+        reader.onerror = function(){
+          result[key] = null; pendiente--;
+          if(pendiente === 0) callback(result);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(function(){
+        result[key] = null; pendiente--;
+        if(pendiente === 0) callback(result);
+      });
+  });
+
+  if(pendiente === 0) callback(result);
+}
+
+// Agrega imagen respetando aspect ratio dentro de la caja dada
+// El dataUrl DEBE venir del canvas ya procesado (tiene dimensiones reales en el canvas)
+// Retorna la altura real usada
+function _addImgAR(doc, fotoObj, x, y, maxW, maxH) {
+  // fotoObj = { dataUrl, w, h } con dimensiones reales ya conocidas
+  if(!fotoObj || !fotoObj.dataUrl) return 0;
   try {
-    // ══════════════════════════════════════════
+    var natW = fotoObj.w || 3;
+    var natH = fotoObj.h || 4;
+    var ratio = natW / natH;
+    var drawW = maxW;
+    var drawH = drawW / ratio;
+    if(drawH > maxH) { drawH = maxH; drawW = drawH * ratio; }
+    // Centrar horizontalmente
+    var offsetX = x + (maxW - drawW) / 2;
+    doc.addImage(fotoObj.dataUrl, 'JPEG', offsetX, y, drawW, drawH);
+    doc.setDrawColor(210, 210, 210);
+    doc.setLineWidth(0.2);
+    doc.rect(offsetX, y, drawW, drawH);
+    return drawH;
+  } catch(e) {
+    return 0;
+  }
+}
+
+function _renderPDFCompleto(doc, exp, e4, y, M, W, H, AMBER, AMBER2, DARK, GRAY, LGRAY, MGRAY, WHITE, dataUrls) {
+  try {
+    // ═══════════════════════════════════
+    // BLOQUE 1 — REDUCTOR
+    // ═══════════════════════════════════
+    y = _pdfHeader(doc, 'BLOQUE 1 — REDUCTOR', y, M, W, AMBER, AMBER2, DARK);
+
+    // Tabla de datos (ancho completo)
+    var redDatos = [
+      ['Tipo / Marca',   e4.marcaReductor || '—'],
+      ['N° de Serie',    e4.serieReductor || '—'],
+      ['N° de Produce',  e4.nroProductoReductor || '—'],
+    ];
+    y = _pdfTablaH(doc, redDatos, M, y, W-M*2, LGRAY, MGRAY, DARK, GRAY) + 4;
+
+    // Foto reductor — ocupa todo el ancho disponible, altura máxima generosa
+    if(dataUrls.reductor && dataUrls.reductor.dataUrl) {
+      var hUsadaRed = _addImgAR(doc, dataUrls.reductor, M, y, W-M*2, 110);
+      y += hUsadaRed + 6;
+    } else {
+      _pdfNoFoto(doc, M, y, W-M*2, 30, LGRAY, GRAY);
+      y += 36;
+    }
+
+    // ═══════════════════════════════════
     // BLOQUE 2 — CILINDROS GNV
-    // ══════════════════════════════════════════
-    y = _pdfSeccionHeader(doc, 'BLOQUE 2 — CILINDRO GNV', y, margin, W, AMBER, BLACK);
-    y += 2;
+    // ═══════════════════════════════════
+    y = _pdfHeader(doc, 'BLOQUE 2 — CILINDROS GNV', y, M, W, AMBER, AMBER2, DARK);
 
     // CILINDRO 1
-    var cil1Label = _pdfSubHeader(doc, 'CILINDRO 1', margin, y, W, LGRAY, GRAY);
-    y += cil1Label + 2;
-
+    y = _pdfSubtitulo(doc, 'CILINDRO 1', M, y, W, LGRAY, MGRAY, DARK) + 2;
     var cil1Datos = [
       ['N° de Serie',      e4.serieCilindro || '—'],
       ['Fecha Fabricación', e4.fechaFabCilindro || '—'],
-      ['Capacidad',        e4.capacidadCilindro1 || '—'],
-      ['N° de Produce',   e4.nroProductoCilindro1 || '—'],
+      ['Capacidad',         e4.capacidadCilindro1 || '—'],
+      ['N° de Produce',     e4.nroProductoCilindro1 || '—'],
     ];
-    _pdfTabla(doc, cil1Datos, margin, y, colW, LGRAY, BLACK, GRAY, BORDER);
+    y = _pdfTablaH(doc, cil1Datos, M, y, W-M*2, LGRAY, MGRAY, DARK, GRAY) + 4;
 
-    var cil1FotoUrl = getDrivePreviewUrl(exp.id, 'fotoCilindro1');
-    if(cil1FotoUrl) {
-      _pdfImgFromDrive(doc, cil1FotoUrl, margin + colW + 4, y, imgW, 44, function(){
-        y += 50;
-        _bloqueCil2(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW);
-      });
+    if(dataUrls.cilindro1 && dataUrls.cilindro1.dataUrl) {
+      var hCil1 = _addImgAR(doc, dataUrls.cilindro1, M, y, W-M*2, 115);
+      y += hCil1 + 6;
     } else {
-      _pdfPlaceholderImg(doc, margin + colW + 4, y, imgW, 44, '[ Sin foto cilindro 1 ]', LGRAY, GRAY);
-      y += 50;
-      _bloqueCil2(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW);
+      _pdfNoFoto(doc, M, y, W-M*2, 30, LGRAY, GRAY);
+      y += 36;
     }
-  } catch(err) {
-    showToast('Error PDF bloque 2: ' + err.message, 'error');
-  }
-}
 
-function _bloqueCil2(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY, WHITE, BORDER, colW, imgW) {
-  try {
-    if(e4.serieCilindro2 || e4.fechaFabCilindro2) {
-      var lbl2 = _pdfSubHeader(doc, 'CILINDRO 2', margin, y, W, LGRAY, GRAY);
-      y += lbl2 + 2;
+    // CILINDRO 2 (si existe)
+    if(e4.serieCilindro2 || e4.fechaFabCilindro2 || (dataUrls.cilindro2 && dataUrls.cilindro2.dataUrl)) {
+      // Nueva página si queda poco espacio
+      if(y > H - 80) { doc.addPage(); y = 16; }
 
+      y = _pdfSubtitulo(doc, 'CILINDRO 2', M, y, W, LGRAY, MGRAY, DARK) + 2;
       var cil2Datos = [
         ['N° de Serie',      e4.serieCilindro2 || '—'],
         ['Fecha Fabricación', e4.fechaFabCilindro2 || '—'],
-        ['Capacidad',        e4.capacidadCilindro2 || '—'],
-        ['N° de Produce',   e4.nroProductoCilindro2 || '—'],
+        ['Capacidad',         e4.capacidadCilindro2 || '—'],
+        ['N° de Produce',     e4.nroProductoCilindro2 || '—'],
       ];
-      _pdfTabla(doc, cil2Datos, margin, y, colW, LGRAY, BLACK, GRAY, BORDER);
+      y = _pdfTablaH(doc, cil2Datos, M, y, W-M*2, LGRAY, MGRAY, DARK, GRAY) + 4;
 
-      var cil2FotoUrl = getDrivePreviewUrl(exp.id, 'fotoCilindro2');
-      if(cil2FotoUrl) {
-        _pdfImgFromDrive(doc, cil2FotoUrl, margin + colW + 4, y, imgW, 44, function(){
-          _footerYGuardar(doc, exp, y+50);
-        });
+      if(dataUrls.cilindro2 && dataUrls.cilindro2.dataUrl) {
+        var hCil2 = _addImgAR(doc, dataUrls.cilindro2, M, y, W-M*2, 115);
+        y += hCil2 + 6;
       } else {
-        _pdfPlaceholderImg(doc, margin + colW + 4, y, imgW, 44, '[ Sin foto cilindro 2 ]', LGRAY, GRAY);
-        _footerYGuardar(doc, exp, y+50);
+        _pdfNoFoto(doc, M, y, W-M*2, 30, LGRAY, GRAY);
+        y += 36;
       }
-    } else {
-      _footerYGuardar(doc, exp, y);
     }
-  } catch(err) {
-    showToast('Error PDF cilindro 2: ' + err.message, 'error');
-  }
-}
 
-function _footerYGuardar(doc, exp, y) {
-  var W = 210; var margin = 14;
-  var BLACK = [19,19,19]; var GRAY = [100,100,100]; var BORDER = [200,200,200];
-
-  // Separador
-  doc.setDrawColor.apply(doc, BORDER);
-  doc.line(margin, y+4, W-margin, y+4);
-  y += 10;
-
-  // Footer
-  doc.setFillColor.apply(doc, BLACK);
-  doc.rect(0, y, W, 18, 'F');
-  doc.setTextColor(150,150,150);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','normal');
-  doc.text('Carrigas Peru E.I.R.L.  |  Documento generado por Gasmotion  |  ' + (exp.fecha||'') + ' ' + (exp.hora||''), W/2, y+7, {align:'center'});
-  doc.setTextColor(255,193,101);
-  doc.text('Este documento es de uso oficial y debe ser presentado ante la autoridad competente', W/2, y+13, {align:'center'});
-
-  // Guardar
-  var nombre = 'Series_' + (exp.placa||'').replace(/[^A-Z0-9]/g,'') + '_' + (exp.fecha||'').replace(/\//g,'') + '.pdf';
-  doc.save(nombre);
-  showToast('PDF generado: ' + nombre, 'success');
-}
-
-// ── Helpers PDF ──
-function _pdfSeccionHeader(doc, texto, y, margin, W, AMBER, BLACK) {
-  doc.setFillColor.apply(doc, BLACK);
-  doc.rect(margin, y, W-margin*2, 8, 'F');
-  doc.setTextColor.apply(doc, AMBER);
-  doc.setFontSize(8);
-  doc.setFont('helvetica','bold');
-  doc.text(texto, margin+3, y+5.5);
-  return y+8;
-}
-
-function _pdfSubHeader(doc, texto, margin, y, W, LGRAY, GRAY) {
-  doc.setFillColor.apply(doc, LGRAY);
-  doc.rect(margin, y, W-margin*2, 7, 'F');
-  doc.setTextColor.apply(doc, GRAY);
-  doc.setFontSize(8);
-  doc.setFont('helvetica','bold');
-  doc.text(texto, margin+3, y+4.8);
-  return 7;
-}
-
-function _pdfTabla(doc, filas, x, y, w, LGRAY, BLACK, GRAY, BORDER) {
-  var rowH = 8;
-  for(var i=0;i<filas.length;i++){
-    var fy = y + i*rowH;
-    doc.setFillColor.apply(doc, i%2===0?LGRAY:[255,255,255]);
-    doc.rect(x, fy, w, rowH, 'F');
-    doc.setDrawColor.apply(doc, BORDER);
-    doc.rect(x, fy, w, rowH);
+    // ── PIE DE PÁGINA ──
+    if(y > H - 22) { doc.addPage(); y = 16; }
+    doc.setFillColor.apply(doc, LGRAY);
+    doc.rect(M, y+4, W-M*2, 0.5, 'F');
     doc.setTextColor.apply(doc, GRAY);
     doc.setFontSize(7);
     doc.setFont('helvetica','normal');
-    doc.text(filas[i][0], x+2, fy+5.5);
-    doc.setTextColor.apply(doc, BLACK);
-    doc.setFont('helvetica','bold');
-    doc.text(String(filas[i][1]), x+w/2+1, fy+5.5);
+    doc.text('Carrigas Peru E.I.R.L.  ·  Generado por Gasmotion  ·  ' + (exp.fecha||'') + ' ' + (exp.hora||''), W/2, y+10, {align:'center'});
+    doc.setTextColor(180, 130, 0);
+    doc.text('Documento oficial — Registro de conversion vehicular GNV', W/2, y+16, {align:'center'});
+
+    var nombre = 'Series_' + (exp.placa||'').replace(/[^A-Z0-9]/g,'') + '.pdf';
+    doc.save(nombre);
+    showToast('PDF generado: ' + nombre, 'success');
+
+  } catch(err) {
+    showToast('Error generando PDF: ' + err.message, 'error');
+    console.error(err);
   }
 }
 
-function _pdfPlaceholderImg(doc, x, y, w, h, texto, LGRAY, GRAY) {
+// ── Helpers PDF ──
+function _pdfHeader(doc, texto, y, M, W, AMBER, AMBER2, DARK) {
+  // Encabezado: línea izquierda ámbar + fondo muy claro
+  doc.setFillColor(255, 248, 230); // crema muy claro
+  doc.rect(M, y, W-M*2, 9, 'F');
+  doc.setFillColor.apply(doc, AMBER);
+  doc.rect(M, y, 3, 9, 'F'); // barra izquierda ámbar
+  doc.setDrawColor(230, 180, 60);
+  doc.setLineWidth(0.3);
+  doc.rect(M, y, W-M*2, 9);
+  doc.setLineWidth(0.2);
+  doc.setTextColor(100, 70, 0); // marrón cálido
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica','bold');
+  doc.text(texto, M+6, y+6);
+  return y + 12;
+}
+
+function _pdfSubtitulo(doc, texto, M, y, W, LGRAY, MGRAY, DARK) {
+  doc.setFillColor(238, 238, 238); // gris muy claro
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.rect(M, y, W-M*2, 7, 'FD');
+  doc.setTextColor(60, 60, 60);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','bold');
+  doc.text(texto, M+3, y+4.8);
+  return y + 7;
+}
+
+// Tabla horizontal (etiqueta | valor en filas alternas)
+function _pdfTablaH(doc, filas, x, y, w, LGRAY, MGRAY, DARK, GRAY) {
+  var rH = 7.5;
+  var colLbl = w * 0.38;
+  for(var i=0; i<filas.length; i++){
+    var fy = y + i*rH;
+    doc.setFillColor.apply(doc, i%2===0 ? LGRAY : [255,255,255]);
+    doc.setDrawColor.apply(doc, MGRAY);
+    doc.rect(x, fy, w, rH, 'FD');
+    doc.setTextColor.apply(doc, GRAY);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text(filas[i][0], x+2, fy+5);
+    doc.setTextColor.apply(doc, DARK);
+    doc.setFont('helvetica','bold');
+    doc.text(String(filas[i][1]), x+colLbl+2, fy+5);
+  }
+  return y + filas.length * rH;
+}
+
+function _pdfNoFoto(doc, x, y, w, h, LGRAY, GRAY) {
   doc.setFillColor.apply(doc, LGRAY);
   doc.rect(x, y, w, h, 'F');
   doc.setTextColor.apply(doc, GRAY);
   doc.setFontSize(8);
   doc.setFont('helvetica','italic');
-  doc.text(texto, x+w/2, y+h/2, {align:'center'});
+  doc.text('[ Sin fotografía ]', x+w/2, y+h/2, {align:'center'});
 }
+
 
 function getDrivePreviewUrl(expId, docKey) {
   // Buscar en driveFiles del expediente
