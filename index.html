@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.1';
+    var GM_VERSION = '3.9.2';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -1710,6 +1710,28 @@ function loadExpFromScript(){
         console.log('Preservando fotosData local para:', expRemoto.placa);
         remote[m].fotosData = fdLocal;
         saveOneExpConFotos(remote[m]);
+      }
+
+      // Preservar campos nuevos de e4 que pueden no existir en expedientes viejos de D1
+      if(expLocal && expLocal.e4 && expRemoto.e4) {
+        var camposNuevosE4 = ['capacidadCilindro1','nroProductoCilindro1',
+                              'capacidadCilindro2','nroProductoCilindro2',
+                              'nroProductoReductor'];
+        var necesitaSync = false;
+        for(var ci=0; ci<camposNuevosE4.length; ci++){
+          var campo = camposNuevosE4[ci];
+          if(!expRemoto.e4[campo] && expLocal.e4[campo]) {
+            remote[m].e4[campo] = expLocal.e4[campo];
+            necesitaSync = true;
+          }
+        }
+        if(necesitaSync) {
+          // Subir al servidor con los campos nuevos completos
+          fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=saveOneExp', {
+            method: 'POST', headers: {'Content-Type':'application/json'}, cache: 'no-store',
+            body: JSON.stringify({action:'saveOneExp', data: remote[m]})
+          }).catch(function(){});
+        }
       }
     }
 
@@ -5887,6 +5909,21 @@ function renderEtapa4(cont, exp) {
     prog4.appendChild(av4);
   }
   sec.appendChild(prog4);
+
+  // ── BOTÓN GENERAR PDF TÉCNICO (visible para todos excepto técnico) ──
+  if(CU && CU.role !== 'tecnico') {
+    var pdfDiv4 = document.createElement('div');
+    pdfDiv4.style.cssText = 'margin-top:16px;padding:14px;background:#fff8eb;border:1.5px solid #FFC165;border-radius:10px';
+    pdfDiv4.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:6px">▣ Registro Fotográfico de Series</div>' +
+      '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">Genera el PDF oficial con las series, marcas y fotos del kit de conversión.</div>';
+    var pdfBtn4 = document.createElement('button');
+    pdfBtn4.style.cssText = 'width:100%;justify-content:center;background:#FFC165;color:#131313;font-weight:800;border:none;border-radius:9px;padding:13px;font-size:14px;cursor:pointer;font-family:inherit';
+    pdfBtn4.textContent = '↓ Generar PDF de Series';
+    pdfBtn4.onclick = (function(eid){ return function(){ generarPDFSeries(eid); }; })(exp.id);
+    pdfDiv4.appendChild(pdfBtn4);
+    sec.appendChild(pdfDiv4);
+  }
+
   cont.appendChild(sec);
 }
 
@@ -6496,8 +6533,12 @@ function grabarDatosCilindro(id) {
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.serieCilindro = serieVal.toUpperCase();
-      expedientes[i].e4.fechaFabCilindro = fechaVal;
+      expedientes[i].e4.serieCilindro       = serieVal.toUpperCase();
+      expedientes[i].e4.fechaFabCilindro    = fechaVal;
+      var _cap1 = getInputVal('cil_cap1_' + id);
+      var _nrp1 = getInputVal('cil_nrp1_' + id);
+      if(_cap1) expedientes[i].e4.capacidadCilindro1   = _cap1;
+      if(_nrp1) expedientes[i].e4.nroProductoCilindro1 = _nrp1.toUpperCase();
       expTarget = expedientes[i];
       break;
     }
@@ -6541,8 +6582,12 @@ function grabarDatosCilindro2(id) {
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.serieCilindro2 = serieVal.toUpperCase();
-      expedientes[i].e4.fechaFabCilindro2 = fechaVal;
+      expedientes[i].e4.serieCilindro2      = serieVal.toUpperCase();
+      expedientes[i].e4.fechaFabCilindro2   = fechaVal;
+      var _cap2 = getInputVal('cil_cap2_' + id);
+      var _nrp2 = getInputVal('cil_nrp2_' + id);
+      if(_cap2) expedientes[i].e4.capacidadCilindro2   = _cap2;
+      if(_nrp2) expedientes[i].e4.nroProductoCilindro2 = _nrp2.toUpperCase();
       expTarget = expedientes[i];
       break;
     }
@@ -6597,8 +6642,10 @@ function grabarDatosReductor(id) {
   for(var i=0;i<expedientes.length;i++) {
     if(expedientes[i].id===id) {
       if(!expedientes[i].e4) expedientes[i].e4={};
-      expedientes[i].e4.marcaReductor = marcaVal.toUpperCase();
-      expedientes[i].e4.serieReductor = serieVal.toUpperCase();
+      expedientes[i].e4.marcaReductor       = marcaVal.toUpperCase();
+      expedientes[i].e4.serieReductor       = serieVal.toUpperCase();
+      var _nrpR = getInputVal('red_nroprod_' + id);
+      if(_nrpR) expedientes[i].e4.nroProductoReductor = _nrpR.toUpperCase();
       expTarget = expedientes[i];
       break;
     }
@@ -6765,22 +6812,6 @@ function grabarFotoReductor(expId, input) {
   });
 }
 
-
-  // ── BOTÓN GENERAR PDF TÉCNICO ──
-  var canGenPDF4 = CU && CU.role !== 'tecnico';
-  if(canGenPDF4) {
-    var pdfDiv4 = document.createElement('div');
-    pdfDiv4.style.cssText = 'margin-top:16px;padding:14px;background:#fff8eb;border:1.5px solid #FFC165;border-radius:10px';
-    pdfDiv4.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:8px">▣ Registro Fotográfico de Series</div>' +
-      '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">Genera el PDF oficial con las series, marcas y fotos del kit de conversión.</div>';
-    var pdfBtn4 = document.createElement('button');
-    pdfBtn4.className = 'btn';
-    pdfBtn4.style.cssText = 'width:100%;justify-content:center;background:#FFC165;color:#131313;font-weight:800;border:none;padding:13px';
-    pdfBtn4.innerHTML = '↓ Generar PDF de Series';
-    pdfBtn4.onclick = (function(eid){ return function(){ generarPDFSeries(eid); }; })(exp.id);
-    pdfDiv4.appendChild(pdfBtn4);
-    sec.appendChild(pdfDiv4);
-  }
 
 function guardarBono(expId, val) {
   for(var i=0;i<expedientes.length;i++){
