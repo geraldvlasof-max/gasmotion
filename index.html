@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.0';
+    var GM_VERSION = '3.9.1';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -4747,7 +4747,7 @@ function _buildPDFSeries(exp) {
     var redDatos = [
       ['Tipo / Marca', e4.marcaReductor || '—'],
       ['N° de Serie',  e4.serieReductor || '—'],
-      ['N° de Producto', e4.nroProductoReductor || '—'],
+      ['N° de Produce', e4.nroProductoReductor || '—'],
     ];
 
     // Columna izquierda: datos
@@ -4789,7 +4789,7 @@ function _continuarPDF(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY,
       ['N° de Serie',      e4.serieCilindro || '—'],
       ['Fecha Fabricación', e4.fechaFabCilindro || '—'],
       ['Capacidad',        e4.capacidadCilindro1 || '—'],
-      ['N° de Producto',   e4.nroProductoCilindro1 || '—'],
+      ['N° de Produce',   e4.nroProductoCilindro1 || '—'],
     ];
     _pdfTabla(doc, cil1Datos, margin, y, colW, LGRAY, BLACK, GRAY, BORDER);
 
@@ -4819,7 +4819,7 @@ function _bloqueCil2(doc, exp, e4, y, margin, W, H, AMBER, BLACK, GRAY, LGRAY, W
         ['N° de Serie',      e4.serieCilindro2 || '—'],
         ['Fecha Fabricación', e4.fechaFabCilindro2 || '—'],
         ['Capacidad',        e4.capacidadCilindro2 || '—'],
-        ['N° de Producto',   e4.nroProductoCilindro2 || '—'],
+        ['N° de Produce',   e4.nroProductoCilindro2 || '—'],
       ];
       _pdfTabla(doc, cil2Datos, margin, y, colW, LGRAY, BLACK, GRAY, BORDER);
 
@@ -5784,22 +5784,6 @@ function renderEtapa3(cont, exp) {
   }
   // ── Asignación de técnicos ──
   renderAsignacionTecnicosEtapa3(sec, exp);
-
-  // ── BOTÓN GENERAR PDF TÉCNICO ──
-  var canGenPDF = CU && CU.role !== 'tecnico';
-  if(canGenPDF) {
-    var pdfDiv = document.createElement('div');
-    pdfDiv.style.cssText = 'margin-top:16px;padding:14px;background:#fff8eb;border:1.5px solid #FFC165;border-radius:10px';
-    pdfDiv.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:8px">▣ Registro Fotográfico de Series</div>' +
-      '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">Genera el PDF oficial con las series, marcas y fotos del kit de conversión.</div>';
-    var pdfBtn = document.createElement('button');
-    pdfBtn.className = 'btn btn-amber';
-    pdfBtn.style.cssText = 'width:100%;justify-content:center;background:#FFC165;color:#131313;font-weight:800';
-    pdfBtn.innerHTML = '↓ Generar PDF de Series';
-    pdfBtn.onclick = (function(eid){ return function(){ generarPDFSeries(eid); }; })(exp.id);
-    pdfDiv.appendChild(pdfBtn);
-    sec.appendChild(pdfDiv);
-  }
   cont.appendChild(sec);
 }
 
@@ -5994,12 +5978,12 @@ function crearFotoCilindroCard(exp, canSub) {
   if(canSub || e4.nroProductoCilindro1) {
     var div_cil_nrp1 = document.createElement('div');
     div_cil_nrp1.style.cssText = 'margin-top:10px';
-    div_cil_nrp1.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Producto</label>';
+    div_cil_nrp1.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Produce</label>';
     if(canSub) {
       var inp_cil_nrp1 = document.createElement('input');
       inp_cil_nrp1.type = 'text'; inp_cil_nrp1.id = 'cil_nrp1_' + exp.id;
       inp_cil_nrp1.value = e4.nroProductoCilindro1 || '';
-      inp_cil_nrp1.placeholder = 'N° de producto';
+      inp_cil_nrp1.placeholder = 'N° de produce';
       inp_cil_nrp1.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       inp_cil_nrp1.oninput = function() { this.value = this.value.toUpperCase(); };
       div_cil_nrp1.appendChild(inp_cil_nrp1);
@@ -6103,6 +6087,10 @@ function crearFotoCilindroCard(exp, canSub) {
         f2div.appendChild(f2val);
       }
 
+      c2.appendChild(f2div);
+    }
+
+    // Capacidad cilindro 2
     if(canSub || e4.capacidadCilindro2) {
       var cap2div = document.createElement('div');
       cap2div.style.cssText = 'margin-top:10px';
@@ -6120,14 +6108,16 @@ function crearFotoCilindroCard(exp, canSub) {
       }
       c2.appendChild(cap2div);
     }
+
+    // N° de Produce cilindro 2
     if(canSub || e4.nroProductoCilindro2) {
       var nrp2div = document.createElement('div');
       nrp2div.style.cssText = 'margin-top:10px';
-      nrp2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Producto</label>';
+      nrp2div.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Produce</label>';
       if(canSub) {
         var nrp2inp = document.createElement('input');
         nrp2inp.type='text'; nrp2inp.id='cil_nrp2_'+exp.id;
-        nrp2inp.value=e4.nroProductoCilindro2||''; nrp2inp.placeholder='N° de producto';
+        nrp2inp.value=e4.nroProductoCilindro2||''; nrp2inp.placeholder='N° de produce';
         nrp2inp.style.cssText='text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
         nrp2inp.oninput=function(){this.value=this.value.toUpperCase();};
         nrp2div.appendChild(nrp2inp);
@@ -6137,9 +6127,6 @@ function crearFotoCilindroCard(exp, canSub) {
         nrp2val.textContent=e4.nroProductoCilindro2||'—'; nrp2div.appendChild(nrp2val);
       }
       c2.appendChild(nrp2div);
-    }
-
-      c2.appendChild(f2div);
     }
 
     if(canSub) {
@@ -6720,16 +6707,16 @@ function crearFotoReductorCard(exp, canSub) {
     rWrap.appendChild(sDiv);
   }
 
-  // 4. N° de Producto reductor (nuevo campo protocolo)
+  // 4. N° de Produce reductor (nuevo campo protocolo)
   if(canSub || e4.nroProductoReductor) {
     var npRedDiv = document.createElement('div');
     npRedDiv.style.cssText = 'margin-top:10px';
-    npRedDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Producto</label>';
+    npRedDiv.innerHTML = '<label style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px">N° de Produce</label>';
     if(canSub) {
       var npRedInp = document.createElement('input');
       npRedInp.type = 'text'; npRedInp.id = 'red_nroprod_' + exp.id;
       npRedInp.value = e4.nroProductoReductor || '';
-      npRedInp.placeholder = 'N° de producto del reductor';
+      npRedInp.placeholder = 'N° de produce del reductor';
       npRedInp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       npRedInp.oninput = function() { this.value = this.value.toUpperCase(); };
       npRedDiv.appendChild(npRedInp);
