@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.2';
+    var GM_VERSION = '3.9.3';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -4941,37 +4941,70 @@ function getDrivePreviewUrl(expId, docKey) {
   for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===expId){exp=expedientes[i];break;}}
   if(!exp || !exp.driveFiles || !exp.driveFiles[docKey]) return null;
   var meta = exp.driveFiles[docKey];
-  var url = (typeof meta === 'string') ? meta : (meta.url || meta.webViewLink || null);
-  if(!url) return null;
-  // Convertir URL de Drive a URL directa de imagen
-  var match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if(match) return 'https://drive.google.com/uc?export=view&id=' + match[1];
-  return url;
+  // Extraer el fileId de Drive
+  var fileId = null;
+  if(typeof meta === 'object' && meta !== null) {
+    fileId = meta.id || null;
+    if(!fileId) {
+      var url = meta.viewUrl || meta.url || meta.webViewLink || '';
+      var m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if(m) fileId = m[1];
+    }
+  } else if(typeof meta === 'string') {
+    var m2 = meta.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if(m2) fileId = m2[1];
+  }
+  if(!fileId) return null;
+  // Usar proxyFile del Worker (evita CORS de Drive en canvas)
+  return GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + fileId;
 }
 
 function _pdfImgFromDrive(doc, url, x, y, w, h, callback) {
-  var img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = function() {
-    try {
-      var canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || img.width;
-      canvas.height = img.naturalHeight || img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      var dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      doc.addImage(dataUrl, 'JPEG', x, y, w, h);
-      doc.setDrawColor(200,200,200);
-      doc.rect(x, y, w, h);
-    } catch(e) {
-      _pdfPlaceholderImg(doc, x, y, w, h, '[ Imagen no disponible ]', [240,240,240], [100,100,100]);
-    }
-    callback();
-  };
-  img.onerror = function() {
-    _pdfPlaceholderImg(doc, x, y, w, h, '[ Error cargando imagen ]', [240,240,240], [100,100,100]);
-    callback();
-  };
-  img.src = url;
+  // Usar fetch para descargar la imagen (evita restricciones CORS del canvas)
+  fetch(url)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          var dataUrl = ev.target.result;
+          var img = new Image();
+          img.onload = function() {
+            try {
+              var canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth || img.width;
+              canvas.height = img.naturalHeight || img.height;
+              canvas.getContext('2d').drawImage(img, 0, 0);
+              var jpegUrl = canvas.toDataURL('image/jpeg', 0.85);
+              doc.addImage(jpegUrl, 'JPEG', x, y, w, h);
+              doc.setDrawColor(200,200,200);
+              doc.rect(x, y, w, h);
+            } catch(e2) {
+              _pdfPlaceholderImg(doc, x, y, w, h, '[ Error en canvas ]', [240,240,240], [100,100,100]);
+            }
+            callback();
+          };
+          img.onerror = function(){
+            _pdfPlaceholderImg(doc, x, y, w, h, '[ Error cargando imagen ]', [240,240,240], [100,100,100]);
+            callback();
+          };
+          img.src = dataUrl;
+        } catch(e) {
+          _pdfPlaceholderImg(doc, x, y, w, h, '[ Error procesando imagen ]', [240,240,240], [100,100,100]);
+          callback();
+        }
+      };
+      reader.onerror = function(){
+        _pdfPlaceholderImg(doc, x, y, w, h, '[ Error leyendo imagen ]', [240,240,240], [100,100,100]);
+        callback();
+      };
+      reader.readAsDataURL(blob);
+    })
+    .catch(function(err){
+      console.warn('Error cargando foto para PDF:', err);
+      _pdfPlaceholderImg(doc, x, y, w, h, '[ Sin conexion a imagen ]', [240,240,240], [100,100,100]);
+      callback();
+    });
 }
 
 function renderRadar() {
