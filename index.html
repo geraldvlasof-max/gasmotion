@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.9';
+    var GM_VERSION = '4.0.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6006,102 +6006,148 @@ function renderEtapa4(cont, exp) {
   var canSub=CU&&(CU.role==='admin'||CU.role==='supervisor'||CU.role==='tecnico'||CU.role==='jefe'||CU.role==='asistente_fise');
   // canVer: puede ver todos los datos (todos los roles)
   var canVer=true;
-  var sec=document.createElement('div');
-  sec.innerHTML='<div class="etapa-header"><div class="etapa-num" style="background:#FFC165">4</div><div><div class="etapa-title">ETAPA 4 — DOCUMENTOS TECNICOS</div><div class="etapa-sub">Adjunta y graba todos los documentos tecnicos de la conversion</div></div></div>';
+  // ── CONTENEDOR PRINCIPAL — grid 3 columnas ──
+  var sec = document.createElement('div');
+  sec.innerHTML = '<div class="etapa-header"><div class="etapa-num" style="background:#FFC165">4</div><div><div class="etapa-title">ETAPA 4 — DOCUMENTOS TÉCNICOS</div><div class="etapa-sub">Adjunta y graba todos los documentos técnicos de la conversión</div></div></div>';
 
-  // 1. SCANFILE 2 (solo descarga)
+  // Grid 3 columnas responsivo
+  var grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start;margin-top:4px';
+
+  // ══ COLUMNA 1: Kit técnico (Reductor + Cilindros) ══
+  var col1 = document.createElement('div');
+  col1.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+
+  // Título sección
+  var hdr1 = document.createElement('div');
+  hdr1.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 4px;border-bottom:2px solid #FFC165';
+  hdr1.textContent = 'Kit técnico';
+  col1.appendChild(hdr1);
+
+  col1.appendChild(crearFotoReductorCard(exp, canSub));
+  col1.appendChild(crearFotoCilindroCard(exp, canSub));
+  grid.appendChild(col1);
+
+  // ══ COLUMNA 2: Documentos administrativos ══
+  var col2 = document.createElement('div');
+  col2.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+
+  var hdr2 = document.createElement('div');
+  hdr2.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 4px;border-bottom:2px solid #5C8CF5';
+  hdr2.textContent = 'Documentos';
+  col2.appendChild(hdr2);
+
+  // SCANFILE 2
   var sf2meta=exp.e3&&exp.e3.scanfile2?exp.e3.scanfile2:null;
   var sf2url=getFileUrl(exp.id,'sf2');
   var sf2box=document.createElement('div');sf2box.className='doc-box done';
-  sf2box.innerHTML='<div class="doc-box-title">1. SCANFILE 2 (referencia)</div>';
-  if(sf2meta){sf2box.innerHTML+='<div class="meta-row"><span>∷</span><span>'+sf2meta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>'+sf2meta.subidoPor+' — '+sf2meta.fecha+' '+sf2meta.hora+'</span></div>';}
+  sf2box.innerHTML='<div class="doc-box-title">SCANFILE 2 (referencia)</div>';
+  if(sf2meta){sf2box.innerHTML+='<div class="meta-row"><span>∷</span><span>'+sf2meta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>'+sf2meta.subidoPor+' — '+sf2meta.fecha+'</span></div>';}
   var dlSf2=document.createElement('a');
   if(sf2url&&sf2meta){dlSf2.href=sf2url;dlSf2.download=sf2meta.nombre;dlSf2.className='btn btn-teal btn-sm';dlSf2.style.marginTop='8px';dlSf2.innerHTML='↓ Descargar SCANFILE 2';}
   else{dlSf2.className='btn btn-sm';dlSf2.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlSf2.textContent='Re-subir para descargar';}
-  sf2box.appendChild(dlSf2);sec.appendChild(sf2box);
+  sf2box.appendChild(dlSf2);
+  col2.appendChild(sf2box);
 
-  // 1. Video compresiones
-  sec.appendChild(crearDocCard(exp.id,'videoComp','1. Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
+  col2.appendChild(crearDocCard(exp.id,'videoComp','Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
+  col2.appendChild(crearDocCard(exp.id,'boletaInfo','Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
+  col2.appendChild(crearDocCard(exp.id,'boletaVenta','Boleta de Venta',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
+  col2.appendChild(crearDocCard(exp.id,'capturaPIT','Captura PIT',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
+  col2.appendChild(crearDocCard(exp.id,'dniTecnico','DNI Técnico Responsable',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
 
-  // 2. Cilindros (fotos + datos)
-  // Fila horizontal: Reductor (izq) | Cilindros (der)
-  var rowKit = document.createElement('div');
-  rowKit.style.cssText = 'display:flex;gap:14px;align-items:flex-start;margin-bottom:0';
-
-  var colRed = document.createElement('div');
-  colRed.style.cssText = 'flex:1;min-width:0';
-  colRed.appendChild(crearFotoReductorCard(exp,canSub));
-  rowKit.appendChild(colRed);
-
-  var colCil = document.createElement('div');
-  colCil.style.cssText = 'flex:1;min-width:0';
-  colCil.appendChild(crearFotoCilindroCard(exp,canSub));
-  rowKit.appendChild(colCil);
-
-  sec.appendChild(rowKit);
-
-  // 4. Boleta Informativa
-  sec.appendChild(crearDocCard(exp.id,'boletaInfo','4. Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
-
-  // 5. Boleta de Venta
-  sec.appendChild(crearDocCard(exp.id,'boletaVenta','5. Boleta de Venta',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
-
-  // 6. Captura PIT
-  sec.appendChild(crearDocCard(exp.id,'capturaPIT','6. Captura PIT',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
-
-  // 7. DNI Técnico Responsable (nuevo campo)
-  sec.appendChild(crearDocCard(exp.id,'dniTecnico','7. DNI Técnico Responsable',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
-
-  // ── BOTÓN ÚNICO GUARDAR TODOS LOS DATOS TÉCNICOS ──
-  if(canSub) {
-    var btnGuardarTodo = document.createElement('button');
-    btnGuardarTodo.id = 'btnGuardarTecnico_' + exp.id;
-    btnGuardarTodo.className = 'btn btn-primary';
-    btnGuardarTodo.style.cssText = 'width:100%;justify-content:center;margin:12px 0;font-size:15px;padding:14px;background:#FFC165;border-color:#FFC165';
-    btnGuardarTodo.innerHTML = 'GUARDAR TODOS LOS DATOS TÉCNICOS';
-    btnGuardarTodo.onclick = (function(eid){ return function(){ guardarTodosDatosTecnicos(eid); }; })(exp.id);
-    sec.appendChild(btnGuardarTodo);
-  }
-
-  // 8. BONO GLP (opcional)
-  var bonoDiv=document.createElement('div');bonoDiv.style.cssText='background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:12px;padding:16px;margin-top:12px';
-  bonoDiv.innerHTML='<div style="font-size:13px;font-weight:700;color:#131313;margin-bottom:12px">¿La conversión lleva BONO GLP?</div>';
-  var bonoOpts=document.createElement('div');bonoOpts.style.cssText='display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px';
-  var labSi=document.createElement('label');labSi.style.cssText='display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;background:#d1fae5;border:2px solid #6ee7b7;border-radius:8px;padding:10px 16px';
+  // Bono GLP
+  var bonoDiv=document.createElement('div');bonoDiv.style.cssText='background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:12px;padding:14px';
+  bonoDiv.innerHTML='<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px">¿Lleva BONO GLP?</div>';
+  var bonoOpts=document.createElement('div');bonoOpts.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px';
+  var labSi=document.createElement('label');labSi.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;background:#d1fae5;border:2px solid #6ee7b7;border-radius:8px;padding:8px 14px';
   var radSi=document.createElement('input');radSi.type='radio';radSi.name='dc_bono'+exp.id;radSi.value='si';
   if(e4.llevaBono===true)radSi.checked=true;
   if(!canSub)radSi.disabled=true;
-  radSi.style.cssText='width:16px;height:16px;accent-color:#FFC165';
+  radSi.style.cssText='width:15px;height:15px;accent-color:#FFC165';
   radSi.onchange=(function(eid){return function(){guardarBono(eid,'si');};})(exp.id);
   labSi.appendChild(radSi);labSi.appendChild(document.createTextNode(' SI'));
-  var labNo=document.createElement('label');labNo.style.cssText='display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:10px 16px';
+  var labNo=document.createElement('label');labNo.style.cssText='display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;font-weight:600;background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:8px 14px';
   var radNo=document.createElement('input');radNo.type='radio';radNo.name='dc_bono'+exp.id;radNo.value='no';
   if(e4.llevaBono===false)radNo.checked=true;
   if(!canSub)radNo.disabled=true;
-  radNo.style.cssText='width:16px;height:16px;accent-color:#cc2200';
+  radNo.style.cssText='width:15px;height:15px;accent-color:#cc2200';
   radNo.onchange=(function(eid){return function(){guardarBono(eid,'no');};})(exp.id);
   labNo.appendChild(radNo);labNo.appendChild(document.createTextNode(' NO'));
   bonoOpts.appendChild(labSi);bonoOpts.appendChild(labNo);
   bonoDiv.appendChild(bonoOpts);
   if(e4.llevaBono===true){
-    var bonoCard=crearDocCard(exp.id,'informeBono','8. Informe BONO GLP (Opcional)',e4.informeBono||null,canSub,'e4ib','.pdf');
+    var bonoCard=crearDocCard(exp.id,'informeBono','Informe BONO GLP',e4.informeBono||null,canSub,'e4ib','.pdf');
     bonoDiv.appendChild(bonoCard);
   }
-  sec.appendChild(bonoDiv);
+  col2.appendChild(bonoDiv);
+  grid.appendChild(col2);
 
-  // Validación y avance
-  // Validación: video + foto cilindro1 + foto reductor + boletaInfo + boletaVenta + capturaPIT + dniTecnico
+  // ══ COLUMNA 3: Estado, acciones y PDF ══
+  var col3 = document.createElement('div');
+  col3.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+
+  var hdr3 = document.createElement('div');
+  hdr3.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 4px;border-bottom:2px solid #10b981';
+  hdr3.textContent = 'Acciones';
+  col3.appendChild(hdr3);
+
+  // Progreso / validación
   var items=['videoCompresiones','fotoCilindro1','fotoReductorMarca','fotoReductorSerie','boletaInformativa','boletaVenta','capturaPIT','dniTecnico'];
-  var done4=0,tot4=9; // 8 docs + 1 decisión bono
+  var done4=0,tot4=9;
   for(var ii=0;ii<items.length;ii++){if(e4[items[ii]]&&e4[items[ii]].completado)done4++;}
   if(e4.llevaBono!==null&&e4.llevaBono!==undefined){done4++;}
   if(e4.llevaBono===true){tot4=10;if(e4.informeBono&&e4.informeBono.completado)done4++;}
   else if(e4.llevaBono===false){tot4=9;}
   var pct4=Math.round(done4/tot4*100);
-  var prog4=document.createElement('div');prog4.style.cssText='background:#F7F7F2;border:1px solid #D9D9D9;border-radius:10px;padding:14px;margin-top:14px';
-  prog4.innerHTML='<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span>Documentos completados</span><span>'+done4+'/'+tot4+'</span></div>'+
-    '<div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:12px"><div style="height:100%;width:'+pct4+'%;background:'+(pct4===100?'#10b981':'#FFC165')+';border-radius:3px"></div></div>';
+
+  var prog4=document.createElement('div');
+  prog4.style.cssText='background:white;border:1.5px solid #D9D9D9;border-radius:12px;padding:16px';
+  prog4.innerHTML=
+    '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:10px">Progreso Etapa 4</div>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+
+      '<div style="font-size:32px;font-weight:900;color:'+(pct4===100?'#10b981':'#FFC165')+'">'+pct4+'%</div>'+
+      '<div style="flex:1">'+
+        '<div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">'+
+          '<div style="height:100%;width:'+pct4+'%;background:'+(pct4===100?'#10b981':'#FFC165')+';border-radius:4px;transition:width .4s"></div>'+
+        '</div>'+
+        '<div style="font-size:11px;color:#8a8a8a;margin-top:4px">'+done4+' de '+tot4+' completados</div>'+
+      '</div>'+
+    '</div>';
+
+  // Lista de items pendientes
+  var listaItems=[
+    {k:'fotoReductorMarca',l:'Foto marca reductor'},
+    {k:'fotoReductorSerie',l:'Foto serie reductor'},
+    {k:'fotoCilindro1',l:'Foto cilindro 1'},
+    {k:'videoCompresiones',l:'Video compresiones'},
+    {k:'boletaInformativa',l:'Boleta informativa'},
+    {k:'boletaVenta',l:'Boleta de venta'},
+    {k:'capturaPIT',l:'Captura PIT'},
+    {k:'dniTecnico',l:'DNI técnico'}
+  ];
+  var checkList=document.createElement('div');
+  checkList.style.cssText='display:flex;flex-direction:column;gap:3px;margin-bottom:12px';
+  for(var ci=0;ci<listaItems.length;ci++){
+    var itm=listaItems[ci];
+    var ok=!!(e4[itm.k]&&e4[itm.k].completado);
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:'+(ok?'#15803d':'#9ca3af');
+    row.innerHTML='<span style="font-size:12px">'+(ok?'✓':'○')+'</span><span>'+(ok?'<strong>'+itm.l+'</strong>':itm.l)+'</span>';
+    checkList.appendChild(row);
+  }
+  prog4.appendChild(checkList);
+
+  // Botón guardar datos técnicos
   if(canSub){
+    var btnGuardarTodo=document.createElement('button');
+    btnGuardarTodo.id='btnGuardarTecnico_'+exp.id;
+    btnGuardarTodo.className='btn btn-primary';
+    btnGuardarTodo.style.cssText='width:100%;justify-content:center;font-size:13px;padding:12px;background:#FFC165;border-color:#FFC165;margin-bottom:8px';
+    btnGuardarTodo.innerHTML='Guardar datos técnicos';
+    btnGuardarTodo.onclick=(function(eid){return function(){guardarTodosDatosTecnicos(eid);};})(exp.id);
+    prog4.appendChild(btnGuardarTodo);
+
+    // Botón avanzar
     var av4=document.createElement('button');av4.className='btn btn-navy';
     av4.style.cssText='width:100%;justify-content:center'+(done4<tot4?';opacity:0.5;cursor:not-allowed':'');
     av4.disabled=done4<tot4;
@@ -6109,21 +6155,30 @@ function renderEtapa4(cont, exp) {
     av4.onclick=(function(eid){return function(){avanzarEtapaNum(eid,5);};})(exp.id);
     prog4.appendChild(av4);
   }
-  sec.appendChild(prog4);
+  col3.appendChild(prog4);
 
-  // ── BOTÓN GENERAR PDF TÉCNICO (visible para todos excepto técnico) ──
-  if(CU && CU.role !== 'tecnico') {
-    var pdfDiv4 = document.createElement('div');
-    pdfDiv4.style.cssText = 'margin-top:16px;padding:14px;background:#fff8eb;border:1.5px solid #FFC165;border-radius:10px';
-    pdfDiv4.innerHTML = '<div style="font-size:12px;font-weight:700;color:#131313;margin-bottom:6px">▣ Fotografías de series de regulador y cilindro</div>' +
-      '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">Genera el PDF oficial con las series, marcas y fotos del kit de conversión.</div>';
-    var pdfBtn4 = document.createElement('button');
-    pdfBtn4.style.cssText = 'width:100%;justify-content:center;background:#FFC165;color:#131313;font-weight:800;border:none;border-radius:9px;padding:13px;font-size:14px;cursor:pointer;font-family:inherit';
-    pdfBtn4.textContent = 'PDF Fotografías de series de regulador y cilindro';
-    pdfBtn4.onclick = (function(eid){ return function(){ generarPDFSeries(eid); }; })(exp.id);
+  // Botón PDF (solo no-técnicos)
+  if(CU && CU.role !== 'tecnico'){
+    var pdfDiv4=document.createElement('div');
+    pdfDiv4.style.cssText='background:#fff8eb;border:1.5px solid #FFC165;border-radius:12px;padding:14px';
+    pdfDiv4.innerHTML='<div style="font-size:11px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">▣ Fotografías de series</div>'+
+      '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px;line-height:1.4">Genera el PDF oficial con series, marcas y fotos del kit de conversión.</div>';
+    var pdfBtn4=document.createElement('button');
+    pdfBtn4.style.cssText='width:100%;background:#FFC165;color:#131313;font-weight:800;border:none;border-radius:9px;padding:12px;font-size:13px;cursor:pointer;font-family:inherit';
+    pdfBtn4.textContent='PDF Fotografías de series de regulador y cilindro';
+    pdfBtn4.onclick=(function(eid){return function(){generarPDFSeries(eid);};})(exp.id);
     pdfDiv4.appendChild(pdfBtn4);
-    sec.appendChild(pdfDiv4);
+    col3.appendChild(pdfDiv4);
   }
+
+  grid.appendChild(col3);
+  sec.appendChild(grid);
+
+  // CSS responsivo inline para el grid
+  var styleEl=document.createElement('style');
+  styleEl.textContent='@media(max-width:900px){#e4grid-'+exp.id+'{grid-template-columns:1fr 1fr!important}}@media(max-width:600px){#e4grid-'+exp.id+'{grid-template-columns:1fr!important}}';
+  sec.appendChild(styleEl);
+  grid.id='e4grid-'+exp.id;
 
   cont.appendChild(sec);
 }
