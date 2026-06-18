@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.0.2';
+    var GM_VERSION = '4.0.3';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6008,7 +6008,18 @@ function renderEtapa4(cont, exp) {
   var canVer=true;
   // ── CONTENEDOR PRINCIPAL — grid 3 columnas ──
   var sec = document.createElement('div');
-  sec.innerHTML = '<div class="etapa-header"><div class="etapa-num" style="background:#FFC165">4</div><div><div class="etapa-title">ETAPA 4 — DOCUMENTOS TÉCNICOS</div><div class="etapa-sub">Adjunta y graba todos los documentos técnicos de la conversión</div></div></div>';
+  sec.innerHTML = '<div class="etapa-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'+
+    '<div style="display:flex;align-items:center;gap:12px">'+
+      '<div class="etapa-num" style="background:#FFC165">4</div>'+
+      '<div><div class="etapa-title">ETAPA 4 — DOCUMENTOS TÉCNICOS</div>'+
+      '<div class="etapa-sub">Adjunta y graba todos los documentos técnicos de la conversión</div></div>'+
+    '</div>'+
+    '<div style="background:#131313;color:#FFC165;border-radius:10px;padding:8px 18px;text-align:center;flex-shrink:0">'+
+      '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;color:#8a8a8a;text-transform:uppercase">Placa</div>'+
+      '<div style="font-size:22px;font-weight:900;letter-spacing:.05em">'+(exp.placa||'—')+'</div>'+
+      '<div style="font-size:10px;color:#8a8a8a;margin-top:1px">'+(exp.marca||'')+' '+(exp.modelo||'')+'</div>'+
+    '</div>'+
+  '</div>';
 
   // Grid 3 columnas responsivo
   var grid = document.createElement('div');
