@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.6';
+    var GM_VERSION = '3.9.7';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -4694,6 +4694,67 @@ function generarPDFSeries(expId) {
   }
 }
 
+
+// Carga todas las fotos en paralelo y devuelve { key: {dataUrl, w, h} }
+function _cargarTodasFotos(fotos, callback) {
+  var keys = Object.keys(fotos);
+  var result = {};
+  var pendiente = 0;
+  keys.forEach(function(k) {
+    if(!fotos[k]) { result[k] = null; return; }
+    pendiente++;
+    var key = k;
+    fetch(fotos[key])
+      .then(function(r){ return r.blob(); })
+      .then(function(blob){
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          var dataUrl = ev.target.result;
+          var img = new Image();
+          img.onload = function() {
+            result[key] = { dataUrl: dataUrl, w: img.naturalWidth, h: img.naturalHeight };
+            pendiente--;
+            if(pendiente === 0) callback(result);
+          };
+          img.onerror = function() {
+            result[key] = { dataUrl: dataUrl, w: 4, h: 3 };
+            pendiente--;
+            if(pendiente === 0) callback(result);
+          };
+          img.src = dataUrl;
+        };
+        reader.onerror = function(){
+          result[key] = null; pendiente--;
+          if(pendiente === 0) callback(result);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(function(){
+        result[key] = null; pendiente--;
+        if(pendiente === 0) callback(result);
+      });
+  });
+  if(pendiente === 0) callback(result);
+}
+
+// Agrega imagen al PDF respetando aspect ratio real
+function _addImgAR(doc, fotoObj, x, y, maxW, maxH) {
+  if(!fotoObj || !fotoObj.dataUrl) return 0;
+  try {
+    var natW = fotoObj.w || 4, natH = fotoObj.h || 3;
+    var ratio = natW / natH;
+    var drawW = maxW;
+    var drawH = drawW / ratio;
+    if(drawH > maxH) { drawH = maxH; drawW = drawH * ratio; }
+    var offsetX = x + (maxW - drawW) / 2;
+    doc.addImage(fotoObj.dataUrl, 'JPEG', offsetX, y, drawW, drawH);
+    doc.setDrawColor(210, 210, 210);
+    doc.setLineWidth(0.2);
+    doc.rect(offsetX, y, drawW, drawH);
+    return drawH;
+  } catch(e) { return 0; }
+}
+
 function _buildPDFSeries(exp) {
   try {
     var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
@@ -6047,7 +6108,7 @@ function renderEtapa4(cont, exp) {
       '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">Genera el PDF oficial con las series, marcas y fotos del kit de conversión.</div>';
     var pdfBtn4 = document.createElement('button');
     pdfBtn4.style.cssText = 'width:100%;justify-content:center;background:#FFC165;color:#131313;font-weight:800;border:none;border-radius:9px;padding:13px;font-size:14px;cursor:pointer;font-family:inherit';
-    pdfBtn4.textContent = '↓ Generar Fotografías de series';
+    pdfBtn4.textContent = 'PDF Fotografías de series de regulador y cilindro';
     pdfBtn4.onclick = (function(eid){ return function(){ generarPDFSeries(eid); }; })(exp.id);
     pdfDiv4.appendChild(pdfBtn4);
     sec.appendChild(pdfDiv4);
@@ -6162,14 +6223,21 @@ function crearFotoCilindroCard(exp, canSub) {
     c1.appendChild(div_cil_nrp1);
   }
 
-  // Botón grabar cilindro 1
+  // Botón grabar cilindro 1 (protegido si ya fue grabado)
   if(canSub) {
-    var btn1 = document.createElement('button');
-    btn1.className = 'btn btn-teal btn-sm';
-    btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    btn1.textContent = 'Grabar datos Cilindro 1';
-    btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
-    c1.appendChild(btn1);
+    var cil1FueGrabado = !!(e4.cil1Grabado) && !isTecnico();
+    if(cil1FueGrabado) {
+      var inpsCil1 = c1.querySelectorAll('input');
+      for(var ci1r=0; ci1r<inpsCil1.length; ci1r++) inpsCil1[ci1r].disabled = true;
+      c1.appendChild(_bannerDatosGrabados('Cilindro 1', exp.id, 'cilindro 1'));
+    } else {
+      var btn1 = document.createElement('button');
+      btn1.className = 'btn btn-teal btn-sm';
+      btn1.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+      btn1.textContent = 'Grabar datos Cilindro 1';
+      btn1.onclick = (function(eid){ return function(){ grabarDatosCilindro(eid); }; })(exp.id);
+      c1.appendChild(btn1);
+    }
   }
 
   card.appendChild(c1);
@@ -6296,12 +6364,19 @@ function crearFotoCilindroCard(exp, canSub) {
     }
 
     if(canSub) {
-      var btn2 = document.createElement('button');
-      btn2.className = 'btn btn-teal btn-sm';
-      btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-      btn2.textContent = 'Grabar datos Cilindro 2';
-      btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
-      c2.appendChild(btn2);
+      var cil2FueGrabado = !!(e4.cil2Grabado) && !isTecnico();
+      if(cil2FueGrabado) {
+        var inpsCil2 = c2.querySelectorAll('input');
+        for(var ci2r=0; ci2r<inpsCil2.length; ci2r++) inpsCil2[ci2r].disabled = true;
+        c2.appendChild(_bannerDatosGrabados('Cilindro 2', exp.id, 'cilindro 2'));
+      } else {
+        var btn2 = document.createElement('button');
+        btn2.className = 'btn btn-teal btn-sm';
+        btn2.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+        btn2.textContent = 'Grabar datos Cilindro 2';
+        btn2.onclick = (function(eid){ return function(){ grabarDatosCilindro2(eid); }; })(exp.id);
+        c2.appendChild(btn2);
+      }
     }
   } else {
     c2.innerHTML += '<div style="text-align:center;color:#a8a8a8;font-size:13px;padding:8px">No aplica para este vehículo</div>';
@@ -6668,6 +6743,7 @@ function grabarDatosCilindro(id) {
       var _nrp1 = getInputVal('cil_nrp1_' + id);
       if(_cap1) expedientes[i].e4.capacidadCilindro1   = _cap1;
       if(_nrp1) expedientes[i].e4.nroProductoCilindro1 = _nrp1.toUpperCase();
+      expedientes[i].e4.cil1Grabado = true;
       expTarget = expedientes[i];
       break;
     }
@@ -6717,6 +6793,7 @@ function grabarDatosCilindro2(id) {
       var _nrp2 = getInputVal('cil_nrp2_' + id);
       if(_cap2) expedientes[i].e4.capacidadCilindro2   = _cap2;
       if(_nrp2) expedientes[i].e4.nroProductoCilindro2 = _nrp2.toUpperCase();
+      expedientes[i].e4.cil2Grabado = true;
       expTarget = expedientes[i];
       break;
     }
@@ -6775,6 +6852,7 @@ function grabarDatosReductor(id) {
       expedientes[i].e4.serieReductor       = serieVal.toUpperCase();
       var _nrpR = getInputVal('red_nroprod_' + id);
       if(_nrpR) expedientes[i].e4.nroProductoReductor = _nrpR.toUpperCase();
+      expedientes[i].e4.redGrabado = true;
       expTarget = expedientes[i];
       break;
     }
@@ -6823,6 +6901,33 @@ function grabarFotoCilindro(expId, fotoKey, input) {
     }
     abrirExpediente(expId);
   });
+}
+
+
+// Banner de protección de datos técnicos grabados
+function _bannerDatosGrabados(titulo, eid, tipo) {
+  var banner = document.createElement('div');
+  banner.style.cssText = 'background:#fef3c7;border:1.5px solid #fde047;border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px';
+  banner.innerHTML = '<div style="font-size:12px;color:#92400e"><strong>Datos grabados por técnico</strong><br><span style="font-size:11px">Se requiere confirmación para modificar</span></div>';
+  var btnEdit = document.createElement('button');
+  btnEdit.style.cssText = 'background:#92400e;color:white;border:none;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap';
+  btnEdit.textContent = '✎ Reescribir';
+  btnEdit.onclick = (function(bannerEl, tipo2) { return function() {
+    var msg = '¿Deseas reescribir los datos del ' + tipo2 + '?\n\nEsto sobreescribirá lo grabado por el técnico.\nConfirma qué campo deseas modificar:\n\n[Aceptar] = desbloquear todos los campos para edición';
+    if(confirm(msg)) {
+      bannerEl.style.display = 'none';
+      // Habilitar todos los inputs del bloque padre
+      var parent = bannerEl.parentNode;
+      if(parent) {
+        var inputs = parent.querySelectorAll('input[disabled]');
+        for(var i=0; i<inputs.length; i++) inputs[i].disabled = false;
+        var btnsGrabar = parent.querySelectorAll('button.btn-teal');
+        for(var j=0; j<btnsGrabar.length; j++) btnsGrabar[j].style.display = '';
+      }
+    }
+  }; })(banner, tipo);
+  banner.appendChild(btnEdit);
+  return banner;
 }
 
 function crearFotoReductorCard(exp, canSub) {
@@ -6909,16 +7014,22 @@ function crearFotoReductorCard(exp, canSub) {
     rWrap.appendChild(npRedDiv);
   }
 
-  // Botón grabar
+  // Botón grabar (protegido si ya fue grabado por técnico)
   if(canSub) {
-    var gBtn = document.createElement('button');
-    gBtn.className = 'btn btn-teal btn-sm';
-    var gBtn = document.createElement('button');
-    gBtn.className = 'btn btn-teal btn-sm';
-    gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
-    gBtn.textContent = 'Grabar datos Reductor';
-    gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
-    rWrap.appendChild(gBtn);
+    var redFueGrabado = !!(e4.redGrabado) && !isTecnico();
+    if(redFueGrabado) {
+      // Deshabilitar inputs del bloque
+      var inpsRed = rWrap.querySelectorAll('input');
+      for(var ri2=0; ri2<inpsRed.length; ri2++) inpsRed[ri2].disabled = true;
+      rWrap.appendChild(_bannerDatosGrabados('Reductor', exp.id, 'reductor'));
+    } else {
+      var gBtn = document.createElement('button');
+      gBtn.className = 'btn btn-teal btn-sm';
+      gBtn.style.cssText = 'margin-top:12px;width:100%;justify-content:center';
+      gBtn.textContent = 'Grabar datos Reductor';
+      gBtn.onclick = (function(eid){ return function(){ grabarDatosReductor(eid); }; })(exp.id);
+      rWrap.appendChild(gBtn);
+    }
   }
 
   card.appendChild(rWrap);
@@ -8320,72 +8431,7 @@ function renderVistaTecnico() {
       card.appendChild(grpDiv);
     });
     
-    // ── BOTONES DE CULMINACIÓN según rol del técnico ──
-    var expObj = null;
-    for(var ei=0; ei<expedientes.length; ei++){ if(expedientes[ei].id===placa.expId){ expObj=expedientes[ei]; break; } }
-    if(expObj) {
-      var e4t = expObj.e4 || {};
-      var nombreT = CU ? CU.nombre : '';
-      var esTecTanque = expObj.tecnicoTanque === nombreT;
-      var esTecDelantera = expObj.tecnicoDelantera === nombreT;
-      var cilOk = !!e4t.cilindroCulminado;
-      var elecOk = !!e4t.electronicaCulminado;
-
-      var culminBox = document.createElement('div');
-      culminBox.style.cssText = 'margin-top:10px;display:flex;flex-direction:column;gap:8px';
-
-      // Técnico de tanque/cilindros
-      if(esTecTanque) {
-        if(cilOk) {
-          var okCil = document.createElement('div');
-          okCil.style.cssText = 'background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#15803d';
-          okCil.innerHTML = 'Montaje cilindro culminado';
-          culminBox.appendChild(okCil);
-        } else {
-          var btnCil = document.createElement('button');
-          btnCil.style.cssText = 'width:100%;background:#16a34a;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
-          btnCil.innerHTML = 'Marcar montaje de CILINDRO culminado';
-          btnCil.onclick = (function(eid){ return function(){
-            if(confirm('¿Confirmas que terminaste el montaje del cilindro?')) marcarCulminadoTecnico(eid, 'cilindro');
-          }; })(placa.expId);
-          culminBox.appendChild(btnCil);
-        }
-      }
-
-      // Técnico delantero/electrónica
-      if(esTecDelantera) {
-        if(elecOk) {
-          var okElec = document.createElement('div');
-          okElec.style.cssText = 'background:#dbeafe;border:1px solid #93c5fd;border-radius:10px;padding:12px;text-align:center;font-size:13px;font-weight:700;color:#2563eb';
-          okElec.innerHTML = 'Montaje electrónica culminado';
-          culminBox.appendChild(okElec);
-        } else {
-          var btnElec = document.createElement('button');
-          btnElec.style.cssText = 'width:100%;background:#2563eb;color:white;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer';
-          btnElec.innerHTML = 'Marcar montaje de ELECTRÓNICA culminado';
-          btnElec.onclick = (function(eid){ return function(){
-            if(confirm('¿Confirmas que terminaste el montaje de la electrónica?')) marcarCulminadoTecnico(eid, 'electronica');
-          }; })(placa.expId);
-          culminBox.appendChild(btnElec);
-        }
-      }
-
-      // Estado de la otra parte (informativo)
-      if(esTecTanque && elecOk) {
-        var infoE = document.createElement('div');
-        infoE.style.cssText = 'font-size:11px;color:#8a8a8a;text-align:center';
-        infoE.innerHTML = 'Electrónica ya culminada por el otro técnico';
-        culminBox.appendChild(infoE);
-      }
-      if(esTecDelantera && cilOk) {
-        var infoC = document.createElement('div');
-        infoC.style.cssText = 'font-size:11px;color:#8a8a8a;text-align:center';
-        infoC.innerHTML = 'Cilindro ya culminado por el otro técnico';
-        culminBox.appendChild(infoC);
-      }
-
-      if(culminBox.children.length > 0) card.appendChild(culminBox);
-    }
+    // Botones de culminación removidos — técnico solo ve sus tareas
 
     // Botón para ir al expediente
     var btn = document.createElement('button');
