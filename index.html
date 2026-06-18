@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '3.9.8';
+    var GM_VERSION = '3.9.9';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6024,10 +6024,21 @@ function renderEtapa4(cont, exp) {
   sec.appendChild(crearDocCard(exp.id,'videoComp','1. Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
 
   // 2. Cilindros (fotos + datos)
-  sec.appendChild(crearFotoCilindroCard(exp,canSub));
+  // Fila horizontal: Reductor (izq) | Cilindros (der)
+  var rowKit = document.createElement('div');
+  rowKit.style.cssText = 'display:flex;gap:14px;align-items:flex-start;margin-bottom:0';
 
-  // 3. Reductor (fotos + datos)
-  sec.appendChild(crearFotoReductorCard(exp,canSub));
+  var colRed = document.createElement('div');
+  colRed.style.cssText = 'flex:1;min-width:0';
+  colRed.appendChild(crearFotoReductorCard(exp,canSub));
+  rowKit.appendChild(colRed);
+
+  var colCil = document.createElement('div');
+  colCil.style.cssText = 'flex:1;min-width:0';
+  colCil.appendChild(crearFotoCilindroCard(exp,canSub));
+  rowKit.appendChild(colCil);
+
+  sec.appendChild(rowKit);
 
   // 4. Boleta Informativa
   sec.appendChild(crearDocCard(exp.id,'boletaInfo','4. Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
