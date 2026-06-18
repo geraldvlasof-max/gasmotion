@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.0.1';
+    var GM_VERSION = '4.0.2';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6020,24 +6020,44 @@ function renderEtapa4(cont, exp) {
 
   // Título sección
   var hdr1 = document.createElement('div');
-  hdr1.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 4px;border-bottom:2px solid #FFC165';
-  hdr1.textContent = 'Kit técnico';
+  hdr1.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 6px;border-bottom:2px solid #FFC165;margin-bottom:2px';
+  hdr1.textContent = 'Kit técnico (reductor y cilindros)';
   col1.appendChild(hdr1);
 
-  col1.appendChild(crearFotoReductorCard(exp, canSub));
-  col1.appendChild(crearFotoCilindroCard(exp, canSub));
+  // Reductor (fotos + datos)
+  var redOk = !!(e4.fotoReductorMarca&&e4.fotoReductorMarca.completado&&e4.fotoReductorSerie&&e4.fotoReductorSerie.completado&&e4.marcaReductor&&e4.serieReductor);
+  col1.appendChild(_itemCard('A','Reductor',redOk,crearFotoReductorCard(exp,canSub)));
+  // Cilindros (fotos + datos)
+  var cilOk = !!(e4.fotoCilindro1&&e4.fotoCilindro1.completado&&e4.serieCilindro&&e4.fechaFabCilindro);
+  col1.appendChild(_itemCard('B','Cilindro(s)',cilOk,crearFotoCilindroCard(exp,canSub)));
   grid.appendChild(col1);
+
+  // Helper: envuelve un card con número de item visible
+  function _itemCard(num, label, ok, card) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:10px;align-items:flex-start';
+    var badge = document.createElement('div');
+    badge.style.cssText = 'flex-shrink:0;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-top:13px;'+
+      (ok ? 'background:#10b981;color:white' : 'background:#e5e7eb;color:#6b7280');
+    badge.textContent = ok ? '✓' : String(num);
+    card.style.flex = '1';
+    card.style.minWidth = '0';
+    card.style.marginTop = '0';
+    wrap.appendChild(badge);
+    wrap.appendChild(card);
+    return wrap;
+  }
 
   // ══ COLUMNA 2: Documentos administrativos ══
   var col2 = document.createElement('div');
-  col2.style.cssText = 'display:flex;flex-direction:column;gap:12px';
+  col2.style.cssText = 'display:flex;flex-direction:column;gap:10px';
 
   var hdr2 = document.createElement('div');
-  hdr2.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 4px;border-bottom:2px solid #5C8CF5';
-  hdr2.textContent = 'Documentos';
+  hdr2.style.cssText = 'font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.8px;padding:0 2px 6px;border-bottom:2px solid #5C8CF5;margin-bottom:2px';
+  hdr2.textContent = 'Documentos administrativos';
   col2.appendChild(hdr2);
 
-  // SCANFILE 2
+  // 1. SCANFILE 2 (referencia — siempre done)
   var sf2meta=exp.e3&&exp.e3.scanfile2?exp.e3.scanfile2:null;
   var sf2url=getFileUrl(exp.id,'sf2');
   var sf2box=document.createElement('div');sf2box.className='doc-box done';
@@ -6045,15 +6065,25 @@ function renderEtapa4(cont, exp) {
   if(sf2meta){sf2box.innerHTML+='<div class="meta-row"><span>∷</span><span>'+sf2meta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>'+sf2meta.subidoPor+' — '+sf2meta.fecha+'</span></div>';}
   var dlSf2=document.createElement('a');
   if(sf2url&&sf2meta){dlSf2.href=sf2url;dlSf2.download=sf2meta.nombre;dlSf2.className='btn btn-teal btn-sm';dlSf2.style.marginTop='8px';dlSf2.innerHTML='↓ Descargar SCANFILE 2';}
-  else{dlSf2.className='btn btn-sm';dlSf2.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlSf2.textContent='Re-subir para descargar';}
+  else{dlSf2.className='btn btn-sm';dlSf2.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlSf2.textContent='Pendiente de carga';}
   sf2box.appendChild(dlSf2);
-  col2.appendChild(sf2box);
+  col2.appendChild(_itemCard(1,'SCANFILE 2',!!sf2meta,sf2box));
 
-  col2.appendChild(crearDocCard(exp.id,'videoComp','Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv'));
-  col2.appendChild(crearDocCard(exp.id,'boletaInfo','Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*'));
-  col2.appendChild(crearDocCard(exp.id,'boletaVenta','Boleta de Venta',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*'));
-  col2.appendChild(crearDocCard(exp.id,'capturaPIT','Captura PIT',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*'));
-  col2.appendChild(crearDocCard(exp.id,'dniTecnico','DNI Técnico Responsable',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*'));
+  // 2. Video compresiones
+  col2.appendChild(_itemCard(2,'Video compresiones',!!(e4.videoCompresiones&&e4.videoCompresiones.completado),
+    crearDocCard(exp.id,'videoComp','Video de Compresiones',e4.videoCompresiones||null,canSub,'e4vc','video/*,.mp4,.avi,.mov,.wmv')));
+  // 3. Boleta Informativa
+  col2.appendChild(_itemCard(3,'Boleta Informativa',!!(e4.boletaInformativa&&e4.boletaInformativa.completado),
+    crearDocCard(exp.id,'boletaInfo','Boleta Informativa',e4.boletaInformativa||null,canSub,'e4bi','.pdf,image/*')));
+  // 4. Boleta de Venta
+  col2.appendChild(_itemCard(4,'Boleta de Venta',!!(e4.boletaVenta&&e4.boletaVenta.completado),
+    crearDocCard(exp.id,'boletaVenta','Boleta de Venta',e4.boletaVenta||null,canSub,'e4bv','.pdf,image/*')));
+  // 5. Captura PIT
+  col2.appendChild(_itemCard(5,'Captura PIT',!!(e4.capturaPIT&&e4.capturaPIT.completado),
+    crearDocCard(exp.id,'capturaPIT','Captura PIT',e4.capturaPIT||null,canSub,'e4pit','.pdf,image/*')));
+  // 6. DNI Técnico
+  col2.appendChild(_itemCard(6,'DNI Técnico',!!(e4.dniTecnico&&e4.dniTecnico.completado),
+    crearDocCard(exp.id,'dniTecnico','DNI Técnico Responsable',e4.dniTecnico||null,canSub,'e4dt','.pdf,image/*')));
 
   // Bono GLP
   var bonoDiv=document.createElement('div');bonoDiv.style.cssText='background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:12px;padding:14px';
