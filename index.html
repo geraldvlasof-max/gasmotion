@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.1.0';
+    var GM_VERSION = '4.1.1';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -8771,26 +8771,49 @@ function abrirVistaTareasTecnico(expId) {
     body.appendChild(cc);
   }
 
-  // Botón enviar
-  var btnEnv=document.createElement('button');
-  btnEnv.style.cssText='width:100%;background:'+(pct.pct>=100?'#22c55e':'#FFC165')+';color:white;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px';
-  btnEnv.textContent=pct.pct>=100?'Enviar para revisión':'Guardar progreso';
-  btnEnv.onclick=(function(eid,p){return function(){
-    if(p.pct>=100){
-      for(var i=0;i<expedientes.length;i++){
-        if(expedientes[i].id===eid){
-          if(!expedientes[i].e4)expedientes[i].e4={};
-          expedientes[i].e4.tecnicoEnvio={fecha:nowFecha(),hora:nowHora(),tecnico:CU?CU.nombre:''};
-          saveExp();break;
-        }
-      }
-      showToast('Tareas enviadas para revisión','success');
-      cerrarTecModal();
-    } else {
-      showToast('Completa todas las tareas antes de enviar','warning');
+  // Determinar si ESTA parte (reductor o cilindro) ya fue marcada como culminada
+  var tipoParte = esTanque ? 'cilindro' : (esDelantera ? 'electronica' : null);
+  var yaCulminoEstaParte = tipoParte === 'cilindro' ? !!e4.cilindroCulminado : (tipoParte === 'electronica' ? !!e4.electronicaCulminado : false);
+
+  if(yaCulminoEstaParte) {
+    var doneBox = document.createElement('div');
+    var durTxt = '';
+    if(e4.inicioFotosTecnico) {
+      var finTs = tipoParte==='cilindro' ? e4.cilindroCulminado : e4.electronicaCulminado;
+      var durMins = Math.round((finTs - e4.inicioFotosTecnico) / 60000);
+      durTxt = durMins < 60 ? durMins+' min' : Math.floor(durMins/60)+'h '+(durMins%60)+'m';
     }
-  };})(expId,pct);
-  body.appendChild(btnEnv);
+    doneBox.style.cssText = 'background:#dcfce7;border:1.5px solid #86efac;border-radius:12px;padding:16px;text-align:center;margin-top:8px';
+    doneBox.innerHTML = '<div style="font-size:24px;margin-bottom:6px">✓</div>'+
+      '<div style="font-size:14px;font-weight:800;color:#15803d">Tarea culminada</div>'+
+      (durTxt ? '<div style="font-size:12px;color:#16a34a;margin-top:4px">⏱ Tiempo total: '+durTxt+'</div>' : '');
+    body.appendChild(doneBox);
+  } else {
+    // Botón enviar / culminar
+    var btnEnv=document.createElement('button');
+    btnEnv.style.cssText='width:100%;background:'+(pct.pct>=100?'#22c55e':'#FFC165')+';color:white;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px';
+    btnEnv.textContent=pct.pct>=100?'✓ Tarea culminada':'Guardar progreso';
+    btnEnv.onclick=(function(eid,p,tipo){return function(){
+      if(p.pct>=100){
+        if(!confirm('¿Confirmas que culminaste tu trabajo en este vehículo?\n\nEsto registrará el tiempo total empleado.')) return;
+        for(var i=0;i<expedientes.length;i++){
+          if(expedientes[i].id===eid){
+            if(!expedientes[i].e4)expedientes[i].e4={};
+            expedientes[i].e4.tecnicoEnvio={fecha:nowFecha(),hora:nowHora(),tecnico:CU?CU.nombre:''};
+            break;
+          }
+        }
+        saveExp();
+        // Marcar culminado en el sistema de radar (calcula duración real)
+        if(tipo) marcarCulminado(eid, tipo);
+        showToast('Tarea marcada como culminada','success');
+        cerrarTecModal();
+      } else {
+        showToast('Completa todas las tareas antes de enviar','warning');
+      }
+    };})(expId,pct,tipoParte);
+    body.appendChild(btnEnv);
+  }
   modal.appendChild(body);
   modal.style.display='block';
   modal.scrollTop=0;
