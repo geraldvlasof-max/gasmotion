@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.0.3';
+    var GM_VERSION = '4.1.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -36,10 +36,34 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 :root{
   /* ═══ ESTILO NEXROUTE ═══ */
-  /* Acento principal AMBER mapeado a --teal para reutilizar CSS existente */
   --teal:#FFC165;--teal2:#f0a93d;--teal-dim:rgba(255,193,101,0.18);
   --red:#E1272A;--red2:#c41f22;--red-dim:rgba(225,39,42,0.1);
   --navy:#131313;--navy2:#262626;
+  /* Variables modo claro */
+  --bg-app:#F5F5F0;--bg-card:#ffffff;--bg-sidebar:#131313;
+  --text-main:#131313;--text-sub:#6b7280;--border-color:#D9D9D9;
+  --input-bg:#ffffff;--input-border:#D9D9D9;
+  --doc-box-bg:#F7F7F2;--topbar-bg:#ffffff;
+}
+body.dark-mode{
+  --bg-app:#0f0f0f;--bg-card:#1a1a1a;--bg-sidebar:#0a0a0a;
+  --text-main:#f0f0f0;--text-sub:#9ca3af;--border-color:#2d2d2d;
+  --input-bg:#262626;--input-border:#3a3a3a;
+  --doc-box-bg:#1e1e1e;--topbar-bg:#111111;
+}
+body.dark-mode .main{background:var(--bg-app)}
+body.dark-mode .topbar{background:var(--topbar-bg);border-bottom:1px solid var(--border-color)}
+body.dark-mode .card,body.dark-mode .doc-box{background:var(--bg-card);border-color:var(--border-color);color:var(--text-main)}
+body.dark-mode input,body.dark-mode select,body.dark-mode textarea{background:var(--input-bg)!important;border-color:var(--input-border)!important;color:var(--text-main)!important}
+body.dark-mode .etapa-header,body.dark-mode .doc-box-title{color:var(--text-main)}
+body.dark-mode [style*="background:white"]{background:var(--bg-card)!important}
+body.dark-mode [style*="background:#F7F7F2"]{background:var(--doc-box-bg)!important}
+body.dark-mode [style*="background:#F5F5F0"]{background:var(--bg-app)!important}
+body.dark-mode [style*="color:#131313"]{color:var(--text-main)!important}
+body.dark-mode [style*="color:#374151"]{color:var(--text-sub)!important}
+body.dark-mode [style*="border:1px solid #D9D9D9"]{border-color:var(--border-color)!important}
+body.dark-mode [style*="border:1.5px solid #D9D9D9"]{border-color:var(--border-color)!important}
+:root{--navy:#131313;--navy2:#262626;
   --green:#5C8CF5;--green-d:#4070d8;
   --yellow:#FC682F;
   --text:#131313;--muted:#8a8a8a;--bg:#F5F5F0;
@@ -108,6 +132,10 @@ body{font-family:'Plus Jakarta Sans','DM Sans',sans-serif;background:var(--bg);c
 .sede-badge{background:var(--navy);color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px}
 .content{padding:24px 28px;flex:1}
 .tab-content{display:none}.tab-content.active{display:block;animation:fadeIn .2s ease}
+/* ANIMACION PARPADEO INCIDENCIA */
+@keyframes pulseBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.notif-pulse{animation:pulseBadge .8s ease-in-out infinite}
+
 /* CARDS */
 .card{background:white;border:1px solid var(--card-border);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:none;transition:border-color .15s}
 .card:hover{border-color:#b8b8b8}
@@ -608,7 +636,7 @@ input,select,textarea{font-size:16px!important}
           <div class="topbar-title" id="topbarTitle">Panel de Control</div>
           <div class="topbar-sub" id="topbarSub">Resumen de actividad</div>
         </div>
-        <div class="topbar-right"><span class="sede-badge" id="topbarSede">-</span></div>
+        <div class="topbar-right"><button id="btnDarkMode" onclick="toggleDarkMode()" title="Modo oscuro" style="background:none;border:1px solid rgba(0,0,0,.15);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:15px;line-height:1;margin-right:6px">🌙</button><span class="sede-badge" id="topbarSede">-</span></div>
       </div>
       <div class="content">
 
@@ -2310,6 +2338,22 @@ function switchTab(name, el) {
   if(window.innerWidth<=768) toggleSidebar();
 }
 
+
+function toggleDarkMode() {
+  var isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('gm_dark_mode', isDark ? '1' : '0');
+  var btn = document.getElementById('btnDarkMode');
+  if(btn) btn.textContent = isDark ? '☀️' : '🌙';
+}
+
+function initDarkMode() {
+  if(localStorage.getItem('gm_dark_mode') === '1') {
+    document.body.classList.add('dark-mode');
+    var btn = document.getElementById('btnDarkMode');
+    if(btn) btn.textContent = '☀️';
+  }
+}
+
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('show');
@@ -2688,9 +2732,24 @@ function initCampanaNotif() {
 function actualizarCampanaNotif() {
   var badge = document.getElementById('gmCampanaBadge');
   if(!badge) return;
-  var n = getNotifPendientes().length;
-  if(n > 0) { badge.style.display = 'inline-block'; badge.textContent = n; }
-  else { badge.style.display = 'none'; }
+  var pendientes = getNotifPendientes();
+  var n = pendientes.length;
+  var tieneIncidencia = pendientes.some(function(p){ return p.tipo === 'incidencia'; });
+  if(n > 0) {
+    badge.style.display = 'inline-block';
+    badge.textContent = n;
+    // Parpadeo si hay incidencias del cliente sin ver
+    if(tieneIncidencia) {
+      badge.classList.add('notif-pulse');
+      badge.style.background = '#cc2200';
+    } else {
+      badge.classList.remove('notif-pulse');
+      badge.style.background = '';
+    }
+  } else {
+    badge.style.display = 'none';
+    badge.classList.remove('notif-pulse');
+  }
 }
 function toggleNotifPanel() {
   var panel = document.getElementById('gmNotifPanel');
@@ -5326,6 +5385,29 @@ function renderRadar() {
       '<div style="font-size:12px;font-weight:600;color:#131313">' + (exp.vendedorServicio || '—') + '</div></div>' +
       '<div><div style="font-size:9px;color:#a8a8a8;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Sede</div>' +
       '<div style="font-size:12px;font-weight:600;color:#131313">' + (exp.sede||'—') + '</div></div>' +
+      // EN MANOS DE QUIÉN
+      '<div style="background:#fef9ec;border:1px solid #fde68a;border-radius:8px;padding:6px 10px">' +
+      '<div style="font-size:9px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">⏳ En manos de</div>' +
+      (function(){
+        var e4r2 = exp.e4 || {};
+        var partes = [];
+        // Parte delantera / reductor
+        var redDone = !!(e4r2.fotoReductorMarca&&e4r2.fotoReductorMarca.completado&&e4r2.fotoReductorSerie&&e4r2.fotoReductorSerie.completado&&e4r2.marcaReductor&&e4r2.serieReductor);
+        if(exp.tecnicoDelantera) {
+          partes.push('<span style="font-size:11px;font-weight:700;color:'+(redDone?'#15803d':'#b45309')+'">'+(redDone?'✓ ':'')+exp.tecnicoDelantera+' <span style="font-size:10px;font-weight:400">(Reductor'+(redDone?' listo':' pendiente')+')</span></span>');
+        } else {
+          partes.push('<span style="font-size:11px;color:#ef4444;font-weight:700">! Sin técnico asignado (Reductor)</span>');
+        }
+        // Parte tanque / cilindros
+        var cilDone = !!(e4r2.fotoCilindro1&&e4r2.fotoCilindro1.completado&&e4r2.serieCilindro&&e4r2.fechaFabCilindro);
+        if(exp.tecnicoTanque) {
+          partes.push('<span style="font-size:11px;font-weight:700;color:'+(cilDone?'#15803d':'#b45309')+'">'+(cilDone?'✓ ':'')+exp.tecnicoTanque+' <span style="font-size:10px;font-weight:400">(Cilindro'+(cilDone?' listo':' pendiente')+')</span></span>');
+        } else {
+          partes.push('<span style="font-size:11px;color:#ef4444;font-weight:700">! Sin técnico asignado (Cilindro)</span>');
+        }
+        return '<div style="display:flex;flex-direction:column;gap:2px">'+partes.join('')+'</div>';
+      })() +
+      '</div>' +
       // Progreso
       '<div style="min-width:90px"><div style="font-size:9px;color:#a8a8a8;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Progreso E4</div>' +
       '<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:#f0f0f0;border-radius:99px;height:5px;overflow:hidden"><div style="background:' + col.badge + ';height:100%;width:' + item.progreso + '%"></div></div>' +
@@ -5499,8 +5581,11 @@ function renderBloquePortal(exp, cont) {
     for(var i = incs.length - 1; i >= 0; i--) {
       var inc = incs[i];
       html += '<div style="background:white;border:1px solid #EFEFEA;border-radius:8px;padding:8px 12px;margin-bottom:6px">' +
-        '<div style="font-size:10px;color:#8a8a8a">▦ ' + (inc.fecha||'') + ' ' + (inc.hora||'') + '</div>' +
-        '<div style="font-size:12px;color:#131313;margin-top:3px">' + (inc.texto||'') + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">' +
+          '<span style="font-size:11px;font-weight:700;color:#cc2200">' + (inc.nombreCliente||exp.nombre||'Cliente') + '</span>' +
+          '<span style="font-size:10px;color:#8a8a8a">· ' + (inc.fecha||'') + ' ' + (inc.hora||'') + '</span>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#131313">' + (inc.texto||'') + '</div>' +
         (inc.fotoUrl ? '<a href="' + inc.fotoUrl + '" target="_blank" style="font-size:11px;color:#5C8CF5;text-decoration:none">⊡ Ver foto adjunta</a>' : '') +
         '</div>';
     }
@@ -6251,6 +6336,7 @@ function crearFotoCilindroCard(exp, canSub) {
       s1inp.placeholder = 'Ej: ABC123456';
       s1inp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       s1inp.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(s1inp);
       s1div.appendChild(s1inp);
     } else {
       var s1val = document.createElement('div');
@@ -6274,6 +6360,7 @@ function crearFotoCilindroCard(exp, canSub) {
       f1inp.inputMode = 'numeric';
       f1inp.maxLength = 7;
       f1inp.style.cssText = 'border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+      _protegerInput(f1inp);
       f1inp.oninput = function() {
         var v = this.value.replace(/\D/g,'');
         if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
@@ -6300,6 +6387,7 @@ function crearFotoCilindroCard(exp, canSub) {
       inp_cil_cap1.placeholder = 'Ej: 65 L';
       inp_cil_cap1.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       inp_cil_cap1.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(inp_cil_cap1);
       div_cil_cap1.appendChild(inp_cil_cap1);
     } else {
       var val_cil_cap1 = document.createElement('div');
@@ -6320,6 +6408,7 @@ function crearFotoCilindroCard(exp, canSub) {
       inp_cil_nrp1.placeholder = 'N° de produce';
       inp_cil_nrp1.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       inp_cil_nrp1.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(inp_cil_nrp1);
       div_cil_nrp1.appendChild(inp_cil_nrp1);
     } else {
       var val_cil_nrp1 = document.createElement('div');
@@ -6393,6 +6482,7 @@ function crearFotoCilindroCard(exp, canSub) {
         s2inp.placeholder = 'Ej: ABC789012';
         s2inp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
         s2inp.oninput = function() { this.value = this.value.toUpperCase(); };
+        _protegerInput(s2inp);
         s2div.appendChild(s2inp);
       } else {
         var s2val = document.createElement('div');
@@ -6415,6 +6505,7 @@ function crearFotoCilindroCard(exp, canSub) {
         f2inp.inputMode = 'numeric';
         f2inp.maxLength = 7;
         f2inp.style.cssText = 'border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
+        _protegerInput(f2inp);
         f2inp.oninput = function() {
           var v = this.value.replace(/\D/g,'');
           if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,6);
@@ -6716,6 +6807,10 @@ function mostrarConfirmacionFoto(expId, fotoKey, file) {
               nombre: nombre, subidoPor: CU?CU.nombre:'-',
               fecha: nowFecha(), hora: nowHora(), completado: true
             };
+            // Registrar inicio de trabajo técnico al subir la primera foto
+            if(!expedientes[i].e4.inicioFotosTecnico && isTecnico()) {
+              expedientes[i].e4.inicioFotosTecnico = Date.now();
+            }
             if(!expedientes[i].fotosData) expedientes[i].fotosData={};
             expedientes[i].fotosData[fotoKey] = {
               dataUrl: compressed, nombre: nombre,
@@ -7037,6 +7132,31 @@ function _bannerDatosGrabados(titulo, eid, tipo) {
   return banner;
 }
 
+
+// Protección de inputs técnicos: pide confirmación antes de editar un valor ya grabado
+function _protegerInput(inp, rolPermitido) {
+  // rolPermitido: función que devuelve true si el usuario puede editar
+  if(!inp) return;
+  inp.addEventListener('focus', function(ev) {
+    // Si el input ya tiene valor y el campo fue grabado (disabled fue desbloqueado)
+    if(!inp.value || inp.value.trim() === '') return; // vacío: OK
+    if(inp.dataset.confirmado === 'true') return; // ya confirmó en esta sesión
+    // Solo técnico y asistente_fise pueden editar
+    var puedeEditar = CU && (CU.role === 'tecnico' || CU.role === 'asistente_fise' || CU.role === 'admin');
+    if(!puedeEditar) {
+      inp.blur();
+      showToast('Solo el técnico o asistente FISE puede modificar este dato', 'error');
+      return;
+    }
+    var original = inp.value;
+    inp.blur(); // quitar focus momentáneamente
+    if(confirm('¿Deseas modificar este campo?\n\nValor actual: ' + original + '\n\nSolo técnico y asistente FISE pueden modificar datos ya grabados.')) {
+      inp.dataset.confirmado = 'true';
+      setTimeout(function(){ inp.focus(); inp.select(); }, 50);
+    }
+  });
+}
+
 function crearFotoReductorCard(exp, canSub) {
   var e4 = exp.e4 || {};
   var card = document.createElement('div');
@@ -7067,6 +7187,7 @@ function crearFotoReductorCard(exp, canSub) {
       mInp.placeholder = 'Ej: TARTARINI';
       mInp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       mInp.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(mInp);
       mDiv.appendChild(mInp);
     } else {
       var mVal = document.createElement('div');
@@ -7089,6 +7210,7 @@ function crearFotoReductorCard(exp, canSub) {
       sInp.placeholder = 'Ej: RED789012';
       sInp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       sInp.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(sInp);
       sDiv.appendChild(sInp);
     } else {
       var sVal = document.createElement('div');
@@ -7111,6 +7233,7 @@ function crearFotoReductorCard(exp, canSub) {
       npRedInp.placeholder = 'N° de produce del reductor';
       npRedInp.style.cssText = 'text-transform:uppercase;border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box;background:white';
       npRedInp.oninput = function() { this.value = this.value.toUpperCase(); };
+      _protegerInput(npRedInp);
       npRedDiv.appendChild(npRedInp);
     } else {
       var npRedVal = document.createElement('div');
@@ -8233,7 +8356,13 @@ function renderComentariosSection(expId,cont){
       var it=exp.historial[h];
       var item=document.createElement('div');
       item.style.cssText='background:#F7F7F2;border-left:3px solid #FFC165;border-radius:0 8px 8px 0;padding:9px 12px';
-      item.innerHTML='<div style="font-size:11px;color:#6b82a0;margin-bottom:2px">'+it.fecha+' '+it.hora+' &mdash; <strong>'+it.usuario+'</strong>'+(it.etapa?' (Etapa '+it.etapa+')':'')+'</div><div style="font-size:13px;color:#131313">'+it.texto+'</div>';
+      var isIncPortal = it.tipo === 'incidencia_portal';
+      item.innerHTML='<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'+
+        '<strong style="font-size:12px;color:'+(isIncPortal?'#cc2200':'#131313')+'">'+it.usuario+'</strong>'+
+        (isIncPortal?'<span style="font-size:10px;background:#fef2f2;color:#cc2200;border:1px solid #fca5a5;border-radius:4px;padding:1px 6px;font-weight:700">Portal cliente</span>':'')+
+        '<span style="font-size:11px;color:#6b82a0">'+it.fecha+' '+it.hora+(it.etapa?' · E'+it.etapa:'')+'</span>'+
+      '</div>'+
+      '<div style="font-size:13px;color:#131313">'+it.texto+'</div>';
       listDiv.appendChild(item);
     }
   } else {
@@ -8508,6 +8637,7 @@ function renderVistaTecnico() {
         '<div style="text-align:right">'+
           '<div style="font-size:22px;font-weight:800;color:'+color+'">'+pct+'%</div>'+
           '<div style="font-size:10px;color:#a8a8a8">'+placa.completadas+'/'+placa.total+' tareas</div>'+
+          (placa.tiempoTrab ? '<div style="font-size:10px;color:#FFC165;font-weight:700">⏱ '+placa.tiempoTrab+'</div>' : '')+
         '</div>'+
       '</div>'+
       '<div style="background:#F0F0F0;border-radius:999px;height:6px;overflow:hidden;margin-bottom:14px">'+
@@ -8605,8 +8735,15 @@ function abrirVistaTareasTecnico(expId) {
     '<div style="font-size:13px;color:#a8a8a8">'+(exp.modeloVehiculo||exp.marca||'')+(exp.sede?' · '+exp.sede:'')+'</div>';
   var hdrPct=document.createElement('div');
   hdrPct.style.cssText='float:right;text-align:right;padding-top:4px';
+  var tiempoTrab = '';
+  if(exp.e4 && exp.e4.inicioFotosTecnico) {
+    var minsTrab = Math.round((Date.now() - exp.e4.inicioFotosTecnico) / 60000);
+    if(minsTrab < 60) tiempoTrab = minsTrab + ' min';
+    else tiempoTrab = Math.floor(minsTrab/60) + 'h ' + (minsTrab%60) + 'm';
+  }
   hdrPct.innerHTML='<div style="font-size:22px;font-weight:800;color:'+colorPct+'">'+pct.pct+'%</div>'+
-    '<div style="font-size:11px;color:#8a8a8a">'+pct.completadas+'/'+pct.total+'</div>';
+    '<div style="font-size:11px;color:#8a8a8a">'+pct.completadas+'/'+pct.total+'</div>'+
+    (tiempoTrab ? '<div style="font-size:10px;color:#FFC165;margin-top:2px">⏱ '+tiempoTrab+'</div>' : '');
   var bar=document.createElement('div');
   bar.style.cssText='background:rgba(255,255,255,.1);border-radius:999px;height:4px;margin-top:10px;overflow:hidden;clear:both';
   bar.innerHTML='<div style="background:'+colorPct+';height:100%;width:'+pct.pct+'%;transition:width .5s"></div>';
@@ -8780,8 +8917,18 @@ function getTareasTecnico() {
     }
   }
   
-  // Convertir a array y calcular total global
+  // Calcular tiempo trabajado por placa y total global
   var placasArr = Object.values(placas);
+  for(var pi=0; pi<placasArr.length; pi++) {
+    var pExp = null;
+    for(var pe=0; pe<expedientes.length; pe++) { if(expedientes[pe].id===placasArr[pi].expId){pExp=expedientes[pe];break;} }
+    if(pExp && pExp.e4 && pExp.e4.inicioFotosTecnico) {
+      var mins = Math.round((Date.now() - pExp.e4.inicioFotosTecnico) / 60000);
+      placasArr[pi].tiempoTrab = mins < 60 ? mins + ' min' : Math.floor(mins/60) + 'h ' + (mins%60) + 'm';
+    } else {
+      placasArr[pi].tiempoTrab = '';
+    }
+  }
   var totalComp = 0, totalTot = 0;
   placasArr.forEach(function(p) { totalComp += p.completadas; totalTot += p.total; });
   var totalPct = totalTot > 0 ? Math.round(totalComp/totalTot*100) : 0;
@@ -9207,6 +9354,7 @@ function observarTareaTecnica(expId, tipo, obs) {
 function mostrarApp(){
   hideEl('loginScreen');
   document.getElementById('app').style.display='block';
+  initDarkMode();
   actualizarSidebarUser();
   initCampanaNotif();
   registrarPushUsuario();
