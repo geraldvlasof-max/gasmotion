@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.1.1';
+    var GM_VERSION = '4.2.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -614,6 +614,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" id="navTecnico" onclick="switchTab('tecnico',this)" style="display:none"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Mis Tareas</span></button>
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuracion</button>
         <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Radar de Conversiones</button>
+        <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-user">
@@ -977,6 +978,11 @@ input,select,textarea{font-size:16px!important}
           <div style="padding:16px 0">
             <div id="radarContainer"></div>
           </div>
+        </div>
+
+        <!-- MODULO CREDITOS -->
+        <div class="tab-content" id="tab-creditos">
+          <div id="creditosContent" style="padding:16px 0"></div>
         </div>
 
       </div>
@@ -2303,6 +2309,7 @@ function editarNombreAdmin() {
 // TABS
 // ==================
 var TAB_TITLES={
+  creditos:['Creditos','Gestion de creditos AUTOCASH y CBET'],
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
   panel:['Panel de Control','Resumen de actividad'],
   bandeja:['Expedientes FISE GNV','Pendientes de procesar — Programa GNV FISE'],
@@ -2328,6 +2335,7 @@ function switchTab(name, el) {
   if(name==='panel') renderPanel();
   if(name==='usuarios') renderUsuarios();
   if(name==='radar') renderRadar();
+  if(name==='creditos') renderCreditos();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
   if(name==='fise') renderPanelFise();
@@ -5222,6 +5230,210 @@ function _pdfImgFromDrive(doc, url, x, y, w, h, callback) {
       callback();
     });
 }
+
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO CRÉDITOS — CBET (Fase 1: Panel de Cobranza, lectura)
+// ═══════════════════════════════════════════════════════════
+var CBET_SUBVIEW = null; // null = menú, 'panel' = panel cobranza
+
+function renderCreditos() {
+  var cont = document.getElementById('creditosContent');
+  if(!cont) return;
+  // Si no hay submódulo elegido, mostrar el menú AUTOCASH / CBET
+  if(!CBET_SUBVIEW) {
+    renderCreditosMenu(cont);
+  } else if(CBET_SUBVIEW === 'cbet') {
+    renderCBETPanel(cont);
+  }
+}
+
+function renderCreditosMenu(cont) {
+  cont.innerHTML = '';
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:760px;margin:0 auto;padding:20px 0';
+  wrap.innerHTML =
+    '<div style="font-size:22px;font-weight:900;color:#131313;margin-bottom:6px">Modulo de Creditos</div>' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:24px">Selecciona la modalidad de credito a gestionar</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">' +
+      // AUTOCASH (placeholder)
+      '<div style="background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:16px;padding:24px;opacity:.6;cursor:not-allowed">' +
+        '<div style="width:48px;height:48px;background:#D9D9D9;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px">▦</div>' +
+        '<div style="font-size:18px;font-weight:800;color:#131313">AUTOCASH</div>' +
+        '<div style="font-size:12px;color:#8a8a8a;margin-top:4px">Financiamiento directo. Proximamente.</div>' +
+        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#a8a8a8;background:#e5e7eb;display:inline-block;padding:4px 12px;border-radius:20px">EN DESARROLLO</div>' +
+      '</div>' +
+      // CBET (activo)
+      '<div id="cbetCard" style="background:linear-gradient(135deg,#131313 0%,#262626 100%);border:1.5px solid #FFC165;border-radius:16px;padding:24px;cursor:pointer;transition:transform .15s">' +
+        '<div style="width:48px;height:48px;background:#FFC165;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;color:#131313;font-weight:900">C</div>' +
+        '<div style="font-size:18px;font-weight:800;color:white">CBET</div>' +
+        '<div style="font-size:12px;color:#a8a8a8;margin-top:4px">Cartera de creditos con cobranza y analitica.</div>' +
+        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#131313;background:#FFC165;display:inline-block;padding:4px 12px;border-radius:20px">ENTRAR ▸</div>' +
+      '</div>' +
+    '</div>';
+  cont.appendChild(wrap);
+  var cbetCard = document.getElementById('cbetCard');
+  if(cbetCard) {
+    cbetCard.onmouseenter = function(){ this.style.transform = 'translateY(-3px)'; };
+    cbetCard.onmouseleave = function(){ this.style.transform = ''; };
+    cbetCard.onclick = function(){ CBET_SUBVIEW = 'cbet'; renderCreditos(); };
+  }
+}
+
+function renderCBETPanel(cont) {
+  cont.innerHTML = '';
+  // Header con volver + pestañas (solo Panel activo en Fase 1)
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap';
+  hdr.innerHTML =
+    '<button onclick="CBET_SUBVIEW=null;renderCreditos()" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Modalidades</button>' +
+    '<div style="font-size:20px;font-weight:900;color:#131313">CBET — Panel de Cobranza</div>';
+  cont.appendChild(hdr);
+
+  // Contenedor KPIs
+  var kpis = document.createElement('div');
+  kpis.id = 'cbetKpis';
+  kpis.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px';
+  kpis.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#8a8a8a;font-size:13px">Cargando cartera...</div>';
+  cont.appendChild(kpis);
+
+  // Contenedor tabla
+  var tablaWrap = document.createElement('div');
+  tablaWrap.id = 'cbetTablaWrap';
+  cont.appendChild(tablaWrap);
+
+  // Cargar data
+  cargarCarteraCBET();
+}
+
+function cargarCarteraCBET() {
+  if(!GM_CONFIG.workerUrl) { showToast('Sin conexion al servidor', 'error'); return; }
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetListarClientes', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.ok) { mostrarErrorCBET(d.error || 'Error cargando cartera'); return; }
+    renderKpisCBET(d.clientes);
+    renderTablaCBET(d.clientes, d.hoy);
+  })
+  .catch(function(e){ mostrarErrorCBET('Error de conexion: ' + e.message); });
+}
+
+function mostrarErrorCBET(msg) {
+  var wrap = document.getElementById('cbetTablaWrap');
+  var kpis = document.getElementById('cbetKpis');
+  if(kpis) kpis.innerHTML = '';
+  if(wrap) {
+    wrap.innerHTML = '<div style="background:#fef9ec;border:1.5px solid #fde68a;border-radius:12px;padding:24px;text-align:center">' +
+      '<div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:8px">' + msg + '</div>' +
+      '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Si es la primera vez, inicializa las tablas y carga datos de prueba.</div>' +
+      '<button onclick="inicializarCBET()" style="background:#131313;color:#FFC165;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:8px">Inicializar tablas CBET</button>' +
+      '<button onclick="sembrarDemoCBET()" style="background:#FFC165;color:#131313;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Cargar 3 clientes demo</button>' +
+      '</div>';
+  }
+}
+
+function inicializarCBET() {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetMigrate', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) { showToast('Tablas CBET creadas', 'success'); cargarCarteraCBET(); }
+    else showToast('Error: ' + (d.error||''), 'error');
+  })
+  .catch(function(e){ showToast('Error: ' + e.message, 'error'); });
+}
+
+function sembrarDemoCBET() {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetSeedDemo', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) { showToast(d.msg || '3 clientes demo cargados', 'success'); cargarCarteraCBET(); }
+    else showToast('Error: ' + (d.error||''), 'error');
+  })
+  .catch(function(e){ showToast('Error: ' + e.message, 'error'); });
+}
+
+function renderKpisCBET(clientes) {
+  var kpis = document.getElementById('cbetKpis');
+  if(!kpis) return;
+  var carteraTotal = 0, deudaVencida = 0, enMora = 0, total = clientes.length;
+  for(var i=0; i<clientes.length; i++) {
+    carteraTotal += clientes[i].saldoTotal;
+    deudaVencida += clientes[i].deudaVencida;
+    if(clientes[i].estado === 'EN MORA') enMora++;
+  }
+  var pctMora = total > 0 ? Math.round(enMora / total * 100) : 0;
+  function fmt(n){ return 'S/ ' + n.toFixed(2); }
+  kpis.innerHTML =
+    _kpiCard('Cartera total', fmt(carteraTotal), '#FFC165', 'Saldo por cobrar') +
+    _kpiCard('Deuda vencida', fmt(deudaVencida), '#ef4444', 'Mora acumulada') +
+    _kpiCard('Clientes en mora', enMora + ' / ' + total, '#f59e0b', pctMora + '% de la cartera') +
+    _kpiCard('Clientes activos', String(total), '#10b981', 'Creditos vigentes');
+}
+
+function _kpiCard(label, valor, color, sub) {
+  return '<div style="background:white;border:1.5px solid #D9D9D9;border-radius:14px;padding:16px;border-left:4px solid ' + color + '">' +
+    '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px">' + label + '</div>' +
+    '<div style="font-size:24px;font-weight:900;color:' + color + ';margin:6px 0 2px">' + valor + '</div>' +
+    '<div style="font-size:11px;color:#a8a8a8">' + sub + '</div>' +
+    '</div>';
+}
+
+function renderTablaCBET(clientes, hoyISO) {
+  var wrap = document.getElementById('cbetTablaWrap');
+  if(!wrap) return;
+  if(!clientes.length) {
+    wrap.innerHTML = '<div style="background:#f0fdf4;border:2px dashed #86efac;border-radius:14px;padding:40px;text-align:center">' +
+      '<div style="font-size:40px;margin-bottom:10px">✓</div>' +
+      '<div style="font-size:15px;font-weight:700;color:#16a34a">Sin creditos en cartera</div>' +
+      '<div style="font-size:12px;color:#8a8a8a;margin-top:6px">Aun no hay clientes registrados en CBET</div></div>';
+    return;
+  }
+
+  function semaforo(estado) {
+    if(estado === 'EN MORA') return '<span style="color:#ef4444">●</span>';
+    if(estado === 'AL DIA') return '<span style="color:#10b981">●</span>';
+    return '<span style="color:#6b7280">●</span>';
+  }
+  function fmt(n){ return 'S/ ' + n.toFixed(2); }
+  function fechaCorta(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+  var html = '<div style="background:white;border:1.5px solid #D9D9D9;border-radius:14px;overflow:hidden">' +
+    '<div style="overflow-x:auto">' +
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+    '<thead><tr style="background:#131313;color:white;text-align:left">' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Estado</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Placa</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Cliente</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Telefono</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:center">Cuotas</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:center">Dias mora</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:right">Deuda vencida</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:right">Saldo total</th>' +
+      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Prox. venc.</th>' +
+    '</tr></thead><tbody>';
+
+  for(var i=0; i<clientes.length; i++) {
+    var c = clientes[i];
+    var filaBg = c.estado === 'EN MORA' ? '#fff5f5' : 'white';
+    var moraColor = c.maxMora > 0 ? '#ef4444' : '#a8a8a8';
+    var telBtn = c.telefono ? '<a href="tel:' + c.telefono + '" style="color:#5C8CF5;text-decoration:none;font-weight:600">' + c.telefono + '</a>' : '—';
+    html += '<tr style="border-bottom:1px solid #f0f0f0;background:' + filaBg + '">' +
+      '<td style="padding:11px 14px;font-size:16px">' + semaforo(c.estado) + '</td>' +
+      '<td style="padding:11px 14px;font-weight:800;color:#131313">' + c.placa + '</td>' +
+      '<td style="padding:11px 14px;color:#374151">' + (c.nombre||'—') + '</td>' +
+      '<td style="padding:11px 14px">' + telBtn + '</td>' +
+      '<td style="padding:11px 14px;text-align:center;color:#374151">' + c.cuotasPagadas + '/' + c.cuotasTotal + '</td>' +
+      '<td style="padding:11px 14px;text-align:center;font-weight:700;color:' + moraColor + '">' + (c.maxMora > 0 ? c.maxMora + ' d' : '—') + '</td>' +
+      '<td style="padding:11px 14px;text-align:right;font-weight:800;color:' + (c.deudaVencida > 0 ? '#ef4444' : '#a8a8a8') + '">' + (c.deudaVencida > 0 ? fmt(c.deudaVencida) : '—') + '</td>' +
+      '<td style="padding:11px 14px;text-align:right;font-weight:700;color:#131313">' + fmt(c.saldoTotal) + '</td>' +
+      '<td style="padding:11px 14px;color:#6b82a0;font-size:12px">' + fechaCorta(c.proxVencimiento) + '</td>' +
+    '</tr>';
+  }
+  html += '</tbody></table></div></div>';
+  html += '<div style="font-size:11px;color:#a8a8a8;margin-top:10px;text-align:right">Cartera calculada al ' + (hoyISO ? hoyISO.split('-').reverse().join('/') : '') + ' · Morosos ordenados primero</div>';
+  wrap.innerHTML = html;
+}
+
 
 function renderRadar() {
   var container = document.getElementById('radarContainer');
@@ -9393,6 +9605,8 @@ function mostrarApp(){
   var isVend=CU.role==='vendedor'||CU.role==='jefe';
   document.getElementById('navUsuarios').style.display=isAdm?'':'none';
   document.getElementById('navConfig').style.display=isAdm?'':'none';
+  var navCred=document.getElementById('navCreditos');
+  if(navCred) navCred.style.display=isAdm?'':'none';
   var adminLabel=document.getElementById('navAdminLabel');
   if(adminLabel)adminLabel.style.display=isAdm?'':'none';
   document.getElementById('navFise').style.display=(isAdm||isFis)?'':'none';
