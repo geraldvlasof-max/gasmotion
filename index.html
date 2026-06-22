@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.2.1';
+    var GM_VERSION = '4.3.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -5233,206 +5233,944 @@ function _pdfImgFromDrive(doc, url, x, y, w, h, callback) {
 
 
 // ═══════════════════════════════════════════════════════════
-// MÓDULO CRÉDITOS — CBET (Fase 1: Panel de Cobranza, lectura)
+// MÓDULO CRÉDITOS — CBET v2.0
+// 5 vistas: Panel Cobranza | Ficha Cliente | Agenda | Nuevo Crédito | Analítica
 // ═══════════════════════════════════════════════════════════
-var CBET_SUBVIEW = null; // null = menú, 'panel' = panel cobranza
 
+var CBET_VISTA = null;       // null=menu | 'panel'|'ficha'|'agenda'|'nuevo'|'analitica'
+var CBET_PLACA_ACTIVA = null; // placa seleccionada en Ficha Cliente
+var CBET_CONFIG = {};         // cuentas bancarias cargadas desde D1
+var CBET_CLIENTES_CACHE = []; // cache para no recargar al cambiar de vista
+
+// ── Helpers generales ──
+function cbetFmt(n) { return 'S/ ' + parseFloat(n || 0).toFixed(2); }
+function cbetFecha(iso) { if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+function cbetHoy() { return new Date().toISOString().slice(0,10); }
+function cbetNombreMes(iso) {
+  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var p=iso.slice(0,7).split('-');
+  return meses[parseInt(p[1])-1]+' '+p[0];
+}
+function cbetWorker(action) {
+  return GM_CONFIG.workerUrl+'?key='+GM_CONFIG.gmKey+'&action='+action;
+}
+function cbetPost(action, data, cb) {
+  fetch(cbetWorker(action), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+  .then(function(r){return r.json();}).then(cb)
+  .catch(function(e){showToast('Error: '+e.message,'error');});
+}
+function cbetGet(action, params, cb) {
+  var url = cbetWorker(action) + (params||'');
+  fetch(url,{cache:'no-store'}).then(function(r){return r.json();}).then(cb)
+  .catch(function(e){showToast('Error: '+e.message,'error');});
+}
+
+// Semáforos y prioridad
+function cbetSemaforo(estado) {
+  if(estado==='EN MORA') return '<span style="color:#ef4444;font-size:16px">●</span>';
+  if(estado==='AL DIA') return '<span style="color:#10b981;font-size:16px">●</span>';
+  return '<span style="color:#6b7280;font-size:16px">●</span>';
+}
+function cbetPrioridadLabel(p) {
+  var map={3:'🔴 URGENTE',2:'🟠 ALTO',1:'🟡 NORMAL',0:'⚪ BAJO'};
+  return map[p]||'🟡 NORMAL';
+}
+function cbetEstadoCuotaColor(estado) {
+  if(estado==='PAGADO') return '#10b981';
+  if(estado==='VENCIDO') return '#ef4444';
+  if(estado==='PARCIAL') return '#f59e0b';
+  return '#6b82a0';
+}
+
+// ═══════════════════════════════════════
+// RENDERIZADO PRINCIPAL
+// ═══════════════════════════════════════
 function renderCreditos() {
   var cont = document.getElementById('creditosContent');
   if(!cont) return;
-  // Si no hay submódulo elegido, mostrar el menú AUTOCASH / CBET
-  if(!CBET_SUBVIEW) {
-    renderCreditosMenu(cont);
-  } else if(CBET_SUBVIEW === 'cbet') {
-    renderCBETPanel(cont);
-  }
+  if(!CBET_VISTA) { renderCreditosMenu(cont); return; }
+  if(CBET_VISTA==='cbet') { renderCBETApp(cont); }
 }
 
 function renderCreditosMenu(cont) {
-  cont.innerHTML = '';
-  var wrap = document.createElement('div');
-  wrap.style.cssText = 'max-width:760px;margin:0 auto;padding:20px 0';
-  wrap.innerHTML =
-    '<div style="font-size:22px;font-weight:900;color:#131313;margin-bottom:6px">Modulo de Creditos</div>' +
-    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:24px">Selecciona la modalidad de credito a gestionar</div>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">' +
-      // AUTOCASH (placeholder)
-      '<div style="background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:16px;padding:24px;opacity:.6;cursor:not-allowed">' +
-        '<div style="width:48px;height:48px;background:#D9D9D9;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px">▦</div>' +
-        '<div style="font-size:18px;font-weight:800;color:#131313">AUTOCASH</div>' +
-        '<div style="font-size:12px;color:#8a8a8a;margin-top:4px">Financiamiento directo. Proximamente.</div>' +
-        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#a8a8a8;background:#e5e7eb;display:inline-block;padding:4px 12px;border-radius:20px">EN DESARROLLO</div>' +
-      '</div>' +
-      // CBET (activo)
-      '<div id="cbetCard" style="background:linear-gradient(135deg,#131313 0%,#262626 100%);border:1.5px solid #FFC165;border-radius:16px;padding:24px;cursor:pointer;transition:transform .15s">' +
-        '<div style="width:48px;height:48px;background:#FFC165;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px;color:#131313;font-weight:900">C</div>' +
-        '<div style="font-size:18px;font-weight:800;color:white">CBET</div>' +
-        '<div style="font-size:12px;color:#a8a8a8;margin-top:4px">Cartera de creditos con cobranza y analitica.</div>' +
-        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#131313;background:#FFC165;display:inline-block;padding:4px 12px;border-radius:20px">ENTRAR ▸</div>' +
-      '</div>' +
+  cont.innerHTML='';
+  var wrap=document.createElement('div');
+  wrap.style.cssText='max-width:760px;margin:0 auto;padding:20px 0';
+  wrap.innerHTML=
+    '<div style="font-size:22px;font-weight:900;color:#131313;margin-bottom:6px">Modulo de Creditos</div>'+
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:24px">Selecciona la modalidad de credito a gestionar</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">'+
+      '<div style="background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:16px;padding:24px;opacity:.6;cursor:not-allowed">'+
+        '<div style="font-size:18px;font-weight:800;color:#131313">AUTOCASH</div>'+
+        '<div style="font-size:12px;color:#8a8a8a;margin-top:4px">Financiamiento directo. Proximamente.</div>'+
+        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#a8a8a8;background:#e5e7eb;display:inline-block;padding:4px 12px;border-radius:20px">EN DESARROLLO</div>'+
+      '</div>'+
+      '<div id="cbetMenuCard" style="background:linear-gradient(135deg,#131313 0%,#262626 100%);border:1.5px solid #FFC165;border-radius:16px;padding:24px;cursor:pointer">'+
+        '<div style="font-size:18px;font-weight:800;color:white">CBET</div>'+
+        '<div style="font-size:12px;color:#a8a8a8;margin-top:4px">Cartera de creditos · Cobranza · Analitica</div>'+
+        '<div style="margin-top:14px;font-size:11px;font-weight:700;color:#131313;background:#FFC165;display:inline-block;padding:4px 12px;border-radius:20px">ENTRAR ▸</div>'+
+      '</div>'+
     '</div>';
   cont.appendChild(wrap);
-  var cbetCard = document.getElementById('cbetCard');
-  if(cbetCard) {
-    cbetCard.onmouseenter = function(){ this.style.transform = 'translateY(-3px)'; };
-    cbetCard.onmouseleave = function(){ this.style.transform = ''; };
-    cbetCard.onclick = function(){ CBET_SUBVIEW = 'cbet'; renderCreditos(); };
-  }
+  var card=document.getElementById('cbetMenuCard');
+  if(card) card.onclick=function(){CBET_VISTA='cbet';CBET_SUBVIEW='panel';renderCreditos();};
 }
 
-function renderCBETPanel(cont) {
-  cont.innerHTML = '';
-  // Header con volver + pestañas (solo Panel activo en Fase 1)
-  var hdr = document.createElement('div');
-  hdr.style.cssText = 'display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap';
-  hdr.innerHTML =
-    '<button onclick="CBET_SUBVIEW=null;renderCreditos()" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">← Modalidades</button>' +
-    '<div style="font-size:20px;font-weight:900;color:#131313">CBET — Panel de Cobranza</div>';
+// ═══════════════════════════════════════
+// APP CBET — estructura con pestañas
+// ═══════════════════════════════════════
+var CBET_SUBVIEW='panel';
+
+function renderCBETApp(cont) {
+  cont.innerHTML='';
+
+  // Header con volver + tabs
+  var hdr=document.createElement('div');
+  hdr.style.cssText='margin-bottom:0';
+  hdr.innerHTML=
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">'+
+      '<button onclick="CBET_VISTA=null;renderCreditos()" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">← Salir</button>'+
+      '<div style="font-size:18px;font-weight:900;color:#131313">CBET — Creditos</div>'+
+    '</div>'+
+    '<div id="cbetTabs" style="display:flex;gap:4px;border-bottom:2px solid #E5E7EB;margin-bottom:16px;overflow-x:auto">'+
+      '<button onclick="cbetCambiarVista(\'panel\')" id="cbetTab_panel" style="'+cbetTabStyle('panel')+'">📋 Cobranza</button>'+
+      '<button onclick="cbetCambiarVista(\'agenda\')" id="cbetTab_agenda" style="'+cbetTabStyle('agenda')+'">📅 Agenda</button>'+
+      '<button onclick="cbetCambiarVista(\'nuevo\')" id="cbetTab_nuevo" style="'+cbetTabStyle('nuevo')+'">➕ Nuevo Credito</button>'+
+      '<button onclick="cbetCambiarVista(\'analitica\')" id="cbetTab_analitica" style="'+cbetTabStyle('analitica')+'">📊 Analitica</button>'+
+      '<button onclick="cbetCambiarVista(\'config\')" id="cbetTab_config" style="'+cbetTabStyle('config')+'">⚙ Config</button>'+
+    '</div>';
   cont.appendChild(hdr);
 
-  // Contenedor KPIs
-  var kpis = document.createElement('div');
-  kpis.id = 'cbetKpis';
-  kpis.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px';
-  kpis.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#8a8a8a;font-size:13px">Cargando cartera...</div>';
-  cont.appendChild(kpis);
-
-  // Contenedor tabla
-  var tablaWrap = document.createElement('div');
-  tablaWrap.id = 'cbetTablaWrap';
-  cont.appendChild(tablaWrap);
-
-  // Cargar data
-  cargarCarteraCBET();
+  var body=document.createElement('div');
+  body.id='cbetBody';
+  cont.appendChild(body);
+  cbetRenderSubvista();
 }
 
-function cargarCarteraCBET() {
-  if(!GM_CONFIG.workerUrl) { showToast('Sin conexion al servidor', 'error'); return; }
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetListarClientes', {cache:'no-store'})
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if(!d.ok) { mostrarErrorCBET(d.error || 'Error cargando cartera'); return; }
-    renderKpisCBET(d.clientes);
-    renderTablaCBET(d.clientes, d.hoy);
-  })
-  .catch(function(e){ mostrarErrorCBET('Error de conexion: ' + e.message); });
+function cbetTabStyle(tab) {
+  var activo = CBET_SUBVIEW===tab;
+  return 'background:'+(activo?'#131313':'transparent')+';color:'+(activo?'#FFC165':'#6b7280')+
+    ';border:none;border-radius:8px 8px 0 0;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap';
 }
 
-function mostrarErrorCBET(msg) {
-  var wrap = document.getElementById('cbetTablaWrap');
-  var kpis = document.getElementById('cbetKpis');
-  if(kpis) kpis.innerHTML = '';
-  if(wrap) {
-    wrap.innerHTML = '<div style="background:#fef9ec;border:1.5px solid #fde68a;border-radius:12px;padding:24px;text-align:center">' +
-      '<div style="font-size:14px;font-weight:700;color:#92400e;margin-bottom:8px">' + msg + '</div>' +
-      '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Si es la primera vez, inicializa las tablas y carga datos de prueba.</div>' +
-      '<button onclick="inicializarCBET()" style="background:#131313;color:#FFC165;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-right:8px">Inicializar tablas CBET</button>' +
-      '<button onclick="sembrarDemoCBET()" style="background:#FFC165;color:#131313;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Cargar 3 clientes demo</button>' +
-      '</div>';
+function cbetCambiarVista(v) {
+  CBET_SUBVIEW=v;
+  // Actualizar estilos de tabs
+  var tabs=['panel','agenda','nuevo','analitica','config'];
+  for(var i=0;i<tabs.length;i++){
+    var t=document.getElementById('cbetTab_'+tabs[i]);
+    if(t) t.style.cssText=cbetTabStyle(tabs[i]);
   }
+  cbetRenderSubvista();
 }
 
-function inicializarCBET() {
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetMigrate', {cache:'no-store'})
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if(d.ok) { showToast('Tablas CBET creadas', 'success'); cargarCarteraCBET(); }
-    else showToast('Error: ' + (d.error||''), 'error');
-  })
-  .catch(function(e){ showToast('Error: ' + e.message, 'error'); });
+function cbetRenderSubvista() {
+  var body=document.getElementById('cbetBody');
+  if(!body) return;
+  body.innerHTML='<div style="text-align:center;padding:30px;color:#8a8a8a;font-size:13px">Cargando...</div>';
+  if(CBET_SUBVIEW==='panel') cbetRenderPanel(body);
+  else if(CBET_SUBVIEW==='ficha') cbetRenderFicha(body);
+  else if(CBET_SUBVIEW==='agenda') cbetRenderAgenda(body);
+  else if(CBET_SUBVIEW==='nuevo') cbetRenderNuevoCredito(body);
+  else if(CBET_SUBVIEW==='analitica') cbetRenderAnalitica(body);
+  else if(CBET_SUBVIEW==='config') cbetRenderConfig(body);
 }
 
-function sembrarDemoCBET() {
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=cbetSeedDemo', {cache:'no-store'})
-  .then(function(r){ return r.json(); })
-  .then(function(d){
-    if(d.ok) { showToast(d.msg || '3 clientes demo cargados', 'success'); cargarCarteraCBET(); }
-    else showToast('Error: ' + (d.error||''), 'error');
-  })
-  .catch(function(e){ showToast('Error: ' + e.message, 'error'); });
+// ═══════════════════════════════════════
+// PANEL DE COBRANZA
+// ═══════════════════════════════════════
+function cbetRenderPanel(body) {
+  body.innerHTML='';
+
+  // KPIs placeholder mientras carga
+  var kpiWrap=document.createElement('div');
+  kpiWrap.id='cbetKpisV2';
+  kpiWrap.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px';
+  body.appendChild(kpiWrap);
+
+  // Filtros
+  var filtros=document.createElement('div');
+  filtros.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center';
+  filtros.innerHTML=
+    '<span style="font-size:12px;font-weight:700;color:#6b7280">FILTRAR:</span>'+
+    '<button onclick="cbetFiltrar(\'todos\')" id="cbetF_todos" style="'+cbetFiltroStyle('todos')+'">Todos</button>'+
+    '<button onclick="cbetFiltrar(\'mora\')" id="cbetF_mora" style="'+cbetFiltroStyle('mora')+'">En mora</button>'+
+    '<button onclick="cbetFiltrar(\'vence_mes\')" id="cbetF_vence_mes" style="'+cbetFiltroStyle('vence_mes')+'">Vencen este mes</button>'+
+    '<button onclick="cbetFiltrar(\'compromiso\')" id="cbetF_compromiso" style="'+cbetFiltroStyle('compromiso')+'">Con compromiso</button>';
+  body.appendChild(filtros);
+
+  // Tabla
+  var tablaWrap=document.createElement('div');
+  tablaWrap.id='cbetTablaV2';
+  body.appendChild(tablaWrap);
+
+  cbetCargarPanel();
 }
 
-function renderKpisCBET(clientes) {
-  var kpis = document.getElementById('cbetKpis');
-  if(!kpis) return;
-  var carteraTotal = 0, deudaVencida = 0, enMora = 0, total = clientes.length;
-  for(var i=0; i<clientes.length; i++) {
-    carteraTotal += clientes[i].saldoTotal;
-    deudaVencida += clientes[i].deudaVencida;
-    if(clientes[i].estado === 'EN MORA') enMora++;
+var CBET_FILTRO='todos';
+function cbetFiltroStyle(f) {
+  var activo=CBET_FILTRO===f;
+  return 'background:'+(activo?'#131313':'#F0F0F0')+';color:'+(activo?'white':'#374151')+
+    ';border:1px solid '+(activo?'#131313':'#D9D9D9')+';border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+}
+
+function cbetFiltrar(f) {
+  CBET_FILTRO=f;
+  var fs=['todos','mora','vence_mes','compromiso'];
+  for(var i=0;i<fs.length;i++){
+    var el=document.getElementById('cbetF_'+fs[i]);
+    if(el) el.style.cssText=cbetFiltroStyle(fs[i]);
+    // Actualizamos F despues de generar el estilo
   }
-  var pctMora = total > 0 ? Math.round(enMora / total * 100) : 0;
-  function fmt(n){ return 'S/ ' + n.toFixed(2); }
-  kpis.innerHTML =
-    _kpiCard('Cartera total', fmt(carteraTotal), '#FFC165', 'Saldo por cobrar') +
-    _kpiCard('Deuda vencida', fmt(deudaVencida), '#ef4444', 'Mora acumulada') +
-    _kpiCard('Clientes en mora', enMora + ' / ' + total, '#f59e0b', pctMora + '% de la cartera') +
-    _kpiCard('Clientes activos', String(total), '#10b981', 'Creditos vigentes');
+  cbetAplicarFiltro();
 }
 
-function _kpiCard(label, valor, color, sub) {
-  return '<div style="background:white;border:1.5px solid #D9D9D9;border-radius:14px;padding:16px;border-left:4px solid ' + color + '">' +
-    '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px">' + label + '</div>' +
-    '<div style="font-size:24px;font-weight:900;color:' + color + ';margin:6px 0 2px">' + valor + '</div>' +
-    '<div style="font-size:11px;color:#a8a8a8">' + sub + '</div>' +
+function cbetCargarPanel() {
+  cbetGet('cbetListarClientesV2','',function(d){
+    if(!d.ok){cbetMostrarError(d.error||'Error');return;}
+    CBET_CLIENTES_CACHE=d.clientes;
+    cbetRenderKpisV2(d.clientes,d.hoy);
+    cbetAplicarFiltro();
+  });
+}
+
+function cbetAplicarFiltro() {
+  var clientes=CBET_CLIENTES_CACHE;
+  var hoy=cbetHoy();
+  var mes=hoy.slice(0,7);
+  var filtrado=clientes;
+  if(CBET_FILTRO==='mora') filtrado=clientes.filter(function(c){return c.estado==='EN MORA';});
+  else if(CBET_FILTRO==='vence_mes') filtrado=clientes.filter(function(c){return c.proxVencimiento&&c.proxVencimiento.slice(0,7)===mes&&c.saldoTotal>0;});
+  else if(CBET_FILTRO==='compromiso') filtrado=clientes.filter(function(c){return c.tieneCompromiso;});
+  var wrap=document.getElementById('cbetTablaV2');
+  if(wrap) cbetRenderTablaClientes(wrap,filtrado,hoy);
+}
+
+function cbetRenderKpisV2(clientes,hoy) {
+  var kpiWrap=document.getElementById('cbetKpisV2');
+  if(!kpiWrap) return;
+  var cartera=0,vencida=0,mora=0,total=clientes.length;
+  for(var i=0;i<clientes.length;i++){
+    cartera+=clientes[i].saldoTotal;
+    vencida+=clientes[i].deudaVencida;
+    if(clientes[i].estado==='EN MORA') mora++;
+  }
+  kpiWrap.innerHTML=
+    cbetKpiCard('Cartera total',cbetFmt(cartera),'#FFC165','Saldo pendiente cobrar')+
+    cbetKpiCard('Deuda vencida',cbetFmt(vencida),'#ef4444',mora+' clientes en mora')+
+    cbetKpiCard('Al dia',total-mora+' clientes','#10b981','Sin cuotas vencidas')+
+    cbetKpiCard('Morosidad',Math.round(mora/total*100)+'%','#f59e0b',mora+' de '+total+' clientes');
+}
+
+function cbetKpiCard(label,valor,color,sub) {
+  return '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:16px;border-left:4px solid '+color+'">'+
+    '<div style="font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px">'+label+'</div>'+
+    '<div style="font-size:22px;font-weight:900;color:'+color+';margin:6px 0 2px">'+valor+'</div>'+
+    '<div style="font-size:11px;color:#a8a8a8">'+sub+'</div>'+
     '</div>';
 }
 
-function renderTablaCBET(clientes, hoyISO) {
-  var wrap = document.getElementById('cbetTablaWrap');
-  if(!wrap) return;
-  if(!clientes.length) {
-    wrap.innerHTML = '<div style="background:#f0fdf4;border:2px dashed #86efac;border-radius:14px;padding:40px;text-align:center">' +
-      '<div style="font-size:40px;margin-bottom:10px">✓</div>' +
-      '<div style="font-size:15px;font-weight:700;color:#16a34a">Sin creditos en cartera</div>' +
-      '<div style="font-size:12px;color:#8a8a8a;margin-top:6px">Aun no hay clientes registrados en CBET</div></div>';
+function cbetRenderTablaClientes(wrap,clientes,hoy) {
+  if(!clientes.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:#8a8a8a">Sin resultados para este filtro</div>';
     return;
   }
-
-  function semaforo(estado) {
-    if(estado === 'EN MORA') return '<span style="color:#ef4444">●</span>';
-    if(estado === 'AL DIA') return '<span style="color:#10b981">●</span>';
-    return '<span style="color:#6b7280">●</span>';
-  }
-  function fmt(n){ return 'S/ ' + n.toFixed(2); }
-  function fechaCorta(iso){ if(!iso) return '—'; var p=iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
-
-  var html = '<div style="background:white;border:1.5px solid #D9D9D9;border-radius:14px;overflow:hidden">' +
-    '<div style="overflow-x:auto">' +
-    '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-    '<thead><tr style="background:#131313;color:white;text-align:left">' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Estado</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Placa</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Cliente</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Telefono</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:center">Cuotas</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:center">Dias mora</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:right">Deuda vencida</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:right">Saldo total</th>' +
-      '<th style="padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.4px">Prox. venc.</th>' +
+  var html='<div style="background:white;border:1.5px solid #E5E7EB;border-radius:14px;overflow:hidden"><div style="overflow-x:auto">'+
+    '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr style="background:#131313;color:white">'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Prior.</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Estado</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Placa</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Cliente</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Telefono</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Cuotas</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Mora</th>'+
+      '<th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Vencida</th>'+
+      '<th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Saldo</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Prox.Venc</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase;letter-spacing:.4px">Acciones</th>'+
     '</tr></thead><tbody>';
 
-  for(var i=0; i<clientes.length; i++) {
-    var c = clientes[i];
-    var filaBg = c.estado === 'EN MORA' ? '#fff5f5' : 'white';
-    var moraColor = c.maxMora > 0 ? '#ef4444' : '#a8a8a8';
-    var telBtn = c.telefono ? '<a href="tel:' + c.telefono + '" style="color:#5C8CF5;text-decoration:none;font-weight:600">' + c.telefono + '</a>' : '—';
-    html += '<tr style="border-bottom:1px solid #f0f0f0;background:' + filaBg + '">' +
-      '<td style="padding:11px 14px;font-size:16px">' + semaforo(c.estado) + '</td>' +
-      '<td style="padding:11px 14px;font-weight:800;color:#131313">' + c.placa + '</td>' +
-      '<td style="padding:11px 14px;color:#374151">' + (c.nombre||'—') + '</td>' +
-      '<td style="padding:11px 14px">' + telBtn + '</td>' +
-      '<td style="padding:11px 14px;text-align:center;color:#374151">' + c.cuotasPagadas + '/' + c.cuotasTotal + '</td>' +
-      '<td style="padding:11px 14px;text-align:center;font-weight:700;color:' + moraColor + '">' + (c.maxMora > 0 ? c.maxMora + ' d' : '—') + '</td>' +
-      '<td style="padding:11px 14px;text-align:right;font-weight:800;color:' + (c.deudaVencida > 0 ? '#ef4444' : '#a8a8a8') + '">' + (c.deudaVencida > 0 ? fmt(c.deudaVencida) : '—') + '</td>' +
-      '<td style="padding:11px 14px;text-align:right;font-weight:700;color:#131313">' + fmt(c.saldoTotal) + '</td>' +
-      '<td style="padding:11px 14px;color:#6b82a0;font-size:12px">' + fechaCorta(c.proxVencimiento) + '</td>' +
+  for(var i=0;i<clientes.length;i++){
+    var c=clientes[i];
+    var bg=c.estado==='EN MORA'?'#fff5f5':'white';
+    var priLabel={3:'🔴',2:'🟠',1:'🟡',0:'⚪'}[c.prioridad]||'🟡';
+    var tel=c.telefono?'<a href="tel:'+c.telefono+'" style="color:#5C8CF5;text-decoration:none">'+c.telefono+'</a>':'—';
+    var compIcon=c.tieneCompromiso?'<span title="Tiene compromiso de pago" style="color:#f59e0b">📌</span> ':'';
+    html+='<tr style="border-bottom:1px solid #F3F4F6;background:'+bg+'" id="cbetRow_'+c.placa+'">'+
+      '<td style="padding:9px 12px"><button onclick="cbetModalPrioridad(\''+c.placa+'\','+c.prioridad+')" style="background:none;border:none;cursor:pointer;font-size:16px" title="Cambiar prioridad">'+priLabel+'</button></td>'+
+      '<td style="padding:9px 12px">'+cbetSemaforo(c.estado)+'</td>'+
+      '<td style="padding:9px 12px;font-weight:800;color:#131313">'+c.placa+'</td>'+
+      '<td style="padding:9px 12px;color:#374151">'+compIcon+(c.nombre||'—')+'</td>'+
+      '<td style="padding:9px 12px">'+tel+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;color:#374151">'+c.cuotasPagadas+'/'+c.cuotasTotal+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;font-weight:700;color:'+(c.maxMora>0?'#ef4444':'#a8a8a8')+'">'+
+        (c.maxMora>0?c.maxMora+' d':'—')+'</td>'+
+      '<td style="padding:9px 12px;text-align:right;font-weight:800;color:'+(c.deudaVencida>0?'#ef4444':'#a8a8a8')+'">'+
+        (c.deudaVencida>0?cbetFmt(c.deudaVencida):'—')+'</td>'+
+      '<td style="padding:9px 12px;text-align:right;font-weight:700;color:#131313">'+cbetFmt(c.saldoTotal)+'</td>'+
+      '<td style="padding:9px 12px;color:#6b82a0;font-size:11px">'+cbetFecha(c.proxVencimiento)+'</td>'+
+      '<td style="padding:9px 12px;text-align:center;white-space:nowrap">'+
+        '<button onclick="cbetAbrirFicha(\''+c.placa+'\')" style="'+cbetBtnStyle('#5C8CF5')+'">Ver</button> '+
+        '<button onclick="cbetModalCompromiso(\''+c.placa+'\',\''+c.nombre+'\')" style="'+cbetBtnStyle('#f59e0b')+'">📌</button> '+
+        '<button onclick="cbetModalWhatsapp(\''+c.placa+'\',\''+c.nombre+'\',\''+c.telefono+'\',\''+cbetFmt(c.saldoTotal)+'\',\''+cbetFecha(c.proxVencimiento)+'\')" style="'+cbetBtnStyle('#25D366')+'">WA</button>'+
+      '</td>'+
     '</tr>';
   }
-  html += '</tbody></table></div></div>';
-  html += '<div style="font-size:11px;color:#a8a8a8;margin-top:10px;text-align:right">Cartera calculada al ' + (hoyISO ? hoyISO.split('-').reverse().join('/') : '') + ' · Morosos ordenados primero</div>';
-  wrap.innerHTML = html;
+  html+='</tbody></table></div></div>'+
+    '<div style="font-size:11px;color:#a8a8a8;margin-top:8px;text-align:right">'+clientes.length+' clientes · Ordenado por prioridad y mora · '+cbetFecha(hoy)+'</div>';
+  wrap.innerHTML=html;
 }
+
+function cbetBtnStyle(color) {
+  return 'background:'+color+';color:white;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit';
+}
+
+// ═══════════════════════════════════════
+// FICHA CLIENTE
+// ═══════════════════════════════════════
+function cbetAbrirFicha(placa) {
+  CBET_PLACA_ACTIVA=placa;
+  CBET_SUBVIEW='ficha';
+  var tabs=['panel','agenda','nuevo','analitica','config'];
+  for(var i=0;i<tabs.length;i++){
+    var el=document.getElementById('cbetTab_'+tabs[i]);
+    if(el) el.style.cssText=cbetTabStyle(tabs[i]);
+  }
+  var body=document.getElementById('cbetBody');
+  if(body) cbetRenderFicha(body);
+}
+
+function cbetRenderFicha(body) {
+  body.innerHTML='<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando ficha...</div>';
+  cbetGet('cbetFichaCliente','&placa='+encodeURIComponent(CBET_PLACA_ACTIVA),function(d){
+    if(!d.ok){body.innerHTML='<div style="color:#ef4444;padding:20px">'+d.error+'</div>';return;}
+    cbetMostrarFicha(body,d);
+  });
+}
+
+function cbetMostrarFicha(body,d) {
+  var c=d.cliente;
+  var cuotas=d.cuotas;
+  var m=d.metricas;
+  var pagos=d.pagos||[];
+  body.innerHTML='';
+
+  // Botón volver
+  var btnBack=document.createElement('button');
+  btnBack.style.cssText='background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:14px';
+  btnBack.textContent='← Volver al Panel';
+  btnBack.onclick=function(){CBET_SUBVIEW='panel';cbetRenderSubvista();};
+  body.appendChild(btnBack);
+
+  // Grid: datos cliente + métricas
+  var grid=document.createElement('div');
+  grid.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px';
+
+  // Card datos cliente
+  var cardCli=document.createElement('div');
+  cardCli.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:16px';
+  cardCli.innerHTML=
+    '<div style="font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Datos del cliente</div>'+
+    '<div style="font-size:22px;font-weight:900;color:#131313;margin-bottom:4px">'+c.placa+'</div>'+
+    '<div style="font-size:14px;font-weight:700;color:#374151;margin-bottom:8px">'+c.nombre+'</div>'+
+    '<div style="font-size:12px;color:#6b7280;line-height:2">'+
+      '📋 DNI: <strong>'+c.dni+'</strong><br>'+
+      '📱 Tel: <a href="tel:'+c.telefono+'" style="color:#5C8CF5;font-weight:700">'+c.telefono+'</a><br>'+
+      '📅 Alta: '+cbetFecha(c.fechaAlta)+'<br>'+
+      '📦 Modalidad: <strong>'+c.modalidad+'</strong>'+
+    '</div>';
+  grid.appendChild(cardCli);
+
+  // Card métricas
+  var cardM=document.createElement('div');
+  cardM.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:16px';
+  var estadoColor=m.estado==='EN MORA'?'#ef4444':m.estado==='AL DIA'?'#10b981':'#6b7280';
+  cardM.innerHTML=
+    '<div style="font-size:11px;font-weight:800;color:#8a8a8a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Resumen del credito</div>'+
+    '<div style="font-size:18px;font-weight:900;color:'+estadoColor+';margin-bottom:10px">'+cbetSemaforo(m.estado)+' '+m.estado+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      '<div style="background:#F7F7F2;border-radius:8px;padding:10px">'+
+        '<div style="font-size:10px;color:#8a8a8a;font-weight:700">SALDO TOTAL</div>'+
+        '<div style="font-size:18px;font-weight:900;color:#131313">'+cbetFmt(m.saldoTotal)+'</div>'+
+      '</div>'+
+      '<div style="background:'+(m.deudaVencida>0?'#fff5f5':'#F7F7F2')+';border-radius:8px;padding:10px">'+
+        '<div style="font-size:10px;color:#8a8a8a;font-weight:700">DEUDA VENCIDA</div>'+
+        '<div style="font-size:18px;font-weight:900;color:'+(m.deudaVencida>0?'#ef4444':'#10b981')+'">'+cbetFmt(m.deudaVencida)+'</div>'+
+      '</div>'+
+      '<div style="background:#F7F7F2;border-radius:8px;padding:10px">'+
+        '<div style="font-size:10px;color:#8a8a8a;font-weight:700">CUOTAS</div>'+
+        '<div style="font-size:18px;font-weight:900;color:#131313">'+m.cuotasPagadas+'/'+m.cuotasTotal+'</div>'+
+      '</div>'+
+      '<div style="background:'+(m.maxMora>0?'#fff5f5':'#F7F7F2')+';border-radius:8px;padding:10px">'+
+        '<div style="font-size:10px;color:#8a8a8a;font-weight:700">DIAS MORA</div>'+
+        '<div style="font-size:18px;font-weight:900;color:'+(m.maxMora>0?'#ef4444':'#10b981')+'">'+(m.maxMora||0)+' d</div>'+
+      '</div>'+
+    '</div>';
+  grid.appendChild(cardM);
+  body.appendChild(grid);
+
+  // Acciones rápidas
+  var acciones=document.createElement('div');
+  acciones.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px';
+  acciones.innerHTML=
+    '<button onclick="cbetModalCompromiso(\''+c.placa+'\',\''+c.nombre+'\')" style="'+cbetBtnStyle('#f59e0b')+'">📌 Registrar compromiso</button>'+
+    '<button onclick="cbetModalGestion(\''+c.placa+'\',\''+c.nombre+'\')" style="'+cbetBtnStyle('#5C8CF5')+'">📞 Registrar gestion</button>'+
+    '<button onclick="cbetModalWhatsapp(\''+c.placa+'\',\''+c.nombre+'\',\''+c.telefono+'\',\''+cbetFmt(m.saldoTotal)+'\',\''+cbetFecha(m.proxVencimiento)+'\')" style="'+cbetBtnStyle('#25D366')+'">💬 Enviar WhatsApp</button>';
+  body.appendChild(acciones);
+
+  // Tabla de cuotas
+  var titCuotas=document.createElement('div');
+  titCuotas.style.cssText='font-size:13px;font-weight:800;color:#131313;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px';
+  titCuotas.textContent='Cronograma de cuotas';
+  body.appendChild(titCuotas);
+
+  var tablaCuotas=document.createElement('div');
+  tablaCuotas.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;overflow:hidden;margin-bottom:16px';
+  var htmlC='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr style="background:#131313;color:white">'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase">N°</th>'+
+      '<th style="padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase">Vencimiento</th>'+
+      '<th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase">Importe</th>'+
+      '<th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase">Abonado</th>'+
+      '<th style="padding:10px 12px;text-align:right;font-size:10px;text-transform:uppercase">Saldo</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase">Estado</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase">Dias</th>'+
+      '<th style="padding:10px 12px;text-align:center;font-size:10px;text-transform:uppercase">Accion</th>'+
+    '</tr></thead><tbody>';
+
+  for(var i=0;i<cuotas.length;i++){
+    var q=cuotas[i];
+    var qColor=cbetEstadoCuotaColor(q.estado);
+    var bgQ=q.estado==='VENCIDO'?'#fff5f5':q.estado==='PAGADO'?'#f0fdf4':'white';
+    var diasTxt='—';
+    if(q.estado==='VENCIDO'||q.estado==='PARCIAL') diasTxt='<span style="color:#ef4444;font-weight:700">+'+q.dias+' d mora</span>';
+    else if(q.estado==='PENDIENTE') diasTxt='<span style="color:#10b981">-'+q.dias+' d</span>';
+    var btnPago=q.estado!=='PAGADO'?
+      '<button onclick="cbetModalPago(\''+c.placa+'\','+q.id+','+q.numCuota+','+q.saldo+')" style="'+cbetBtnStyle('#10b981')+'">Pagar</button>':'';
+    htmlC+='<tr style="border-bottom:1px solid #F3F4F6;background:'+bgQ+'">'+
+      '<td style="padding:9px 12px;font-weight:800;color:#131313">'+q.numCuota+'</td>'+
+      '<td style="padding:9px 12px;color:#374151">'+cbetFecha(q.vencimiento)+'</td>'+
+      '<td style="padding:9px 12px;text-align:right;color:#374151">'+cbetFmt(q.importe)+'</td>'+
+      '<td style="padding:9px 12px;text-align:right;color:#10b981;font-weight:700">'+cbetFmt(q.abono)+'</td>'+
+      '<td style="padding:9px 12px;text-align:right;font-weight:800;color:'+qColor+'">'+cbetFmt(q.saldo)+'</td>'+
+      '<td style="padding:9px 12px;text-align:center"><span style="background:'+qColor+';color:white;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700">'+q.estado+'</span></td>'+
+      '<td style="padding:9px 12px;text-align:center;font-size:11px">'+diasTxt+'</td>'+
+      '<td style="padding:9px 12px;text-align:center">'+btnPago+'</td>'+
+    '</tr>';
+  }
+  htmlC+='</tbody></table></div>';
+  tablaCuotas.innerHTML=htmlC;
+  body.appendChild(tablaCuotas);
+
+  // Historial de pagos
+  if(pagos.length>0){
+    var titPagos=document.createElement('div');
+    titPagos.style.cssText='font-size:13px;font-weight:800;color:#131313;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px';
+    titPagos.textContent='Historial de pagos';
+    body.appendChild(titPagos);
+    var htmlP='<div style="background:white;border:1.5px solid #E5E7EB;border-radius:14px;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+      '<thead><tr style="background:#131313;color:white">'+
+        '<th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase">Fecha</th>'+
+        '<th style="padding:8px 12px;text-align:center;font-size:10px;text-transform:uppercase">Cuota</th>'+
+        '<th style="padding:8px 12px;text-align:right;font-size:10px;text-transform:uppercase">Monto</th>'+
+        '<th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase">Registrado por</th>'+
+        '<th style="padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase">Obs.</th>'+
+      '</tr></thead><tbody>';
+    for(var j=0;j<pagos.length;j++){
+      var p=pagos[j];
+      htmlP+='<tr style="border-bottom:1px solid #F3F4F6">'+
+        '<td style="padding:8px 12px;color:#374151">'+cbetFecha(p.fecha_pago)+'</td>'+
+        '<td style="padding:8px 12px;text-align:center;font-weight:700">'+p.num_cuota+'</td>'+
+        '<td style="padding:8px 12px;text-align:right;font-weight:800;color:#10b981">'+cbetFmt(p.monto)+'</td>'+
+        '<td style="padding:8px 12px;color:#6b7280">'+( p.registrado_por||'—')+'</td>'+
+        '<td style="padding:8px 12px;color:#6b7280;font-size:11px">'+(p.observacion||'')+'</td>'+
+      '</tr>';
+    }
+    htmlP+='</tbody></table></div>';
+    var divPagos=document.createElement('div');
+    divPagos.innerHTML=htmlP;
+    body.appendChild(divPagos);
+  }
+}
+
+// ═══════════════════════════════════════
+// AGENDA DE COBRANZA
+// ═══════════════════════════════════════
+function cbetRenderAgenda(body) {
+  body.innerHTML='<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando agenda...</div>';
+  cbetGet('cbetAnalitica','',function(d){
+    if(!d.ok){body.innerHTML='<div style="color:#ef4444;padding:20px">'+d.error+'</div>';return;}
+    cbetMostrarAgenda(body,d);
+  });
+}
+
+function cbetMostrarAgenda(body,d) {
+  body.innerHTML='';
+
+  // Meta del mes
+  var metaDiv=document.createElement('div');
+  metaDiv.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:20px;margin-bottom:16px';
+  var pct=d.pctRecaudado||0;
+  var barColor=pct>=80?'#10b981':pct>=50?'#f59e0b':'#ef4444';
+  metaDiv.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
+      '<div style="font-size:14px;font-weight:800;color:#131313">Meta de recaudo — '+cbetNombreMes(d.hoy)+'</div>'+
+      '<div style="font-size:22px;font-weight:900;color:'+barColor+'">'+pct+'%</div>'+
+    '</div>'+
+    '<div style="height:12px;background:#E5E7EB;border-radius:6px;overflow:hidden;margin-bottom:10px">'+
+      '<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barColor+';border-radius:6px;transition:width .5s"></div>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'+
+      '<div style="text-align:center"><div style="font-size:10px;color:#8a8a8a;font-weight:700">META</div><div style="font-size:18px;font-weight:900;color:#131313">'+cbetFmt(d.meta)+'</div></div>'+
+      '<div style="text-align:center"><div style="font-size:10px;color:#8a8a8a;font-weight:700">RECAUDADO</div><div style="font-size:18px;font-weight:900;color:#10b981">'+cbetFmt(d.recaudado)+'</div></div>'+
+      '<div style="text-align:center"><div style="font-size:10px;color:#8a8a8a;font-weight:700">PENDIENTE</div><div style="font-size:18px;font-weight:900;color:#ef4444">'+cbetFmt(d.meta-d.recaudado)+'</div></div>'+
+    '</div>';
+  body.appendChild(metaDiv);
+
+  // Grid: vencimientos próximos + compromisos
+  var gridDiv=document.createElement('div');
+  gridDiv.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px';
+
+  // Vencimientos próximos 7 días
+  var vencDiv=document.createElement('div');
+  vencDiv.style.cssText='background:white;border:1.5px solid #fde68a;border-radius:14px;padding:16px';
+  var htmlV='<div style="font-size:12px;font-weight:800;color:#92400e;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">⚠ Vencen en 7 dias ('+d.proximosVencimientos.length+')</div>';
+  if(d.proximosVencimientos.length===0){
+    htmlV+='<div style="color:#8a8a8a;font-size:12px">Sin vencimientos proximos</div>';
+  } else {
+    for(var i=0;i<d.proximosVencimientos.length;i++){
+      var v=d.proximosVencimientos[i];
+      var saldo=parseFloat(v.importe)-parseFloat(v.abono);
+      htmlV+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #FEF3C7">'+
+        '<div>'+
+          '<div style="font-size:12px;font-weight:700;color:#131313">'+v.placa+'</div>'+
+          '<div style="font-size:11px;color:#6b7280">'+v.nombre+'</div>'+
+          '<div style="font-size:11px;color:#92400e">Vence: '+cbetFecha(v.vencimiento)+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:14px;font-weight:900;color:#92400e">'+cbetFmt(saldo)+'</div>'+
+          '<button onclick="cbetModalWhatsappRapido(\''+v.placa+'\',\''+v.nombre+'\',\''+v.telefono+'\',\''+cbetFmt(saldo)+'\',\''+cbetFecha(v.vencimiento)+'\')" style="'+cbetBtnStyle('#25D366')+';font-size:10px;margin-top:3px">WA</button>'+
+        '</div>'+
+      '</div>';
+    }
+  }
+  vencDiv.innerHTML=htmlV;
+  gridDiv.appendChild(vencDiv);
+
+  // Compromisos del día
+  var compDiv=document.createElement('div');
+  compDiv.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:16px';
+  var htmlCo='<div style="font-size:12px;font-weight:800;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">📌 Compromisos pendientes ('+d.compromisosPendientes.length+')</div>';
+  if(d.compromisosPendientes.length===0){
+    htmlCo+='<div style="color:#8a8a8a;font-size:12px">Sin compromisos pendientes</div>';
+  } else {
+    for(var j=0;j<d.compromisosPendientes.length;j++){
+      var co=d.compromisosPendientes[j];
+      var vencido=co.fecha_prometida<d.hoy;
+      htmlCo+='<div style="padding:7px 0;border-bottom:1px solid #F3F4F6">'+
+        '<div style="display:flex;justify-content:space-between">'+
+          '<div>'+
+            '<div style="font-size:12px;font-weight:700;color:#131313">'+co.placa+' — '+co.nombre+'</div>'+
+            '<div style="font-size:11px;color:'+(vencido?'#ef4444':'#f59e0b')+'">'+
+              (vencido?'⚠ INCUMPLIDO: ':'📅 ')+cbetFecha(co.fecha_prometida)+
+            '</div>'+
+            (co.observacion?'<div style="font-size:11px;color:#6b7280">'+co.observacion+'</div>':'')+
+          '</div>'+
+          '<div style="font-size:14px;font-weight:900;color:#131313">'+cbetFmt(co.monto_prometido)+'</div>'+
+        '</div>'+
+      '</div>';
+    }
+  }
+  compDiv.innerHTML=htmlCo;
+  gridDiv.appendChild(compDiv);
+  body.appendChild(gridDiv);
+
+  // Top 5 deudores
+  if(d.top5Deudores&&d.top5Deudores.length>0){
+    var top5=document.createElement('div');
+    top5.style.cssText='background:white;border:1.5px solid #E5E7EB;border-radius:14px;padding:16px';
+    var htmlTop='<div style="font-size:12px;font-weight:800;color:#131313;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">🔴 Top deudores</div>';
+    for(var k=0;k<d.top5Deudores.length;k++){
+      var td=d.top5Deudores[k];
+      htmlTop+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F3F4F6">'+
+        '<div>'+
+          '<span style="background:#ef4444;color:white;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-right:8px">'+(k+1)+'</span>'+
+          '<strong style="font-size:12px">'+td.placa+'</strong> <span style="font-size:11px;color:#6b7280">'+td.nombre+'</span>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:14px;font-weight:900;color:#ef4444">'+cbetFmt(td.deudaVencida)+'</div>'+
+          '<div style="font-size:10px;color:#8a8a8a">'+td.maxMora+' dias mora</div>'+
+        '</div>'+
+      '</div>';
+    }
+    top5.innerHTML=htmlTop;
+    body.appendChild(top5);
+  }
+}
+
+// ═══════════════════════════════════════
+// NUEVO CRÉDITO
+// ═══════════════════════════════════════
+function cbetRenderNuevoCredito(body) {
+  body.innerHTML='';
+  var card=document.createElement('div');
+  card.style.cssText='max-width:600px;background:white;border:1.5px solid #E5E7EB;border-radius:16px;padding:24px';
+  card.innerHTML=
+    '<div style="font-size:16px;font-weight:900;color:#131313;margin-bottom:18px">Registrar nuevo crédito CBET</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'+
+      cbetInputField('cbetNC_placa','Placa *','text','Ej: ABC123')+
+      cbetInputField('cbetNC_nombre','Nombre completo *','text','Nombre del cliente')+
+      cbetInputField('cbetNC_dni','DNI *','text','8 dígitos')+
+      cbetInputField('cbetNC_telefono','Teléfono','text','Ej: 987654321')+
+      cbetInputField('cbetNC_importe','Importe por cuota (S/) *','number','Ej: 300')+
+      cbetInputField('cbetNC_ncuotas','Número de cuotas *','number','Ej: 6')+
+      cbetInputField('cbetNC_fecha','Fecha primera cuota *','date','')+
+      '<div style="grid-column:1/-1">'+
+        '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Observación</label>'+
+        '<textarea id="cbetNC_obs" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:13px;box-sizing:border-box;font-family:inherit;resize:vertical" rows="2" placeholder="Opcional"></textarea>'+
+      '</div>'+
+    '</div>'+
+    '<div id="cbetNC_preview" style="margin-top:14px"></div>'+
+    '<div style="display:flex;gap:10px;margin-top:16px">'+
+      '<button onclick="cbetPreviewCredito()" style="'+cbetBtnStyle('#5C8CF5')+';padding:12px 20px;font-size:13px">Vista previa</button>'+
+      '<button onclick="cbetConfirmarCredito()" id="cbetNC_btnConfirmar" style="'+cbetBtnStyle('#10b981')+';padding:12px 20px;font-size:13px;display:none">Confirmar y crear</button>'+
+    '</div>';
+  body.appendChild(card);
+}
+
+function cbetInputField(id,label,type,placeholder) {
+  return '<div>'+
+    '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">'+label+'</label>'+
+    '<input id="'+id+'" type="'+type+'" placeholder="'+placeholder+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:13px;box-sizing:border-box;font-family:inherit">'+
+  '</div>';
+}
+
+function cbetGetVal(id){var el=document.getElementById(id);return el?el.value.trim():'';}
+
+function cbetPreviewCredito() {
+  var placa=cbetGetVal('cbetNC_placa').toUpperCase();
+  var nombre=cbetGetVal('cbetNC_nombre');
+  var importe=parseFloat(cbetGetVal('cbetNC_importe'));
+  var nCuotas=parseInt(cbetGetVal('cbetNC_ncuotas'));
+  var fecha=cbetGetVal('cbetNC_fecha');
+  var prev=document.getElementById('cbetNC_preview');
+  if(!placa||!nombre||!importe||!nCuotas||!fecha){
+    prev.innerHTML='<div style="color:#ef4444;font-size:12px;padding:10px;background:#fff5f5;border-radius:8px">Completa todos los campos obligatorios (*).</div>';
+    return;
+  }
+  var total=Math.round(importe*nCuotas*100)/100;
+  var htmlPrev='<div style="background:#F7F7F2;border:1.5px solid #D9D9D9;border-radius:12px;padding:14px">'+
+    '<div style="font-size:12px;font-weight:800;color:#131313;margin-bottom:10px">Vista previa del cronograma</div>'+
+    '<div style="font-size:12px;color:#374151;margin-bottom:8px"><strong>'+placa+'</strong> — '+nombre+' · Total crédito: <strong>'+cbetFmt(total)+'</strong> en '+nCuotas+' cuotas</div>'+
+    '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+    '<tr style="background:#131313;color:white"><th style="padding:6px 8px;text-align:left">N°</th><th style="padding:6px 8px;text-align:left">Vencimiento</th><th style="padding:6px 8px;text-align:right">Importe</th></tr>';
+  var base=new Date(fecha+'T00:00:00');
+  for(var i=0;i<nCuotas;i++){
+    var d=new Date(base.getFullYear(),base.getMonth()+i,base.getDate());
+    var iso=d.toISOString().slice(0,10);
+    htmlPrev+='<tr style="border-bottom:1px solid #E5E7EB">'+
+      '<td style="padding:5px 8px;font-weight:700">'+(i+1)+'</td>'+
+      '<td style="padding:5px 8px">'+cbetFecha(iso)+'</td>'+
+      '<td style="padding:5px 8px;text-align:right">'+cbetFmt(importe)+'</td>'+
+    '</tr>';
+  }
+  htmlPrev+='</table></div>';
+  prev.innerHTML=htmlPrev;
+  var btn=document.getElementById('cbetNC_btnConfirmar');
+  if(btn) btn.style.display='';
+}
+
+function cbetConfirmarCredito() {
+  var placa=cbetGetVal('cbetNC_placa').toUpperCase();
+  var nombre=cbetGetVal('cbetNC_nombre');
+  var dni=cbetGetVal('cbetNC_dni');
+  var tel=cbetGetVal('cbetNC_telefono');
+  var importe=parseFloat(cbetGetVal('cbetNC_importe'));
+  var nCuotas=parseInt(cbetGetVal('cbetNC_ncuotas'));
+  var fecha=cbetGetVal('cbetNC_fecha');
+  var obs=cbetGetVal('cbetNC_obs');
+  if(!confirm('Confirmas crear el credito para '+placa+' — '+nombre+'?')) return;
+  cbetPost('cbetRegistrarCredito',{
+    placa:placa,nombre:nombre,dni:dni,telefono:tel,
+    importe:importe,nCuotas:nCuotas,fechaInicio:fecha,
+    observacion:obs,registradoPor:CU?CU.nombre:''
+  },function(d){
+    if(d.ok){
+      showToast('Credito creado: '+d.cuotasGeneradas.length+' cuotas generadas','success');
+      CBET_CLIENTES_CACHE=[];
+      cbetCambiarVista('panel');
+    } else {
+      showToast('Error: '+(d.error||'Error desconocido'),'error');
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// ANALÍTICA
+// ═══════════════════════════════════════
+function cbetRenderAnalitica(body) {
+  body.innerHTML='<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando analitica...</div>';
+  cbetGet('cbetAnalitica','',function(d){
+    if(!d.ok){body.innerHTML='<div style="color:#ef4444;padding:20px">'+d.error+'</div>';return;}
+    cbetMostrarAnalitica(body,d);
+  });
+}
+
+function cbetMostrarAnalitica(body,d) {
+  body.innerHTML='';
+  // Reutilizamos los mismos bloques que Agenda pero en modo analítica completa
+  cbetMostrarAgenda(body,d);
+}
+
+// ═══════════════════════════════════════
+// CONFIG — cuentas bancarias
+// ═══════════════════════════════════════
+function cbetRenderConfig(body) {
+  body.innerHTML='<div style="text-align:center;padding:20px;color:#8a8a8a">Cargando configuracion...</div>';
+  cbetGet('cbetGetConfig','',function(d){
+    if(!d.ok){showToast('Error cargando config','error');return;}
+    CBET_CONFIG=d.config||{};
+    cbetMostrarConfig(body);
+  });
+}
+
+function cbetMostrarConfig(body) {
+  var cfg=CBET_CONFIG;
+  body.innerHTML='';
+  var card=document.createElement('div');
+  card.style.cssText='max-width:560px;background:white;border:1.5px solid #E5E7EB;border-radius:16px;padding:24px';
+  var campos=[
+    {clave:'cuenta_bcp',label:'Cuenta BCP',placeholder:'Número de cuenta BCP'},
+    {clave:'cuenta_bbva',label:'Cuenta BBVA',placeholder:'Número de cuenta BBVA'},
+    {clave:'yape',label:'Yape (número)',placeholder:'Número de teléfono Yape'},
+    {clave:'whatsapp_cobranzas',label:'WhatsApp cobranzas',placeholder:'51987654321'},
+    {clave:'empresa_nombre',label:'Nombre empresa',placeholder:''},
+    {clave:'empresa_telefono',label:'Teléfono empresa',placeholder:''}
+  ];
+  var html='<div style="font-size:15px;font-weight:900;color:#131313;margin-bottom:16px">Configuracion de cuentas</div>'+
+    '<div style="display:flex;flex-direction:column;gap:12px">';
+  for(var i=0;i<campos.length;i++){
+    var f=campos[i];
+    html+='<div>'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">'+f.label+'</label>'+
+      '<input id="cbetCfg_'+f.clave+'" type="text" value="'+(cfg[f.clave]||'')+'" placeholder="'+f.placeholder+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:13px;box-sizing:border-box;font-family:inherit">'+
+    '</div>';
+  }
+  html+='</div>'+
+    '<button onclick="cbetGuardarConfig()" style="'+cbetBtnStyle('#131313')+';padding:12px 24px;font-size:13px;margin-top:16px;width:100%">Guardar configuracion</button>';
+  card.innerHTML=html;
+  body.appendChild(card);
+}
+
+function cbetGuardarConfig() {
+  var claves=['cuenta_bcp','cuenta_bbva','yape','whatsapp_cobranzas','empresa_nombre','empresa_telefono'];
+  var updates={};
+  for(var i=0;i<claves.length;i++){
+    var el=document.getElementById('cbetCfg_'+claves[i]);
+    if(el) updates[claves[i]]=el.value.trim();
+  }
+  cbetPost('cbetSetConfig',{updates:updates},function(d){
+    if(d.ok){
+      CBET_CONFIG=Object.assign(CBET_CONFIG,updates);
+      showToast('Configuracion guardada','success');
+    } else showToast('Error guardando','error');
+  });
+}
+
+// ═══════════════════════════════════════
+// MODALES
+// ═══════════════════════════════════════
+function cbetModalPago(placa,cuotaId,numCuota,saldo) {
+  var hoy=cbetHoy();
+  var modal=cbetCrearModal('Registrar pago — Cuota '+numCuota,
+    '<div style="margin-bottom:12px">'+
+      '<div style="font-size:13px;color:#374151;margin-bottom:8px">Saldo pendiente: <strong style="color:#ef4444">'+cbetFmt(saldo)+'</strong></div>'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Monto a pagar (S/)</label>'+
+      '<input id="cbetPago_monto" type="number" value="'+saldo.toFixed(2)+'" min="0.01" max="'+saldo.toFixed(2)+'" step="0.01" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>'+
+    '<div style="margin-bottom:12px">'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Fecha de pago</label>'+
+      '<input id="cbetPago_fecha" type="date" value="'+hoy+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>'+
+    '<div>'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Observacion</label>'+
+      '<input id="cbetPago_obs" type="text" placeholder="Opcional" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>',
+    function(){
+      var monto=parseFloat(document.getElementById('cbetPago_monto').value);
+      var fecha=document.getElementById('cbetPago_fecha').value;
+      var obs=document.getElementById('cbetPago_obs').value;
+      if(!monto||monto<=0){showToast('Ingresa un monto valido','error');return;}
+      if(!fecha){showToast('Ingresa la fecha de pago','error');return;}
+      cbetPost('cbetRegistrarPago',{
+        placa:placa,cuotaId:cuotaId,monto:monto,fechaPago:fecha,
+        observacion:obs,registradoPor:CU?CU.nombre:''
+      },function(d){
+        if(d.ok){
+          showToast('Pago registrado correctamente','success');
+          document.body.removeChild(document.getElementById('cbetModalOverlay'));
+          CBET_CLIENTES_CACHE=[];
+          if(CBET_SUBVIEW==='ficha') cbetRenderFicha(document.getElementById('cbetBody'));
+          else cbetCargarPanel();
+        } else showToast('Error: '+(d.error||''),'error');
+      });
+    }
+  );
+}
+
+function cbetModalCompromiso(placa,nombre) {
+  var hoy=cbetHoy();
+  cbetCrearModal('Compromiso de pago — '+placa,
+    '<div style="font-size:12px;color:#6b7280;margin-bottom:12px">'+nombre+'</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Fecha prometida</label>'+
+      '<input id="cbetComp_fecha" type="date" value="'+hoy+'" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Monto prometido (S/)</label>'+
+      '<input id="cbetComp_monto" type="number" placeholder="0.00" min="0" step="0.01" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>'+
+    '<div>'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Observacion</label>'+
+      '<input id="cbetComp_obs" type="text" placeholder="Ej: dijo que paga el viernes" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>',
+    function(){
+      var fecha=document.getElementById('cbetComp_fecha').value;
+      var monto=parseFloat(document.getElementById('cbetComp_monto').value);
+      var obs=document.getElementById('cbetComp_obs').value;
+      if(!fecha||!monto){showToast('Completa fecha y monto','error');return;}
+      cbetPost('cbetRegistrarCompromiso',{placa:placa,fechaPrometida:fecha,montoPrometido:monto,observacion:obs,registradoPor:CU?CU.nombre:''},function(d){
+        if(d.ok){showToast('Compromiso registrado','success');document.body.removeChild(document.getElementById('cbetModalOverlay'));CBET_CLIENTES_CACHE=[];}
+        else showToast('Error: '+(d.error||''),'error');
+      });
+    }
+  );
+}
+
+function cbetModalGestion(placa,nombre) {
+  cbetCrearModal('Registrar gestion — '+placa,
+    '<div style="font-size:12px;color:#6b7280;margin-bottom:12px">'+nombre+'</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Tipo de contacto</label>'+
+      '<select id="cbetGest_tipo" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+        '<option value="LLAMADA">📞 Llamada</option>'+
+        '<option value="WHATSAPP">💬 WhatsApp</option>'+
+        '<option value="VISITA">🚗 Visita</option>'+
+      '</select>'+
+    '</div>'+
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Resultado</label>'+
+      '<select id="cbetGest_resultado" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+        '<option value="CONTACTADO">✅ Contactado — pagara</option>'+
+        '<option value="PROMESA">📌 Promesa de pago</option>'+
+        '<option value="NO_CONTESTA">📵 No contesta</option>'+
+        '<option value="NEGATIVA">❌ Se nego a pagar</option>'+
+      '</select>'+
+    '</div>'+
+    '<div>'+
+      '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Observacion</label>'+
+      '<input id="cbetGest_obs" type="text" placeholder="Detalle de la gestion" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;font-family:inherit">'+
+    '</div>',
+    function(){
+      var tipo=document.getElementById('cbetGest_tipo').value;
+      var resultado=document.getElementById('cbetGest_resultado').value;
+      var obs=document.getElementById('cbetGest_obs').value;
+      cbetPost('cbetRegistrarGestion',{placa:placa,tipo:tipo,resultado:resultado,observacion:obs,registradoPor:CU?CU.nombre:''},function(d){
+        if(d.ok){showToast('Gestion registrada','success');document.body.removeChild(document.getElementById('cbetModalOverlay'));}
+        else showToast('Error: '+(d.error||''),'error');
+      });
+    }
+  );
+}
+
+function cbetModalPrioridad(placa,actual) {
+  var labels={3:'🔴 URGENTE',2:'🟠 ALTO',1:'🟡 NORMAL',0:'⚪ BAJO'};
+  var html='<div style="font-size:12px;color:#6b7280;margin-bottom:12px">Placa: <strong>'+placa+'</strong></div>'+
+    '<div style="display:flex;flex-direction:column;gap:8px">';
+  var lvls=[3,2,1,0];
+  for(var i=0;i<lvls.length;i++){
+    var lv=lvls[i];
+    var sel=lv===actual?'border:2.5px solid #FFC165;background:#fff8eb':'border:1.5px solid #D9D9D9;background:white';
+    html+='<button onclick="cbetSetPrioridad(\''+placa+'\','+lv+')" style="'+sel+';border-radius:8px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left">'+labels[lv]+'</button>';
+  }
+  html+='</div>';
+  cbetCrearModal('Cambiar prioridad',html,null);
+}
+
+function cbetSetPrioridad(placa,nivel) {
+  cbetPost('cbetActualizarPrioridad',{placa:placa,prioridad:nivel},function(d){
+    if(d.ok){
+      showToast('Prioridad actualizada','success');
+      var ov=document.getElementById('cbetModalOverlay');
+      if(ov) document.body.removeChild(ov);
+      CBET_CLIENTES_CACHE=[];
+      cbetCargarPanel();
+    } else showToast('Error','error');
+  });
+}
+
+function cbetModalWhatsapp(placa,nombre,tel,saldo,proxVenc) {
+  cbetModalWhatsappRapido(placa,nombre,tel,saldo,proxVenc);
+}
+
+function cbetModalWhatsappRapido(placa,nombre,tel,saldo,proxVenc) {
+  var cfg=CBET_CONFIG;
+  var empresa=cfg.empresa_nombre||'Carrigas Peru E.I.R.L.';
+  var telEmp=cfg.empresa_telefono||'971 065 262';
+  var msg='Estimado(a) '+nombre+', le recordamos que tiene una cuota pendiente de '+saldo;
+  if(proxVenc&&proxVenc!=='—') msg+=' con vencimiento el '+proxVenc;
+  msg+='. Puede realizar su pago en:\n';
+  if(cfg.cuenta_bcp&&cfg.cuenta_bcp.indexOf('Completar')<0) msg+='• BCP: '+cfg.cuenta_bcp+'\n';
+  if(cfg.cuenta_bbva&&cfg.cuenta_bbva.indexOf('Completar')<0) msg+='• BBVA: '+cfg.cuenta_bbva+'\n';
+  if(cfg.yape&&cfg.yape.indexOf('Completar')<0) msg+='• Yape: '+cfg.yape+'\n';
+  msg+=empresa+' — Tel: '+telEmp;
+
+  var numLimpio=tel?tel.replace(/\s/g,''):'';
+  var waLink=numLimpio?'https://wa.me/51'+numLimpio.replace(/^0/,'')+'?text='+encodeURIComponent(msg):'';
+
+  cbetCrearModal('Mensaje WhatsApp — '+placa,
+    '<div style="font-size:12px;color:#6b7280;margin-bottom:8px">'+nombre+' · '+tel+'</div>'+
+    '<textarea id="cbetWA_msg" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical;line-height:1.5" rows="7">'+msg+'</textarea>'+
+    (waLink?'<a href="'+waLink+'" target="_blank" style="display:block;margin-top:10px;background:#25D366;color:white;border-radius:8px;padding:10px;text-align:center;text-decoration:none;font-weight:700;font-size:13px">Abrir WhatsApp ↗</a>':'<div style="color:#ef4444;font-size:12px;margin-top:8px">Sin número registrado</div>'),
+    null
+  );
+}
+
+function cbetCrearModal(titulo,htmlContent,onConfirm) {
+  var ov=document.getElementById('cbetModalOverlay');
+  if(ov) document.body.removeChild(ov);
+  ov=document.createElement('div');
+  ov.id='cbetModalOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9500;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){if(e.target===ov)document.body.removeChild(ov);};
+  var box=document.createElement('div');
+  box.style.cssText='background:white;border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:85vh;overflow-y:auto';
+  box.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'+
+      '<div style="font-size:15px;font-weight:800;color:#131313">'+titulo+'</div>'+
+      '<button onclick="document.body.removeChild(document.getElementById(\'cbetModalOverlay\'))" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a8a8a;padding:0 4px">✕</button>'+
+    '</div>'+
+    htmlContent+
+    (onConfirm?'<button id="cbetModalBtn" style="'+cbetBtnStyle('#131313')+';width:100%;padding:12px;font-size:14px;margin-top:14px">Confirmar</button>':'');
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  if(onConfirm){
+    var btn=document.getElementById('cbetModalBtn');
+    if(btn) btn.onclick=onConfirm;
+  }
+  return ov;
+}
+
+function cbetMostrarError(msg) {
+  var wrap=document.getElementById('cbetTablaV2')||document.getElementById('cbetBody');
+  if(!wrap) return;
+  wrap.innerHTML='<div style="background:#fff5f5;border:1.5px solid #fca5a5;border-radius:12px;padding:20px;text-align:center">'+
+    '<div style="font-size:14px;font-weight:700;color:#dc2626;margin-bottom:8px">'+msg+'</div>'+
+    '<button onclick="cbetRenderSubvista()" style="'+cbetBtnStyle('#131313')+'">Reintentar</button>'+
+    '</div>';
+}
+
 
 
 function renderRadar() {
