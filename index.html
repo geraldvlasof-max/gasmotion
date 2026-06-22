@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.2.0';
+    var GM_VERSION = '4.2.1';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -9606,7 +9606,8 @@ function mostrarApp(){
   document.getElementById('navUsuarios').style.display=isAdm?'':'none';
   document.getElementById('navConfig').style.display=isAdm?'':'none';
   var navCred=document.getElementById('navCreditos');
-  if(navCred) navCred.style.display=isAdm?'':'none';
+  var puedeVerCreditos = CU && (CU.role==='admin' || CU.role==='supervisor' || CU.role==='jefe' || CU.role==='asistente_fise');
+  if(navCred) navCred.style.display=puedeVerCreditos?'':'none';
   var adminLabel=document.getElementById('navAdminLabel');
   if(adminLabel)adminLabel.style.display=isAdm?'':'none';
   document.getElementById('navFise').style.display=(isAdm||isFis)?'':'none';
