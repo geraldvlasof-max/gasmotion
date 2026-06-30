@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.4.0';
+    var GM_VERSION = '4.5.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6557,6 +6557,254 @@ function vidEliminar(id, titulo) {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO MATRIZ FISE — Generación automática desde Etapa 1
+// ═══════════════════════════════════════════════════════════
+
+function fiseCerrarModal() {
+  var ov = document.getElementById('fiseModalOv');
+  if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+}
+
+function fiseAbrirModalChecklist(expId) {
+  var exp = null;
+  for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===expId){exp=expedientes[i];break;}}
+  if(!exp) return;
+
+  var ov = document.createElement('div');
+  ov.id = 'fiseModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick = function(e){ if(e.target===ov) document.body.removeChild(ov); };
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:900;color:#131313">Generar Matriz FISE</div>' +
+          '<div style="font-size:12px;color:#8a8a8a;margin-top:2px">Completa el Checklist Comercial</div>' +
+        '</div>' +
+        '<button onclick="fiseCerrarModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a8a8a">✕</button>' +
+      '</div>' +
+
+      '<div style="background:#fef9ec;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e">' +
+        '📋 El vendedor completa este checklist. La IA leerá automáticamente el TIV SUNARP y el DNI del SCANFILE 1.' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:12px">' +
+        fiseInputRow('fise_celular','Celular','text','987654321') +
+        fiseInputRow('fise_correo','Correo electrónico','email','cliente@email.com') +
+        fiseInputRow('fise_km','Kilometraje','number','25000') +
+        '<div>' +
+          '<label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Cantidad de cilindros *</label>' +
+          '<select id="fise_cilindros" onchange="fiseToggleCil2()" style="width:100%;border:1.5px solid #D9D9D9;border-radius:10px;padding:11px 12px;font-size:13px;font-family:inherit;outline:none;background:white">' +
+            '<option value="1">1 cilindro</option>' +
+            '<option value="2">2 cilindros</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+          fiseInputSm('fise_ubic1','Ubicación Cil.1','Maletera') +
+          fiseInputSm('fise_litros1','Litros Cil.1','55') +
+          fiseInputSm('fise_galones1','Galones Cil.1','4') +
+        '</div>' +
+        '<div id="fise_cil2_row" style="display:none;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">' +
+          fiseInputSm('fise_ubic2','Ubicación Cil.2','') +
+          fiseInputSm('fise_litros2','Litros Cil.2','') +
+          fiseInputSm('fise_galones2','Galones Cil.2','') +
+        '</div>' +
+        fiseInputRow('fise_kit','Kit GNV / Marca (5TA)','text','TOMASETTO ACHILLE') +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          fiseInputSm('fise_precio','Precio S/','4000') +
+          fiseInputSm('fise_descuento','Descuento GLP S/','0') +
+        '</div>' +
+        fiseInputRow('fise_fecha','Fecha de ingreso','date','') +
+      '</div>' +
+
+      '<div id="fise_progreso" style="display:none;margin-top:16px">' +
+        '<div style="font-size:12px;color:#374151;margin-bottom:6px;font-weight:600" id="fise_progreso_txt">Procesando...</div>' +
+        '<div style="height:8px;background:#E5E7EB;border-radius:4px;overflow:hidden">' +
+          '<div id="fise_progreso_bar" style="height:100%;width:0%;background:#FFC165;border-radius:4px;transition:width .4s"></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<button onclick="fiseGenerarMatriz(\'' + expId + '\')" id="fise_btn_generar" ' +
+        'style="width:100%;margin-top:18px;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">' +
+        '⚡ Generar Matriz FISE' +
+      '</button>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+  // Delegar focus/blur para inputs FISE (evita comillas en HTML generado)
+  setTimeout(function() {
+    var inputs = ov.querySelectorAll('.fise-input');
+    for(var fi=0; fi<inputs.length; fi++) {
+      inputs[fi].addEventListener('focus', function(){ this.style.borderColor='#FFC165'; });
+      inputs[fi].addEventListener('blur', function(){ this.style.borderColor='#D9D9D9'; });
+    }
+  }, 50);
+  // Poner fecha de hoy por defecto
+  var hoy = new Date().toISOString().slice(0,10);
+  var fechaEl = document.getElementById('fise_fecha');
+  if(fechaEl) fechaEl.value = hoy;
+}
+
+function fiseInputRow(id, label, type, placeholder) {
+  return '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">' + label + '</label>' +
+    '<input id="' + id + '" type="' + type + '" placeholder="' + placeholder + '" class="fise-input" ' +
+    'style="width:100%;border:1.5px solid #D9D9D9;border-radius:10px;padding:11px 14px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+}
+
+function fiseInputSm(id, label, placeholder) {
+  return '<div><label style="font-size:10px;font-weight:700;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">' + label + '</label>' +
+    '<input id="' + id + '" type="text" placeholder="' + placeholder + '" class="fise-input" ' +
+    'style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box"></div>';
+}
+
+function fiseToggleCil2() {
+  var n = document.getElementById('fise_cilindros');
+  var row = document.getElementById('fise_cil2_row');
+  if(n && row) row.style.display = n.value === '2' ? 'grid' : 'none';
+}
+
+function fiseGetVal(id) { var el=document.getElementById(id); return el?el.value.trim():''; }
+
+function fiseProgresoSet(pct, txt) {
+  var bar = document.getElementById('fise_progreso_bar');
+  var txtEl = document.getElementById('fise_progreso_txt');
+  var div = document.getElementById('fise_progreso');
+  if(div) div.style.display = '';
+  if(bar) bar.style.width = pct + '%';
+  if(txtEl) txtEl.textContent = txt;
+}
+
+function fiseGenerarMatriz(expId) {
+  // Validar campos obligatorios
+  var celular = fiseGetVal('fise_celular');
+  var correo = fiseGetVal('fise_correo');
+  var km = fiseGetVal('fise_km');
+  var cilindros = parseInt(fiseGetVal('fise_cilindros') || '1');
+  var ubic1 = fiseGetVal('fise_ubic1');
+  var litros1 = fiseGetVal('fise_litros1');
+  var galones1 = fiseGetVal('fise_galones1');
+  var kit = fiseGetVal('fise_kit');
+  var precio = fiseGetVal('fise_precio');
+  var descuento = fiseGetVal('fise_descuento') || '0';
+  var fechaEl = document.getElementById('fise_fecha');
+  var fecha = fechaEl ? fechaEl.value : '';
+
+  if(!celular||!km||!ubic1||!litros1||!galones1||!kit||!precio||!fecha) {
+    showToast('Completa todos los campos obligatorios', 'error');
+    return;
+  }
+
+  // Convertir fecha de YYYY-MM-DD a DD/MM/YYYY
+  var fechaParts = fecha.split('-');
+  var fechaFmt = fechaParts[2] + '/' + fechaParts[1] + '/' + fechaParts[0];
+
+  var checklist = {
+    celular: celular, correo: correo, kilometraje: km,
+    cant_cilindros: cilindros,
+    ubic_cil1: ubic1, litros_cil1: litros1, galones_cil1: galones1,
+    ubic_cil2: fiseGetVal('fise_ubic2'), litros_cil2: fiseGetVal('fise_litros2'),
+    galones_cil2: fiseGetVal('fise_galones2'),
+    kit_marca: kit, precio: precio, descuento_glp: descuento,
+    fecha_ingreso: fechaFmt
+  };
+
+  // Obtener el PDF del SCANFILE 1 (ya está en Drive — lo descargamos via proxyFile)
+  var exp = null;
+  for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===expId){exp=expedientes[i];break;}}
+  if(!exp || !exp.driveFiles || !exp.driveFiles['sf1']) {
+    showToast('No se encontró el SCANFILE 1 en Drive', 'error');
+    return;
+  }
+
+  var sf1Meta = exp.driveFiles['sf1'];
+  var fileId = typeof sf1Meta === 'object' ? (sf1Meta.id || '') : '';
+  if(!fileId) {
+    // Intentar extraer de URL
+    var url = typeof sf1Meta === 'string' ? sf1Meta : (sf1Meta.viewUrl || sf1Meta.url || '');
+    var m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if(m) fileId = m[1];
+  }
+  if(!fileId) { showToast('No se pudo obtener el ID del SCANFILE 1 en Drive', 'error'); return; }
+
+  var btn = document.getElementById('fise_btn_generar');
+  if(btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+  fiseProgresoSet(10, 'Descargando SCANFILE 1 desde Drive...');
+
+  // 1. Descargar el PDF desde Drive via proxyFile
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + fileId, {cache:'no-store'})
+  .then(function(r){
+    if(!r.ok) throw new Error('Error descargando PDF: ' + r.status);
+    return r.blob();
+  })
+  .then(function(blob){
+    fiseProgresoSet(25, 'Leyendo PDF...');
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var pdfBase64 = ev.target.result.split(',')[1];
+      fiseProgresoSet(40, 'Enviando a IA para extracción automática...');
+
+      // 2. Llamar al Worker que llama al microservicio
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=fiseGenerarMatriz', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          pdfBase64: pdfBase64,
+          checklist: checklist,
+          expId: expId,
+          subidoPor: CU ? CU.nombre : ''
+        })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
+        if(d.ok) {
+          fiseProgresoSet(100, '✓ Matriz generada correctamente');
+          showToast('Matriz FISE generada: ' + (d.nombreArchivo||''), 'success');
+
+          // Guardar en el expediente
+          for(var i=0;i<expedientes.length;i++){
+            if(expedientes[i].id===expId){
+              if(!expedientes[i].e1) expedientes[i].e1={};
+              expedientes[i].e1.matrizFISE = {
+                viewUrl: d.viewUrl, downloadUrl: d.downloadUrl,
+                nombreArchivo: d.nombreArchivo, correlativo: d.correlativo,
+                placa: d.placa, fecha: nowFecha()
+              };
+              break;
+            }
+          }
+          saveExp();
+
+          // Cerrar modal y mostrar resultado
+          var ov = document.getElementById('fiseModalOv');
+          if(ov) document.body.removeChild(ov);
+          abrirExpediente(expId);
+        } else {
+          fiseProgresoSet(0, '');
+          var div = document.getElementById('fise_progreso');
+          if(div) div.style.display = 'none';
+          showToast('Error: ' + (d.error || 'Error desconocido'), 'error');
+        }
+      })
+      .catch(function(e){
+        if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
+        var div = document.getElementById('fise_progreso');
+        if(div) div.style.display = 'none';
+        showToast('Error de conexión: ' + e.message, 'error');
+      });
+    };
+    reader.readAsDataURL(blob);
+  })
+  .catch(function(e){
+    if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
+    showToast('Error descargando PDF: ' + e.message, 'error');
+  });
+}
+
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -7139,6 +7387,50 @@ function renderEtapa1(cont, exp) {
     exp.vendedorServicio===CU.nombre ||
     exp.sede===CU.sede
   );
+  // ── BOTÓN GENERAR MATRIZ FISE ──
+  if(isAdmin || isFise) {
+    var sf1ok = !!(exp.e1 && exp.e1.scanfile1 && exp.e1.scanfile1.completado);
+    var matrizDiv = document.createElement('div');
+    matrizDiv.style.cssText = 'margin-top:14px;background:' + (sf1ok?'#f0fdf4':'#F7F7F2') + ';border:1.5px solid ' + (sf1ok?'#86efac':'#D9D9D9') + ';border-radius:12px;padding:14px';
+    matrizDiv.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
+        '<span style="font-size:18px">📋</span>' +
+        '<div>' +
+          '<div style="font-size:13px;font-weight:800;color:#131313">Generar Matriz FISE</div>' +
+          '<div style="font-size:11px;color:#8a8a8a">Genera el Excel FISE automáticamente desde el SCANFILE 1</div>' +
+        '</div>' +
+      '</div>';
+
+    if(!sf1ok) {
+      matrizDiv.innerHTML += '<div style="font-size:12px;color:#f59e0b;font-weight:600">⚠ Sube primero el SCANFILE 1 para generar la Matriz FISE</div>';
+    } else {
+      var btnMatriz = document.createElement('button');
+      btnMatriz.id = 'btnMatrizFISE_' + exp.id;
+      btnMatriz.style.cssText = 'width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px';
+      btnMatriz.innerHTML = '⚡ Generar Matriz FISE automáticamente';
+      btnMatriz.onclick = (function(eid){ return function(){ fiseAbrirModalChecklist(eid); }; })(exp.id);
+      matrizDiv.appendChild(btnMatriz);
+
+      // Si ya hay una matriz generada, mostrar link
+      if(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl) {
+        var mf = exp.e1.matrizFISE;
+        var matrizInfo = document.createElement('div');
+        matrizInfo.style.cssText = 'margin-top:10px;padding:10px;background:white;border-radius:8px;border:1px solid #D9D9D9;display:flex;justify-content:space-between;align-items:center';
+        matrizInfo.innerHTML =
+          '<div style="font-size:12px;color:#374151"><strong>Matriz generada:</strong> ' + (mf.nombreArchivo||'') + '<br>' +
+          '<span style="color:#8a8a8a;font-size:11px">Correlativo: ' + (mf.correlativo||'') + ' · ' + (mf.fecha||'') + '</span></div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<a href="' + mf.viewUrl + '" target="_blank" style="'+
+              'background:#5C8CF5;color:white;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;text-decoration:none">Ver</a>' +
+            '<a href="' + mf.downloadUrl + '" target="_blank" style="'+
+              'background:#10b981;color:white;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:700;text-decoration:none">↓ Descargar</a>' +
+          '</div>';
+        matrizDiv.appendChild(matrizInfo);
+      }
+    }
+    sec.appendChild(matrizDiv);
+  }
+
   if(isAdmin||isFise||esVendedorModal){
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
