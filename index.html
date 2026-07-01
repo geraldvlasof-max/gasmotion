@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.5.2';
+    var GM_VERSION = '4.5.3';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6790,9 +6790,52 @@ function fiseGenerarMatriz(expId) {
 
   var btn = document.getElementById('fise_btn_generar');
   if(btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
-  fiseProgresoSet(10, 'Descargando SCANFILE 1 desde Drive...');
 
-  // 1. Descargar el PDF desde Drive via proxyFile
+  // ── FASE A: Despertar el microservicio antes de mandar el PDF ──
+  fiseDespertarServicio(0, function(despierto) {
+    if(!despierto) {
+      if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
+      var div = document.getElementById('fise_progreso');
+      if(div) div.style.display = 'none';
+      showToast('El servicio no respondió a tiempo. Intenta de nuevo en un momento.', 'error');
+      return;
+    }
+    fiseContinuarGeneracion(expId, fileId, checklist, btn);
+  });
+}
+
+// ── Despierta el microservicio con reintentos visibles ──
+var FISE_MAX_INTENTOS = 20; // ~20 x 4s = 80s máximo
+function fiseDespertarServicio(intento, callback) {
+  var segundos = intento * 4;
+  var pct = Math.min(5 + intento * 2, 35);
+  fiseProgresoSet(pct, 'Despertando servicio... (' + segundos + 's transcurridos)');
+
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=fiseWakeup', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok && d.despierto) {
+      fiseProgresoSet(35, '✓ Servicio activo, preparando envío...');
+      callback(true);
+    } else if(intento < FISE_MAX_INTENTOS) {
+      setTimeout(function(){ fiseDespertarServicio(intento + 1, callback); }, 4000);
+    } else {
+      callback(false);
+    }
+  })
+  .catch(function(){
+    if(intento < FISE_MAX_INTENTOS) {
+      setTimeout(function(){ fiseDespertarServicio(intento + 1, callback); }, 4000);
+    } else {
+      callback(false);
+    }
+  });
+}
+
+// ── FASE B: PDF + generación (servicio ya despierto) ──
+function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
+  fiseProgresoSet(40, 'Descargando SCANFILE 1 desde Drive...');
+
   fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + fileId, {cache:'no-store'})
   .then(function(r){
     if(!r.ok) throw new Error('Error descargando PDF: ' + r.status);
@@ -6803,9 +6846,17 @@ function fiseGenerarMatriz(expId) {
     var reader = new FileReader();
     reader.onload = function(ev) {
       var pdfBase64 = ev.target.result.split(',')[1];
-      fiseProgresoSet(40, 'Enviando a IA para extracción automática...');
+      var fiseInicioEnvio = Date.now();
+      var fiseContador = setInterval(function(){
+        var seg = Math.round((Date.now() - fiseInicioEnvio) / 1000);
+        var pctAnim = Math.min(45 + Math.floor(seg / 2), 95);
+        fiseProgresoSet(pctAnim, 'Extrayendo datos con IA y generando Excel... (' + seg + 's)');
+      }, 1000);
 
-      // 2. Llamar al Worker que llama al microservicio
+      // 2. Llamar al Worker que llama al microservicio (con timeout de 90s)
+      var fiseAbortCtrl = new AbortController();
+      var fiseAbortTimeout = setTimeout(function(){ fiseAbortCtrl.abort(); }, 90000);
+
       fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=fiseGenerarMatriz', {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -6814,9 +6865,10 @@ function fiseGenerarMatriz(expId) {
           checklist: checklist,
           expId: expId,
           subidoPor: CU ? CU.nombre : ''
-        })
+        }),
+        signal: fiseAbortCtrl.signal
       })
-      .then(function(r){ return r.json(); })
+      .then(function(r){ clearInterval(fiseContador); clearTimeout(fiseAbortTimeout); return r.json(); })
       .then(function(d){
         if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
         if(d.ok) {
@@ -6849,10 +6901,12 @@ function fiseGenerarMatriz(expId) {
         }
       })
       .catch(function(e){
+        clearInterval(fiseContador); clearTimeout(fiseAbortTimeout);
         if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
         var div = document.getElementById('fise_progreso');
         if(div) div.style.display = 'none';
-        showToast('Error de conexión: ' + e.message, 'error');
+        var msg = e.name === 'AbortError' ? 'Tiempo de espera agotado (90s). Intenta de nuevo.' : ('Error de conexión: ' + e.message);
+        showToast(msg, 'error');
       });
     };
     reader.readAsDataURL(blob);
