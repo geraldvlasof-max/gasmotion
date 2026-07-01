@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.5.0';
+    var GM_VERSION = '4.5.1';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -5219,6 +5219,24 @@ function _pdfNoFoto(doc, x, y, w, h, LGRAY, GRAY) {
   doc.text('[ Sin fotografía ]', x+w/2, y+h/2, {align:'center'});
 }
 
+
+function getDriveFileId(expId, docKey) {
+  // Devuelve solo el fileId de Drive (sin construir URL)
+  var exp = null;
+  for(var i=0;i<expedientes.length;i++){if(expedientes[i].id===expId){exp=expedientes[i];break;}}
+  if(!exp || !exp.driveFiles || !exp.driveFiles[docKey]) return null;
+  var meta = exp.driveFiles[docKey];
+  if(typeof meta === 'object' && meta !== null) {
+    if(meta.id) return meta.id;
+    var url = meta.viewUrl || meta.url || meta.webViewLink || '';
+    var m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if(m) return m[1];
+  } else if(typeof meta === 'string') {
+    var m2 = meta.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if(m2) return m2[1];
+  }
+  return null;
+}
 
 function getDrivePreviewUrl(expId, docKey) {
   // Buscar en driveFiles del expediente
