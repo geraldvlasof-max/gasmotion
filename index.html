@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.5.1';
+    var GM_VERSION = '4.5.2';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -5219,6 +5219,47 @@ function _pdfNoFoto(doc, x, y, w, h, LGRAY, GRAY) {
   doc.text('[ Sin fotografía ]', x+w/2, y+h/2, {align:'center'});
 }
 
+
+function puedeReemplazar(docKey, exp) {
+  // Solo admin, asistente_fise, o quien registró el expediente puede reemplazar un documento
+  if(!CU) return false;
+  if(CU.role === 'admin' || CU.role === 'asistente_fise') return true;
+  if(exp && exp.registradoPor === CU.nombre) return true;
+  return false;
+}
+
+function descargarDocumento(driveId, nombre) {
+  if(!driveId) { showToast('Archivo no disponible', 'error'); return; }
+  var url = GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=proxyFile&fileId=' + driveId;
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = nombre || 'documento.pdf';
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function abrirVisorDocumento(driveId, nombre) {
+  if(!driveId) { showToast('Archivo no disponible', 'error'); return; }
+  window.open('https://drive.google.com/file/d/' + driveId + '/view', '_blank');
+}
+
+function confirmarReemplazo(docKey, expId, inputTipoKey, accept) {
+  if(!confirm('¿Deseas reemplazar este documento? El archivo actual será sustituido por el nuevo.')) return;
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = accept || '.pdf,image/*';
+  inp.onchange = function() {
+    if(!inp.files || !inp.files.length) return;
+    var file = inp.files[0];
+    storeFile(expId, docKey, file, function() {
+      showToast('Documento reemplazado correctamente', 'success');
+      abrirExpediente(expId);
+    });
+  };
+  inp.click();
+}
 
 function getDriveFileId(expId, docKey) {
   // Devuelve solo el fileId de Drive (sin construir URL)
