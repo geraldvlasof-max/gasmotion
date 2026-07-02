@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.7.1';
+    var GM_VERSION = '4.7.2';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -2022,7 +2022,7 @@ function showToast(msg,tipo){
   var el=document.getElementById('gmToast');
   if(!el){
     el=document.createElement('div');el.id='gmToast';
-    el.style.cssText='position:fixed;top:16px;right:16px;z-index:8000;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;color:white;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:opacity .3s;display:flex;align-items:center;gap:8px';
+    el.style.cssText='position:fixed;top:16px;right:16px;z-index:99999;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;color:white;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:opacity .3s;display:flex;align-items:center;gap:8px';
     document.body.appendChild(el);
   }
   var colors={error:'#ef4444',warning:'#f59e0b',success:'#22c55e',info:'#FFC165'};
