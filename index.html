@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.9.0';
+    var GM_VERSION = '4.9.2';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -6817,6 +6817,107 @@ function vidEliminar(id, titulo) {
 // MÓDULO MATRIZ FISE — Generación automática desde Etapa 1
 // ═══════════════════════════════════════════════════════════
 
+
+// ═══════════════════════════════════════════════════════════
+// PANTALLA DE REVISIÓN — datos extraídos por IA antes de grabar
+// Permite corregir manualmente si la IA se equivocó en algo,
+// o rehacer el proceso desde cero si el resultado es incorrecto.
+// ═══════════════════════════════════════════════════════════
+
+function fiseMostrarRevision(expId, datos) {
+  var ov = document.createElement('div');
+  ov.id = 'fiseRevisionOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9700;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  var campos = [
+    {id:'fr_nombre', label:'Nombre completo', val: datos.nombre||''},
+    {id:'fr_dni', label:'DNI', val: datos.dni||''},
+    {id:'fr_direccion', label:'Dirección', val: datos.direccion||''},
+    {id:'fr_distrito', label:'Distrito/Prov/Dpto', val: datos.distrito||''},
+    {id:'fr_placa', label:'Placa', val: datos.placa||''},
+    {id:'fr_marca', label:'Marca', val: datos.marca||''},
+    {id:'fr_modelo', label:'Modelo', val: datos.modelo||''},
+    {id:'fr_anio', label:'Año', val: datos.anio||''},
+    {id:'fr_color', label:'Color', val: datos.color||''},
+    {id:'fr_cilindrada', label:'Cilindrada', val: datos.cilindrada||''},
+    {id:'fr_vin', label:'VIN / Serie', val: datos.vin||''},
+    {id:'fr_partida', label:'Partida Registral', val: datos.partida||''}
+  ];
+
+  var camposHtml = '';
+  for(var i=0; i<campos.length; i++) {
+    var c = campos[i];
+    camposHtml += '<div>' +
+      '<label style="font-size:10px;font-weight:700;color:#374151;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em">' + c.label + '</label>' +
+      '<input id="' + c.id + '" type="text" value="' + String(c.val).replace(/"/g,'&quot;') + '" ' +
+        'style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 11px;font-size:13px;box-sizing:border-box;font-family:inherit">' +
+    '</div>';
+  }
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto">' +
+      '<div style="margin-bottom:16px">' +
+        '<div style="font-size:16px;font-weight:900;color:#131313">Revisa los datos extraídos por IA</div>' +
+        '<div style="font-size:12px;color:#8a8a8a;margin-top:2px">La IA leyó el TIV y el DNI del SCANFILE 1. Verifica y corrige si algo está mal antes de grabar en el expediente.</div>' +
+      '</div>' +
+      '<div style="background:#fff8eb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:#92400e">⚠ Estos datos se grabarán en Etapa 2 y no será necesario volver a escribirlos.</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">' + camposHtml + '</div>' +
+      '<div style="display:flex;gap:10px">' +
+        '<button id="frBtnConfirmar" style="flex:2;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">✓ Confirmar y grabar en expediente</button>' +
+        '<button id="frBtnRehacer" style="flex:1;background:#fef2f2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:10px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Rehacer</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin-top:10px;text-align:center">"Rehacer" descarta estos datos y vuelve a intentar la lectura del SCANFILE 1</div>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+
+  document.getElementById('frBtnConfirmar').onclick = function() {
+    fiseConfirmarDatosExtraidos(expId);
+  };
+  document.getElementById('frBtnRehacer').onclick = function() {
+    if(!confirm('¿Descartar estos datos y volver a generar la matriz desde cero?')) return;
+    var ovR = document.getElementById('fiseRevisionOv');
+    if(ovR) document.body.removeChild(ovR);
+    fiseAbrirModalChecklist(expId);
+  };
+}
+
+function fiseConfirmarDatosExtraidos(expId) {
+  var campos = ['fr_nombre','fr_dni','fr_direccion','fr_distrito','fr_placa','fr_marca','fr_modelo','fr_anio','fr_color','fr_cilindrada','fr_vin','fr_partida'];
+  var valores = {};
+  for(var i=0; i<campos.length; i++) {
+    var el = document.getElementById(campos[i]);
+    valores[campos[i]] = el ? el.value.trim() : '';
+  }
+
+  for(var j=0; j<expedientes.length; j++) {
+    if(expedientes[j].id === expId) {
+      var e = expedientes[j];
+      e.nombre = valores.fr_nombre;
+      e.dni = valores.fr_dni;
+      e.direccion = valores.fr_direccion;
+      e.distrito = valores.fr_distrito;
+      e.placa = valores.fr_placa.toUpperCase();
+      e.marca = valores.fr_marca;
+      e.modelo = valores.fr_modelo;
+      e.anio = valores.fr_anio;
+      e.color = valores.fr_color;
+      e.cilindrada = valores.fr_cilindrada;
+      e.vinSerie = valores.fr_vin;
+      e.partida = valores.fr_partida;
+      if(!e.e2) e.e2 = {};
+      e.e2.datosPreLlenadosPorIA = true;
+      break;
+    }
+  }
+  saveExp();
+  showToast('Datos grabados en el expediente — revísalos en Etapa 2', 'success');
+
+  var ov = document.getElementById('fiseRevisionOv');
+  if(ov) document.body.removeChild(ov);
+  abrirExpediente(expId);
+}
+
 function fiseCerrarModal() {
   var ov = document.getElementById('fiseModalOv');
   if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
@@ -7069,26 +7170,26 @@ function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
         if(btn) { btn.disabled = false; btn.textContent = '⚡ Generar Matriz FISE'; }
         if(d.ok) {
           fiseProgresoSet(100, '✓ Matriz generada correctamente');
-          showToast('Matriz FISE generada: ' + (d.nombreArchivo||''), 'success');
 
-          // Guardar en el expediente
+          // Guardar el link de la matriz de una vez (esto no requiere revisión)
           for(var i=0;i<expedientes.length;i++){
             if(expedientes[i].id===expId){
               if(!expedientes[i].e1) expedientes[i].e1={};
               expedientes[i].e1.matrizFISE = {
                 viewUrl: d.viewUrl, downloadUrl: d.downloadUrl,
                 nombreArchivo: d.nombreArchivo, correlativo: d.correlativo,
-                placa: d.placa, fecha: nowFecha()
+                placa: (d.datosExtraidos||{}).placa || '', fecha: nowFecha()
               };
               break;
             }
           }
           saveExp();
 
-          // Cerrar modal y mostrar resultado
+          // Cerrar modal de checklist y mostrar pantalla de REVISIÓN
+          // de los datos extraídos por IA antes de grabarlos en el expediente
           var ov = document.getElementById('fiseModalOv');
           if(ov) document.body.removeChild(ov);
-          abrirExpediente(expId);
+          fiseMostrarRevision(expId, d.datosExtraidos || {});
         } else {
           fiseProgresoSet(0, '');
           var div = document.getElementById('fise_progreso');
@@ -7123,6 +7224,8 @@ var ASIST_YA_MARCADO_HOY = false;
 
 // ── Botón "Iniciar operaciones" en el topbar ──
 function insertarBotonAsistencia() {
+  // Admin (iki) controla todo remotamente — no necesita marcar ingreso
+  if(CU && CU.role === 'admin') return;
   if(document.getElementById('btnIniciarOperaciones')) return;
   var topbarRight = document.querySelector('.topbar-right');
   if(!topbarRight) return;
@@ -7141,6 +7244,7 @@ function insertarBotonAsistencia() {
 // de su ventana de horario de entrada y aún no marcó ingreso
 function asistVerificarBannerGrande() {
   if(!CU) return;
+  if(CU.role === 'admin') return; // admin controla todo remotamente, sin marcar ingreso
   if(ASIST_YA_MARCADO_HOY) {
     var bExistente = document.getElementById('asistBannerGrande');
     if(bExistente) document.body.removeChild(bExistente);
@@ -8300,6 +8404,14 @@ function renderEtapa2(cont, exp) {
   var puedeSub=isAdmin||isFise;
   var sec=document.createElement('div');
   sec.innerHTML='<div class="etapa-header"><div class="etapa-num" style="background:#eab308">2</div><div><div class="etapa-title">ETAPA 2 — MATRIZ EXCEL + DOCUMENTOS FISE</div><div class="etapa-sub">El Asistente FISE descarga el SCANFILE 1, genera la Matriz y adjunta los documentos</div></div></div>';
+
+  // Indicador: datos pre-llenados automaticamente por IA desde el SCANFILE 1
+  if(exp.e2 && exp.e2.datosPreLlenadosPorIA) {
+    var iaInfo = document.createElement('div');
+    iaInfo.style.cssText = 'background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#1e40af;display:flex;align-items:center;gap:8px';
+    iaInfo.innerHTML = '<span style="font-size:16px">🤖</span><span><strong>Datos pre-llenados por IA</strong> desde el SCANFILE 1. Verifica que todo este correcto antes de guardar.</span>';
+    sec.appendChild(iaInfo);
+  }
 
   // Descarga SCANFILE 1
   var sf1url=getFileUrl(exp.id,'sf1');
