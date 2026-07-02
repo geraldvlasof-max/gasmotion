@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.9.4';
+    var GM_VERSION = '4.9.5';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -2596,9 +2596,13 @@ function renderBandeja() {
       exp.sede===CU.sede
     );
     var canAvanzar=CU&&(CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe'||esVendedorExp);
-    if(canAvanzar){
+    var matrizGeneradaBandeja = !!(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl);
+    if(canAvanzar && matrizGeneradaBandeja){
       var avBtn=mkBtn('btn btn-navy btn-sm','width:100%;justify-content:center','avanzarEtapa2',exp.id,'Avanzar a Etapa 2 →');
       acts.appendChild(avBtn);
+    } else if(canAvanzar && !matrizGeneradaBandeja) {
+      var abrirBtn=mkBtn('btn btn-sm','width:100%;justify-content:center;background:#fff8eb;color:#92400e;border:1px solid #fde68a','abrirExpediente',exp.id,'⚡ Abrir para generar Matriz FISE');
+      acts.appendChild(abrirBtn);
     } else {
       var pendMsg=document.createElement('div');
       pendMsg.style.cssText='font-size:11px;color:#6b82a0;text-align:center;padding:6px;background:#F7F7F2;border-radius:6px;border:1px solid #D9D9D9';
@@ -3979,6 +3983,22 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     var df1 = exp.driveFiles && exp.driveFiles['sf1'];
     if(df1) { sf1url = df1.viewUrl || sf1url; sf1dl = df1.downloadUrl || sf1dl; }
     docsHtml = renderDocHistorialRow('SCANFILE 1', sf1, sf1url, sf1dl);
+
+    // La Matriz FISE puede faltar aunque el expediente ya haya avanzado
+    // (expedientes creados antes de este requisito, o casos de excepcion)
+    var matrizGeneradaHist = !!(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl);
+    if(!matrizGeneradaHist) {
+      docsHtml += '<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:14px;margin-top:10px">' +
+        '<div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:8px">⚠ Falta generar la Matriz FISE</div>' +
+        '<button id="btnGenMatrizHist_' + exp.id + '" style="width:100%;background:#131313;color:#FFC165;border:none;border-radius:9px;padding:11px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">⚡ Generar Matriz FISE ahora</button>' +
+      '</div>';
+    } else {
+      var mfHist = exp.e1.matrizFISE;
+      docsHtml += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-top:10px;font-size:12px;color:#15803d">' +
+        '✓ Matriz FISE generada — Correlativo ' + (mfHist.correlativo||'') +
+        ' · <a href="' + mfHist.viewUrl + '" target="_blank" style="color:#5C8CF5">Ver</a>' +
+      '</div>';
+    }
   }
 
   if(numEtapa === 2) {
@@ -4097,6 +4117,15 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   body.innerHTML = docsHtml;
   wrap.appendChild(header);
   wrap.appendChild(body);
+
+  // Enganchar boton de generar matriz si esta visible en el historial
+  var btnGenHist = document.getElementById('btnGenMatrizHist_' + exp.id);
+  if(btnGenHist) {
+    btnGenHist.onclick = (function(eid){ return function(){ fiseAbrirModalChecklist(eid); }; })(exp.id);
+    body.style.display = 'block'; // abrir automaticamente si falta la matriz
+    var arrowAuto = document.getElementById('arrow_' + sectionId);
+    if(arrowAuto) arrowAuto.style.transform = 'rotate(180deg)';
+  }
 
   // Toggle colapsar/expandir
   header.onclick = function() {
