@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.8.0';
+    var GM_VERSION = '4.9.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -667,6 +667,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" id="navTecnico" onclick="switchTab('tecnico',this)" style="display:none"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span><span>Mis Tareas</span></button>
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuracion</button>
         <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Radar de Conversiones</button>
+        <button class="nav-item" onclick="switchTab('agendaGral',this)" id="navAgendaGral"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Agenda</button>
         <button class="nav-item" onclick="switchTab('videoteca',this)" id="navVideoteca"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Videoteca</button>
         <button class="nav-item" onclick="switchTab('asistencia',this)" id="navAsistencia"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Asistencia</button>
         <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
@@ -1033,6 +1034,11 @@ input,select,textarea{font-size:16px!important}
           <div style="padding:16px 0">
             <div id="radarContainer"></div>
           </div>
+        </div>
+
+        <!-- AGENDA GENERAL -->
+        <div class="tab-content" id="tab-agendaGral">
+          <div id="agendaGralContent" style="padding:16px 0"></div>
         </div>
 
         <!-- VIDEOTECA -->
@@ -2375,6 +2381,7 @@ function editarNombreAdmin() {
 // ==================
 var TAB_TITLES={
   asistencia:['Control de Asistencia','Registro de ingresos por geolocalizacion'],
+  agendaGral:['Agenda','Recordatorios y tareas del equipo'],
   videoteca:['Videoteca','Contenido multimedia para vendedores'],
   creditos:['Creditos','Gestion de creditos AUTOCASH y CBET'],
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
@@ -2404,6 +2411,7 @@ function switchTab(name, el) {
   if(name==='radar') renderRadar();
   if(name==='creditos') renderCreditos();
   if(name==='videoteca') renderVideoteca();
+  if(name==='agendaGral') renderAgendaGeneral();
   if(name==='asistencia') renderAsistenciaReporte();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
@@ -4659,6 +4667,30 @@ function colorRadar(diasHabiles) {
 // Técnico tanque → montaje cilindro | Técnico delantera → montaje electrónica
 // ═══════════════════════════════════════════════════════════
 
+// Trigger automático: técnico completa una tarea → evento en Agenda para el jefe de sede
+function agendaTriggerTareaTecnico(exp, descripcionParte) {
+  if(!exp || !GM_CONFIG.workerUrl) return;
+  var users = getUsers();
+  var uidJefe = null;
+  for(var uid in users) {
+    if(users[uid].role === 'jefe' && users[uid].sede === exp.sede) { uidJefe = uid; break; }
+  }
+  if(!uidJefe) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=agendaCrear', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      titulo: descripcionParte + ' — ' + (exp.placa||''),
+      descripcion: 'Tecnico marco como lista esta parte del trabajo.',
+      fechaHora: new Date().toISOString(),
+      responsableId: uidJefe,
+      tipo: 'automatico', categoria: 'taller',
+      origenTabla: 'expedientes', origenId: exp.id,
+      creadoPor: 'sistema'
+    })
+  }).catch(function(){});
+}
+
 function marcarCulminado(expId, tipo) {
   // tipo: 'cilindro' (técnico tanque) o 'electronica' (técnico delantera)
   var expTarget = null;
@@ -4708,9 +4740,11 @@ function marcarCulminado(expId, tipo) {
     var durMs = expTarget.e4.conversionFin - expTarget.e4.conversionInicio;
     expTarget.e4.conversionDuracionHoras = Math.round(durMs / 3600000 * 10) / 10;
     showToast('Conversión culminada — Duración: ' + formatDuracion(durMs), 'success');
+    agendaTriggerTareaTecnico(expTarget, 'Conversión completa');
   } else {
     var parte = tipo === 'cilindro' ? 'Montaje cilindro' : 'Montaje electrónica';
     showToast('' + parte + ' culminado', 'success');
+    agendaTriggerTareaTecnico(expTarget, parte);
   }
 
   // Guardar en servidor
@@ -7413,6 +7447,213 @@ function asistRenderTabla(wrap, registros) {
   }
   html += '</tbody></table></div>';
   wrap.innerHTML = html;
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO AGENDA — recordatorios y tareas del equipo
+// Manual + automático (cobranza CBET, expedientes, taller)
+// ═══════════════════════════════════════════════════════════
+
+var AGENDA_FILTRO_VISTA = 'mios'; // 'mios' | 'todos' (solo admin)
+
+function renderAgendaGeneral() {
+  var cont = document.getElementById('agendaGralContent');
+  if(!cont) return;
+  cont.innerHTML = '';
+
+  var puedeVerTodos = CU && (CU.role === 'admin' || CU.role === 'supervisor');
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px';
+  hdr.innerHTML =
+    '<div><div style="font-size:20px;font-weight:900;color:#131313">Agenda</div>' +
+    '<div style="font-size:12px;color:#8a8a8a">Recordatorios y tareas del equipo</div></div>' +
+    '<button onclick="agendaModalNuevo()" style="background:#131313;color:#FFC165;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Nuevo recordatorio</button>';
+  cont.appendChild(hdr);
+
+  if(puedeVerTodos) {
+    var filtros = document.createElement('div');
+    filtros.style.cssText = 'display:flex;gap:8px;margin-bottom:16px';
+    filtros.innerHTML =
+      '<button id="agFiltroMios" style="' + agFiltroStyle('mios') + '">Mis tareas</button>' +
+      '<button id="agFiltroTodos" style="' + agFiltroStyle('todos') + '">Todo el equipo</button>';
+    cont.appendChild(filtros);
+    document.getElementById('agFiltroMios').onclick = function(){ agendaCambiarFiltro('mios'); };
+    document.getElementById('agFiltroTodos').onclick = function(){ agendaCambiarFiltro('todos'); };
+  }
+
+  var lista = document.createElement('div');
+  lista.id = 'agendaListaWrap';
+  cont.appendChild(lista);
+
+  agendaCargar();
+}
+
+function agFiltroStyle(f) {
+  var activo = AGENDA_FILTRO_VISTA === f;
+  return 'background:' + (activo?'#131313':'#F0F0F0') + ';color:' + (activo?'white':'#374151') +
+    ';border:1px solid ' + (activo?'#131313':'#D9D9D9') + ';border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+}
+
+function agendaCambiarFiltro(f) {
+  AGENDA_FILTRO_VISTA = f;
+  var m = document.getElementById('agFiltroMios');
+  var t = document.getElementById('agFiltroTodos');
+  if(m) m.style.cssText = agFiltroStyle('mios');
+  if(t) t.style.cssText = agFiltroStyle('todos');
+  agendaCargar();
+}
+
+function agendaCargar() {
+  var wrap = document.getElementById('agendaListaWrap');
+  if(!wrap || !CU) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando...</div>';
+  var todos = AGENDA_FILTRO_VISTA === 'todos' ? '&todos=1' : '';
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=agendaListar&uid=' + CU.id + todos, {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.ok) { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error cargando agenda</div>'; return; }
+    agendaRenderLista(wrap, d.eventos);
+  })
+  .catch(function(){ wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error de conexion</div>'; });
+}
+
+function agendaRenderLista(wrap, eventos) {
+  if(!eventos.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:48px;background:white;border:1.5px solid #E5E7EB;border-radius:14px;color:#8a8a8a">' +
+      '<div style="font-size:36px;margin-bottom:10px">📅</div>Sin eventos pendientes</div>';
+    return;
+  }
+
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  var finSemana = new Date(hoy); finSemana.setDate(finSemana.getDate() + (7 - finSemana.getDay()));
+
+  var grupos = { hoy: [], semana: [], proximos: [], vencidos: [] };
+  for(var i=0; i<eventos.length; i++) {
+    var ev = eventos[i];
+    var fechaEv = new Date(ev.fecha_hora);
+    if(ev.estado === 'vencido') { grupos.vencidos.push(ev); continue; }
+    if(ev.estado === 'completado') continue;
+    var fechaEvDia = new Date(fechaEv); fechaEvDia.setHours(0,0,0,0);
+    if(fechaEvDia.getTime() === hoy.getTime()) grupos.hoy.push(ev);
+    else if(fechaEvDia <= finSemana) grupos.semana.push(ev);
+    else grupos.proximos.push(ev);
+  }
+
+  var html = '';
+  if(grupos.vencidos.length) html += agendaGrupoHtml('⚠ Vencidos', grupos.vencidos, '#ef4444');
+  if(grupos.hoy.length) html += agendaGrupoHtml('Hoy', grupos.hoy, '#FFC165');
+  if(grupos.semana.length) html += agendaGrupoHtml('Esta semana', grupos.semana, '#5C8CF5');
+  if(grupos.proximos.length) html += agendaGrupoHtml('Proximos', grupos.proximos, '#8a8a8a');
+
+  if(!html) html = '<div style="text-align:center;padding:48px;background:white;border:1.5px solid #E5E7EB;border-radius:14px;color:#8a8a8a">Sin eventos pendientes</div>';
+  wrap.innerHTML = html;
+}
+
+function agendaGrupoHtml(titulo, eventos, color) {
+  var html = '<div style="margin-bottom:20px">' +
+    '<div style="font-size:12px;font-weight:800;color:' + color + ';text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">' + titulo + ' (' + eventos.length + ')</div>';
+  for(var i=0; i<eventos.length; i++) {
+    var ev = eventos[i];
+    var catIcon = { cobranza:'💳', expediente:'📋', taller:'🔧', general:'📌' }[ev.categoria] || '📌';
+    var fecha = new Date(ev.fecha_hora);
+    var fechaStr = fecha.toLocaleDateString('es-PE', {day:'2-digit',month:'short'}) + ' ' + fecha.toLocaleTimeString('es-PE', {hour:'2-digit',minute:'2-digit'});
+    var origenTxt = ev.tipo === 'automatico' ? '<div style="font-size:10px;color:#a8a8a8;margin-top:2px">Generado desde: ' + (ev.origen_tabla||'') + '</div>' : '';
+
+    html += '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:12px">' +
+      '<div style="font-size:20px">' + catIcon + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:#131313">' + ev.titulo + '</div>' +
+        (ev.descripcion ? '<div style="font-size:12px;color:#6b7280;margin-top:2px">' + ev.descripcion + '</div>' : '') +
+        '<div style="font-size:11px;color:#8a8a8a;margin-top:4px">' + fechaStr + '</div>' +
+        origenTxt +
+      '</div>' +
+      '<button onclick="agendaCompletar(' + ev.id + ')" style="background:#f0fdf4;color:#16a34a;border:1px solid #86efac;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">✓ Completar</button>' +
+    '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function agendaCompletar(id) {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=agendaActualizarEstado', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ id: id, estado: 'completado' })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) { showToast('Marcado como completado', 'success'); agendaCargar(); }
+    else showToast('Error actualizando', 'error');
+  });
+}
+
+function agendaModalNuevo() {
+  var ov = document.createElement('div');
+  ov.id = 'agendaModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick = function(e){ if(e.target===ov) document.body.removeChild(ov); };
+
+  var users = getUsers();
+  var uidsOpts = '';
+  for(var uid in users) {
+    var sel = (CU && uid === CU.id) ? ' selected' : '';
+    uidsOpts += '<option value="' + uid + '"' + sel + '>' + users[uid].nombre + '</option>';
+  }
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:420px">' +
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:16px">Nuevo recordatorio</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Titulo *</label>' +
+      '<input id="ag_titulo" type="text" placeholder="Ej: Llamar al proveedor" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Descripcion</label>' +
+      '<textarea id="ag_desc" rows="2" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Fecha</label>' +
+        '<input id="ag_fecha" type="date" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Hora</label>' +
+        '<input id="ag_hora" type="time" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+      '</div>' +
+      '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Asignar a</label>' +
+      '<select id="ag_responsable" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:white">' + uidsOpts + '</select></div>' +
+      '<button id="agBtnGuardar" style="width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">Guardar recordatorio</button>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+  var hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('ag_fecha').value = hoy;
+  document.getElementById('ag_hora').value = '09:00';
+  document.getElementById('agBtnGuardar').onclick = agendaGuardarNuevo;
+}
+
+function agendaGuardarNuevo() {
+  var titulo = document.getElementById('ag_titulo').value.trim();
+  var desc = document.getElementById('ag_desc').value.trim();
+  var fecha = document.getElementById('ag_fecha').value;
+  var hora = document.getElementById('ag_hora').value;
+  var responsable = document.getElementById('ag_responsable').value;
+
+  if(!titulo || !fecha || !hora) { showToast('Completa titulo, fecha y hora', 'error'); return; }
+
+  var fechaHoraISO = new Date(fecha + 'T' + hora + ':00').toISOString();
+
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=agendaCrear', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      titulo: titulo, descripcion: desc, fechaHora: fechaHoraISO,
+      responsableId: responsable, tipo: 'manual', categoria: 'general',
+      creadoPor: CU ? CU.id : ''
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      showToast('Recordatorio creado', 'success');
+      var ov = document.getElementById('agendaModalOv');
+      if(ov) document.body.removeChild(ov);
+      agendaCargar();
+    } else showToast('Error creando recordatorio', 'error');
+  });
 }
 
 
@@ -10236,12 +10477,38 @@ function avanzarEtapaNum(id, num) {
       // Portal del cliente: generar codigo de acceso desde Etapa 3
       if(num >= 3) ensureCodigoAcceso(expedientes[i]);
       if(num === 4) pushAvanceEtapa4(expedientes[i]);
+      if(num === 5) agendaTriggerEtapa5(expedientes[i]);
       saveExp();
       break;
     }
   }
   abrirExpediente(id);
   renderPanel();
+}
+
+// Trigger automático: expediente entra a Etapa 5 → evento en Agenda para la vendedora
+function agendaTriggerEtapa5(exp) {
+  if(!exp || !GM_CONFIG.workerUrl) return;
+  // Buscar uid de la vendedora asignada por nombre
+  var users = getUsers();
+  var uidVendedora = null;
+  for(var uid in users) {
+    if(users[uid].nombre === exp.vendedorServicio) { uidVendedora = uid; break; }
+  }
+  if(!uidVendedora) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=agendaCrear', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      titulo: 'Expediente en Etapa 5 — ' + (exp.placa||''),
+      descripcion: 'El expediente esta listo para armado de documentos.',
+      fechaHora: new Date().toISOString(),
+      responsableId: uidVendedora,
+      tipo: 'automatico', categoria: 'expediente',
+      origenTabla: 'expedientes', origenId: exp.id,
+      creadoPor: 'sistema'
+    })
+  }).catch(function(){});
 }
 
 // ==================
@@ -11643,6 +11910,8 @@ function mostrarApp(){
   if(navCred) navCred.style.display=puedeVerCreditos?'':'none';
   var navVid=document.getElementById('navVideoteca');
   if(navVid) navVid.style.display=(CU && CU.role!=='tecnico')?'':'none';
+  var navAgGral=document.getElementById('navAgendaGral');
+  if(navAgGral) navAgGral.style.display=(CU)?'':'none';
   var navAsist=document.getElementById('navAsistencia');
   if(navAsist) navAsist.style.display=(CU && (CU.role==='admin'||CU.role==='jefe'))?'':'none';
   var adminLabel=document.getElementById('navAdminLabel');
