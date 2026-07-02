@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.5.3';
+    var GM_VERSION = '4.6.0';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -3016,6 +3016,129 @@ function saltarNotifBloqueo() {
   try{ localStorage.setItem('gm_notif_saltada','1'); }catch(e){}
 }
 
+// ═══════════════════════════════════════════════════════════
+// NOTIFICACIONES EN PRIMER PLANO — sonido real + tabla central
+// Corrige el bug raíz: OneSignal no suena con la app abierta.
+// Este módulo SÍ suena mientras la app está en uso.
+// ═══════════════════════════════════════════════════════════
+
+var GM_NOTIF_ULTIMO_TS = 0;
+var GM_NOTIF_POLLING = null;
+var GM_NOTIF_AUDIO_CTX = null;
+
+// Tono de alerta con Web Audio API — no depende de archivos externos
+function reproducirTonoAlerta() {
+  try {
+    if(!GM_NOTIF_AUDIO_CTX) {
+      GM_NOTIF_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var ctx = GM_NOTIF_AUDIO_CTX;
+    if(ctx.state === 'suspended') ctx.resume();
+
+    function tono(freq, inicio, duracion, volumen) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + inicio);
+      gain.gain.linearRampToValueAtTime(volumen, ctx.currentTime + inicio + 0.02);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + inicio + duracion);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + inicio);
+      osc.stop(ctx.currentTime + inicio + duracion + 0.05);
+    }
+    // Dos tonos ascendentes tipo "alerta" — audible y distintivo
+    tono(880, 0, 0.18, 0.35);
+    tono(1108, 0.20, 0.22, 0.35);
+  } catch(e) { console.warn('No se pudo reproducir tono:', e); }
+
+  // Vibración en móvil (si el navegador lo soporta)
+  if(navigator.vibrate) {
+    try { navigator.vibrate([180, 80, 180]); } catch(e) {}
+  }
+}
+
+// Crear notificación en la tabla central (llamado desde eventos del sistema)
+function crearNotificacion(destinos, tipo, titulo, mensaje, referenciaId, urgente) {
+  if(!GM_CONFIG.workerUrl) return;
+  var uids = Array.isArray(destinos) ? destinos : [destinos];
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=notifCrear', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      destinos: uids, tipo: tipo, titulo: titulo, mensaje: mensaje,
+      referenciaId: referenciaId || null, urgente: urgente !== false
+    })
+  }).catch(function(){});
+}
+
+// Resolver uids de usuarios por rol (para notificar a "todos los admin", etc.)
+function uidsPorRol(roles, excludeUid) {
+  var users = getUsers();
+  var out = [];
+  for(var uid in users) {
+    if(excludeUid && uid === excludeUid) continue;
+    if(roles.indexOf(users[uid].role) !== -1) out.push(uid);
+  }
+  return out;
+}
+
+// ── Polling dedicado de notificaciones (cada 15s, independiente del polling de expedientes) ──
+function iniciarPollingNotificaciones() {
+  if(GM_NOTIF_POLLING) clearInterval(GM_NOTIF_POLLING);
+  if(!CU) return;
+  GM_NOTIF_ULTIMO_TS = Date.now() - 60000; // arrancar mirando el último minuto
+  chequearNotificacionesNuevas(); // primera carga inmediata
+  GM_NOTIF_POLLING = setInterval(chequearNotificacionesNuevas, 15000);
+}
+
+function chequearNotificacionesNuevas() {
+  if(!CU || !GM_CONFIG.workerUrl) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=notifListar&uid=' + CU.id + '&desde=' + GM_NOTIF_ULTIMO_TS, {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.ok || !d.notificaciones || !d.notificaciones.length) return;
+
+    var hayUrgente = false;
+    for(var i=0; i<d.notificaciones.length; i++) {
+      var n = d.notificaciones[i];
+      if(n.ts > GM_NOTIF_ULTIMO_TS) GM_NOTIF_ULTIMO_TS = n.ts;
+      if(n.urgente) hayUrgente = true;
+      // Toast por cada notificación nueva
+      showToast(n.titulo + ': ' + n.mensaje, n.urgente ? 'warning' : 'info');
+    }
+    if(hayUrgente) {
+      reproducirTonoAlerta();
+      actualizarBadgeNotifCentral(true);
+    }
+  })
+  .catch(function(){});
+}
+
+function actualizarBadgeNotifCentral(pulsar) {
+  var badge = document.getElementById('gmCampanaBadge');
+  if(!badge) return;
+  if(pulsar) {
+    badge.classList.add('notif-pulse');
+    badge.style.background = '#cc2200';
+  }
+}
+
+// Habilitar el AudioContext con la primera interacción del usuario
+// (los navegadores bloquean audio autoplay sin gesto del usuario)
+function habilitarAudioConGesto() {
+  if(GM_NOTIF_AUDIO_CTX) return;
+  try {
+    GM_NOTIF_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) {}
+  document.removeEventListener('click', habilitarAudioConGesto);
+  document.removeEventListener('touchstart', habilitarAudioConGesto);
+}
+document.addEventListener('click', habilitarAudioConGesto, {once:true});
+document.addEventListener('touchstart', habilitarAudioConGesto, {once:true});
+
+
 function chequearNotificaciones() {
   // No aplica si el navegador no soporta notificaciones
   if(!('Notification' in window)) return;
@@ -3073,44 +3196,33 @@ function enviarPushPorRol(roles, titulo, mensaje, excludeUid) {
 function pushAvanceEtapa2(exp) {
   var placa = exp ? (exp.placa || 'Sin placa') : 'Sin placa';
   var quien = CU ? CU.nombre : 'Un vendedor';
-  enviarPushPorRol(
-    ['asistente_fise', 'admin', 'supervisor'],
-    'Nuevo expediente pendiente',
-    quien + ' ingresó ' + placa + ' — pendiente en Etapa 2',
-    CU ? CU.id : null
-  );
+  var titulo = 'Nuevo expediente pendiente';
+  var msg = quien + ' ingresó ' + placa + ' — pendiente en Etapa 2';
+  enviarPushPorRol(['asistente_fise', 'admin', 'supervisor'], titulo, msg, CU ? CU.id : null);
+  crearNotificacion(uidsPorRol(['asistente_fise','admin','supervisor'], CU?CU.id:null), 'etapa2', titulo, msg, exp?exp.id:null, true);
 }
 
 // Evento 2: Asistente avanza a Etapa 4 → notifica a técnicos asignados
 function pushAvanceEtapa4(exp) {
   var placa = exp ? (exp.placa || 'Sin placa') : 'Sin placa';
-  var uids = [];
-  var users = getUsers();
-  var ids = Object.keys(users);
-  for(var i=0; i<ids.length; i++) {
-    if(users[ids[i]].role === 'tecnico') uids.push(ids[i]);
-  }
+  var uids = uidsPorRol(['tecnico'], null);
   if(!uids.length || !GM_CONFIG.workerUrl) return;
+  var titulo = 'Expediente listo para instalación';
+  var msg = placa + ' está en Etapa 4 — listo para taller';
   fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendPush', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      uids: uids,
-      titulo: 'Expediente listo para instalación',
-      mensaje: placa + ' está en Etapa 4 — listo para taller',
-      users: getUsers()
-    })
+    body: JSON.stringify({ uids: uids, titulo: titulo, mensaje: msg, users: getUsers() })
   }).catch(function(){});
+  crearNotificacion(uids, 'etapa4', titulo, msg, exp?exp.id:null, true);
 }
 
 // Evento 3: Incidencia del cliente → notifica a todos excepto técnicos
 function pushIncidenciaCliente(placa) {
-  enviarPushPorRol(
-    ['admin', 'supervisor', 'vendedor', 'asistente_fise'],
-    'Incidencia del cliente',
-    'El cliente de ' + (placa||'un vehículo') + ' dejó un comentario',
-    null
-  );
+  var titulo = 'Incidencia del cliente';
+  var msg = 'El cliente de ' + (placa||'un vehículo') + ' dejó un comentario';
+  enviarPushPorRol(['admin', 'supervisor', 'vendedor', 'asistente_fise'], titulo, msg, null);
+  crearNotificacion(uidsPorRol(['admin','supervisor','vendedor','asistente_fise'], null), 'incidencia', titulo, msg, placa, true);
 }
 
 // Mostrar instrucción para iPhone
@@ -11122,6 +11234,7 @@ function mostrarApp(){
   registrarPushUsuario();
   mostrarAvisoIOS();
   if(!window._notifChequeada){ window._notifChequeada=true; setTimeout(chequearNotificaciones, 2000); }
+  iniciarPollingNotificaciones();
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
