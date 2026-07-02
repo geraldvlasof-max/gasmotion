@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.9.2';
+    var GM_VERSION = '4.9.4';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -3278,6 +3278,22 @@ function avanzarEtapa2(id) {
   showAlert('alertBandeja','Expediente avanzado a Etapa 2 — FISE notificado.','success');
 }
 
+// Retroceder un expediente a una etapa anterior (solo admin) — util para
+// casos donde el expediente avanzo sin cumplir un requisito nuevo
+function retrocederEtapa(id, etapaDestino) {
+  if(!CU || CU.role !== 'admin') { showToast('Solo el admin puede retroceder etapas', 'error'); return; }
+  if(!confirm('¿Retroceder este expediente a Etapa ' + etapaDestino + '? Esto es una accion administrativa.')) return;
+  for(var i=0;i<expedientes.length;i++){
+    if(expedientes[i].id===id){
+      expedientes[i].etapa=etapaDestino;
+      saveExp();
+      break;
+    }
+  }
+  showToast('Expediente retrocedido a Etapa ' + etapaDestino, 'success');
+  abrirExpediente(id);
+}
+
 // ==================
 // PANEL FISE
 // ==================
@@ -4068,6 +4084,15 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
   }
 
   if(!docsHtml) docsHtml = '<div style="font-size:12px;color:#9ca3af;font-style:italic">No hay documentos disponibles en esta etapa.</div>';
+
+  // Botón admin: retroceder el expediente a esta etapa (para corregir avances sin requisitos)
+  if(CU && CU.role === 'admin') {
+    var btnRetro = document.createElement('button');
+    btnRetro.style.cssText = 'background:none;border:1px solid #D9D9D9;border-radius:6px;padding:3px 8px;font-size:10px;color:#8a8a8a;cursor:pointer;margin-left:8px;font-family:inherit';
+    btnRetro.textContent = '🔧 Retroceder aqui';
+    btnRetro.onclick = (function(eid, num){ return function(e){ e.stopPropagation(); retrocederEtapa(eid, num); }; })(exp.id, numEtapa);
+    header.querySelector('div').appendChild(btnRetro);
+  }
 
   body.innerHTML = docsHtml;
   wrap.appendChild(header);
@@ -8388,10 +8413,22 @@ function renderEtapa1(cont, exp) {
   }
 
   if(isAdmin||isFise||esVendedorModal){
+    var matrizGenerada = !!(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl);
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
-    avBtn.textContent='Avanzar a Etapa 2 →';
-    avBtn.onclick=(function(eid){return function(){avanzarEtapa2(eid);cerrarExpModal();renderBandeja();};})(exp.id);
+    if(!matrizGenerada) {
+      avBtn.style.opacity='0.5';
+      avBtn.style.cursor='not-allowed';
+      avBtn.disabled=true;
+      avBtn.textContent='Genera la Matriz FISE para avanzar';
+      var avisoObligatorio = document.createElement('div');
+      avisoObligatorio.style.cssText='background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;margin-top:10px;font-size:11px;color:#dc2626;text-align:center';
+      avisoObligatorio.textContent='⚠ No puedes avanzar a Etapa 2 sin generar y confirmar la Matriz FISE primero.';
+      sec.appendChild(avisoObligatorio);
+    } else {
+      avBtn.textContent='Avanzar a Etapa 2 →';
+      avBtn.onclick=(function(eid){return function(){avanzarEtapa2(eid);cerrarExpModal();renderBandeja();};})(exp.id);
+    }
     sec.appendChild(avBtn);
   }
   cont.appendChild(sec);
