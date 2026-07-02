@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.7.3';
+    var GM_VERSION = '4.7.4';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -3033,6 +3033,7 @@ function saltarNotifBloqueo() {
 var GM_NOTIF_ULTIMO_TS = 0;
 var GM_NOTIF_POLLING = null;
 var GM_NOTIF_AUDIO_CTX = null;
+var GM_NOTIF_AUDIO_DESBLOQUEADO = false;
 
 // Tono de alerta con Web Audio API — no depende de archivos externos
 function reproducirTonoAlerta() {
@@ -3041,7 +3042,10 @@ function reproducirTonoAlerta() {
       GM_NOTIF_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
     }
     var ctx = GM_NOTIF_AUDIO_CTX;
-    if(ctx.state === 'suspended') ctx.resume();
+    if(ctx.state === 'suspended') {
+      ctx.resume();
+      console.warn('AudioContext estaba suspendido — puede que iOS no reproduzca sonido hasta el próximo toque en pantalla.');
+    }
 
     function tono(freq, inicio, duracion, volumen) {
       var osc = ctx.createOscillator();
@@ -3134,17 +3138,34 @@ function actualizarBadgeNotifCentral(pulsar) {
 }
 
 // Habilitar el AudioContext con la primera interacción del usuario
-// (los navegadores bloquean audio autoplay sin gesto del usuario)
+// CRÍTICO para iOS: el desbloqueo real debe ocurrir de forma SÍNCRONA
+// dentro del mismo evento de toque, reproduciendo un sonido silencioso
+// inmediatamente. Si se difiere (fetch, setTimeout), iOS lo ignora
+// sin lanzar ningún error — por eso el audio "no sonaba" sin fallar.
 function habilitarAudioConGesto() {
-  if(GM_NOTIF_AUDIO_CTX) return;
   try {
-    GM_NOTIF_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
-  } catch(e) {}
-  document.removeEventListener('click', habilitarAudioConGesto);
-  document.removeEventListener('touchstart', habilitarAudioConGesto);
+    if(!GM_NOTIF_AUDIO_CTX) {
+      GM_NOTIF_AUDIO_CTX = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var ctx = GM_NOTIF_AUDIO_CTX;
+    if(ctx.state === 'suspended') ctx.resume();
+    // Reproducir un tono inaudible (volumen 0) de forma SÍNCRONA para
+    // forzar el desbloqueo real del audio en iOS dentro del mismo gesto
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    gain.gain.value = 0.0001;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.05);
+    GM_NOTIF_AUDIO_DESBLOQUEADO = true;
+  } catch(e) { console.warn('No se pudo desbloquear audio:', e); }
 }
-document.addEventListener('click', habilitarAudioConGesto, {once:true});
-document.addEventListener('touchstart', habilitarAudioConGesto, {once:true});
+// Escucha TODOS los toques (no solo el primero) para reforzar el desbloqueo
+// en cada interacción — más robusto ante sesiones largas donde iOS puede
+// volver a suspender el contexto tras inactividad
+document.addEventListener('click', habilitarAudioConGesto);
+document.addEventListener('touchstart', habilitarAudioConGesto);
 
 
 function chequearNotificaciones() {
