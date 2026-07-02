@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.6.0';
+    var GM_VERSION = '4.7.1';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -668,6 +668,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuracion</button>
         <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Radar de Conversiones</button>
         <button class="nav-item" onclick="switchTab('videoteca',this)" id="navVideoteca"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Videoteca</button>
+        <button class="nav-item" onclick="switchTab('asistencia',this)" id="navAsistencia"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Asistencia</button>
         <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
       </nav>
       <div class="sidebar-bottom">
@@ -1037,6 +1038,11 @@ input,select,textarea{font-size:16px!important}
         <!-- VIDEOTECA -->
         <div class="tab-content" id="tab-videoteca">
           <div id="videotecaContent" style="padding:16px 0"></div>
+        </div>
+
+        <!-- ASISTENCIA -->
+        <div class="tab-content" id="tab-asistencia">
+          <div id="asistContent" style="padding:16px 0"></div>
         </div>
 
         <!-- MODULO CREDITOS -->
@@ -2368,6 +2374,7 @@ function editarNombreAdmin() {
 // TABS
 // ==================
 var TAB_TITLES={
+  asistencia:['Control de Asistencia','Registro de ingresos por geolocalizacion'],
   videoteca:['Videoteca','Contenido multimedia para vendedores'],
   creditos:['Creditos','Gestion de creditos AUTOCASH y CBET'],
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
@@ -2397,6 +2404,7 @@ function switchTab(name, el) {
   if(name==='radar') renderRadar();
   if(name==='creditos') renderCreditos();
   if(name==='videoteca') renderVideoteca();
+  if(name==='asistencia') renderAsistenciaReporte();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
   if(name==='fise') renderPanelFise();
@@ -7030,6 +7038,324 @@ function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
 }
 
 
+// ═══════════════════════════════════════════════════════════
+// MÓDULO ASISTENCIA — Control de tardanzas por geolocalización
+// Botón "Iniciar operaciones" + horario por usuario + reportes
+// ═══════════════════════════════════════════════════════════
+
+var ASIST_YA_MARCADO_HOY = false;
+
+// ── Botón "Iniciar operaciones" en el topbar ──
+function insertarBotonAsistencia() {
+  if(document.getElementById('btnIniciarOperaciones')) return;
+  var topbarRight = document.querySelector('.topbar-right');
+  if(!topbarRight) return;
+  var btn = document.createElement('button');
+  btn.id = 'btnIniciarOperaciones';
+  btn.onclick = asistIniciarOperaciones;
+  btn.style.cssText = 'background:#131313;color:#FFC165;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:700;margin-right:8px;display:flex;align-items:center;gap:6px;font-family:inherit';
+  btn.innerHTML = '📍 Iniciar operaciones';
+  topbarRight.insertBefore(btn, topbarRight.firstChild);
+  asistVerificarEstadoHoy();
+  setTimeout(asistVerificarBannerGrande, 800);
+}
+
+// Muestra el banner grande de pantalla completa si el usuario está dentro
+// de su ventana de horario de entrada y aún no marcó ingreso
+function asistVerificarBannerGrande() {
+  if(!CU || ASIST_YA_MARCADO_HOY) return;
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaGetHorario&uid=' + CU.id, {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.ok) return;
+    var h = d.horario;
+    var ahora = new Date();
+    var diaSemana = ahora.getDay();
+    if(diaSemana === 0) return; // domingo
+    var esSabado = diaSemana === 6;
+    if(esSabado && !h.trabaja_sabado) return;
+    var horaEsperada = esSabado ? h.hora_entrada_sab : h.hora_entrada_lv;
+    var partes = horaEsperada.split(':');
+    var minEsperados = parseInt(partes[0])*60 + parseInt(partes[1]);
+    var minActuales = ahora.getHours()*60 + ahora.getMinutes();
+    var diff = minActuales - minEsperados;
+    // Mostrar banner desde la hora de entrada hasta 60 min después (ventana razonable)
+    if(diff >= 0 && diff <= 60) {
+      asistMostrarBannerGrande(diff);
+    }
+  })
+  .catch(function(){});
+}
+
+function asistMostrarBannerGrande(minutosTarde) {
+  if(document.getElementById('asistBannerGrande')) return;
+  var ov = document.createElement('div');
+  ov.id = 'asistBannerGrande';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(19,19,19,.94);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  var color = minutosTarde > 5 ? '#ef4444' : '#FFC165';
+  var textColor = minutosTarde > 5 ? 'white' : '#131313';
+  var mensaje = minutosTarde > 5
+    ? 'Ya pasaron ' + minutosTarde + ' minutos de tu hora de entrada'
+    : 'Es hora de registrar tu ingreso';
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:24px;padding:40px 32px;max-width:380px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">' +
+      '<div style="font-size:48px;margin-bottom:12px">' + (minutosTarde > 5 ? '🔴' : '⏰') + '</div>' +
+      '<div style="font-size:20px;font-weight:900;color:#131313;margin-bottom:8px">' + mensaje + '</div>' +
+      '<div style="font-size:13px;color:#8a8a8a;margin-bottom:28px">Presiona el botón para activar tu ubicación y registrar tu ingreso</div>' +
+      '<button id="asistBtnGrandeIniciar" style="width:100%;background:' + color + ';color:' + textColor + ';border:none;border-radius:16px;padding:20px;font-size:17px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(255,193,101,.4)">📍 INICIAR OPERACIONES</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+
+  var btnG = document.getElementById('asistBtnGrandeIniciar');
+  if(btnG) btnG.onclick = function() {
+    asistIniciarOperaciones();
+    var checkCerrar = setInterval(function(){
+      if(ASIST_YA_MARCADO_HOY) {
+        var b = document.getElementById('asistBannerGrande');
+        if(b) document.body.removeChild(b);
+        clearInterval(checkCerrar);
+      }
+    }, 500);
+  };
+}
+
+function asistVerificarEstadoHoy() {
+  // Consulta si ya se marcó hoy revisando localStorage (evita llamada innecesaria)
+  var hoy = new Date().toISOString().slice(0,10);
+  var marcado = localStorage.getItem('gm_asist_marcado_' + hoy + '_' + (CU?CU.id:''));
+  if(marcado) {
+    ASIST_YA_MARCADO_HOY = true;
+    asistActualizarBotonMarcado(JSON.parse(marcado));
+  }
+}
+
+function asistActualizarBotonMarcado(data) {
+  var btn = document.getElementById('btnIniciarOperaciones');
+  if(!btn) return;
+  var color = data.estado === 'TARDE' ? '#ef4444' : '#10b981';
+  btn.style.background = color;
+  btn.style.color = 'white';
+  btn.innerHTML = (data.estado==='TARDE' ? '⏰ Tarde ' : '✓ ') + data.hora + ' — ' + data.sede;
+  btn.disabled = true;
+  btn.style.cursor = 'default';
+}
+
+function asistIniciarOperaciones() {
+  if(ASIST_YA_MARCADO_HOY) { showToast('Ya registraste tu ingreso hoy', 'info'); return; }
+  if(!navigator.geolocation) { showToast('Tu navegador no soporta geolocalización', 'error'); return; }
+
+  var btn = document.getElementById('btnIniciarOperaciones');
+  if(btn) { btn.disabled = true; btn.innerHTML = '📍 Obteniendo ubicación...'; }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaRegistrarIngreso', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ uid: CU.id, nombre: CU.nombre, lat: lat, lng: lng })
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d.ok) {
+          ASIST_YA_MARCADO_HOY = true;
+          var hoy = new Date().toISOString().slice(0,10);
+          localStorage.setItem('gm_asist_marcado_' + hoy + '_' + CU.id, JSON.stringify(d));
+          asistActualizarBotonMarcado(d);
+          var msg = d.estado === 'TARDE'
+            ? 'Ingreso registrado con ' + d.minutosTarde + ' min de tardanza en ' + d.sede
+            : 'Ingreso puntual registrado en ' + d.sede;
+          showToast(msg, d.estado==='TARDE' ? 'warning' : 'success');
+        } else {
+          if(btn) { btn.disabled = false; btn.innerHTML = '📍 Iniciar operaciones'; }
+          showToast(d.error || 'Error registrando ingreso', 'error');
+        }
+      })
+      .catch(function(e){
+        if(btn) { btn.disabled = false; btn.innerHTML = '📍 Iniciar operaciones'; }
+        showToast('Error de conexión: ' + e.message, 'error');
+      });
+    },
+    function(err) {
+      if(btn) { btn.disabled = false; btn.innerHTML = '📍 Iniciar operaciones'; }
+      var msg = err.code === 1 ? 'Debes permitir el acceso a tu ubicación para registrar el ingreso' : 'No se pudo obtener tu ubicación';
+      showToast(msg, 'error');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+// ── Modal de configuración de horario por usuario ──
+function asistCerrarModal() {
+  var ov = document.getElementById('asistModalOv');
+  if(ov && ov.parentNode) ov.parentNode.removeChild(ov);
+}
+
+function asistModalHorario(uid, nombre) {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaGetHorario&uid=' + uid, {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var h = d.horario || {};
+    var ov = document.createElement('div');
+    ov.id = 'asistModalOv';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.onclick = function(e){ if(e.target===ov) document.body.removeChild(ov); };
+
+    ov.innerHTML =
+      '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:400px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
+          '<div><div style="font-size:16px;font-weight:800;color:#131313">Horario de trabajo</div>' +
+          '<div style="font-size:12px;color:#8a8a8a">' + nombre + '</div></div>' +
+          '<button onclick="asistCerrarModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8a8a8a">✕</button>' +
+        '</div>' +
+        '<div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Lunes a Viernes</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+          '<div><label style="font-size:10px;color:#8a8a8a;display:block;margin-bottom:4px">Entrada</label>' +
+          '<input id="asist_lv_ent" type="time" value="' + (h.hora_entrada_lv||'08:30') + '" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;box-sizing:border-box"></div>' +
+          '<div><label style="font-size:10px;color:#8a8a8a;display:block;margin-bottom:4px">Salida</label>' +
+          '<input id="asist_lv_sal" type="time" value="' + (h.hora_salida_lv||'18:00') + '" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;box-sizing:border-box"></div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+          '<input id="asist_trabaja_sab" type="checkbox" ' + (h.trabaja_sabado ? 'checked' : '') + ' style="width:16px;height:16px">' +
+          '<label for="asist_trabaja_sab" style="font-size:12px;font-weight:600;color:#374151">Trabaja los sábados</label>' +
+        '</div>' +
+        '<div id="asist_sab_row" style="display:' + (h.trabaja_sabado ? 'grid' : 'none') + ';grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+          '<div><label style="font-size:10px;color:#8a8a8a;display:block;margin-bottom:4px">Entrada Sáb.</label>' +
+          '<input id="asist_sab_ent" type="time" value="' + (h.hora_entrada_sab||'08:30') + '" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;box-sizing:border-box"></div>' +
+          '<div><label style="font-size:10px;color:#8a8a8a;display:block;margin-bottom:4px">Salida Sáb.</label>' +
+          '<input id="asist_sab_sal" type="time" value="' + (h.hora_salida_sab||'14:00') + '" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;box-sizing:border-box"></div>' +
+        '</div>' +
+        '<button id="asistBtnGuardar" style="width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit">Guardar horario</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+
+    var chk = document.getElementById('asist_trabaja_sab');
+    if(chk) chk.onchange = function(){
+      var row = document.getElementById('asist_sab_row');
+      if(row) row.style.display = chk.checked ? 'grid' : 'none';
+    };
+
+    var btnG = document.getElementById('asistBtnGuardar');
+    if(btnG) btnG.onclick = function(){ asistGuardarHorario(uid); };
+  });
+}
+
+function asistGuardarHorario(uid) {
+  var entLV = document.getElementById('asist_lv_ent').value;
+  var salLV = document.getElementById('asist_lv_sal').value;
+  var trabajaSab = document.getElementById('asist_trabaja_sab').checked;
+  var entSab = document.getElementById('asist_sab_ent') ? document.getElementById('asist_sab_ent').value : '08:30';
+  var salSab = document.getElementById('asist_sab_sal') ? document.getElementById('asist_sab_sal').value : '14:00';
+
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaSetHorario', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      uid: uid, horaEntradaLV: entLV, horaSalidaLV: salLV,
+      horaEntradaSab: entSab, horaSalidaSab: salSab, trabajaSabado: trabajaSab
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(d.ok) {
+      showToast('Horario guardado correctamente', 'success');
+      var ov = document.getElementById('asistModalOv');
+      if(ov) document.body.removeChild(ov);
+    } else showToast('Error guardando horario', 'error');
+  });
+}
+
+// ── Panel de reportes de asistencia (para admin y jefe de sede) ──
+function renderAsistenciaReporte() {
+  var cont = document.getElementById('asistContent');
+  if(!cont) return;
+  cont.innerHTML = '';
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px';
+  var hoy = new Date().toISOString().slice(0,10);
+  hdr.innerHTML =
+    '<div><div style="font-size:20px;font-weight:900;color:#131313">Control de Asistencia</div>' +
+    '<div style="font-size:12px;color:#8a8a8a">Registro de ingresos por geolocalización</div></div>' +
+    '<div style="display:flex;gap:8px;align-items:center">' +
+      '<input id="asistFechaDesde" type="date" value="' + hoy + '" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:13px">' +
+      '<span style="color:#8a8a8a">a</span>' +
+      '<input id="asistFechaHasta" type="date" value="' + hoy + '" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:13px">' +
+      '<button onclick="asistCargarReporte()" style="background:#131313;color:#FFC165;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Buscar</button>' +
+    '</div>';
+  cont.appendChild(hdr);
+
+  var tabla = document.createElement('div');
+  tabla.id = 'asistTablaWrap';
+  cont.appendChild(tabla);
+
+  asistCargarReporte();
+}
+
+function asistCargarReporte() {
+  var desde = document.getElementById('asistFechaDesde').value;
+  var hasta = document.getElementById('asistFechaHasta').value;
+  var wrap = document.getElementById('asistTablaWrap');
+  if(!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando...</div>';
+
+  var sedeFiltro = CU && CU.role === 'jefe' && CU.sede ? '&sede=' + encodeURIComponent(CU.sede) : '';
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaListar&desde=' + desde + '&hasta=' + hasta + sedeFiltro, {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if(!d.ok) { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error cargando datos</div>'; return; }
+    asistRenderTabla(wrap, d.registros);
+  });
+}
+
+function asistRenderTabla(wrap, registros) {
+  if(!registros.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:40px;background:white;border:1.5px solid #E5E7EB;border-radius:14px;color:#8a8a8a">Sin registros en este rango de fechas</div>';
+    return;
+  }
+  var puntuales = registros.filter(function(r){ return r.estado==='PUNTUAL'; }).length;
+  var tardes = registros.length - puntuales;
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">' +
+    '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;text-align:center">' +
+      '<div style="font-size:22px;font-weight:900;color:#131313">' + registros.length + '</div>' +
+      '<div style="font-size:11px;color:#8a8a8a">Total registros</div></div>' +
+    '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;text-align:center">' +
+      '<div style="font-size:22px;font-weight:900;color:#10b981">' + puntuales + '</div>' +
+      '<div style="font-size:11px;color:#8a8a8a">Puntuales</div></div>' +
+    '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:14px;text-align:center">' +
+      '<div style="font-size:22px;font-weight:900;color:#ef4444">' + tardes + '</div>' +
+      '<div style="font-size:11px;color:#8a8a8a">Tardanzas</div></div>' +
+  '</div>';
+
+  html += '<div style="background:white;border:1.5px solid #E5E7EB;border-radius:14px;overflow:hidden"><table style="width:100%;border-collapse:collapse;font-size:13px">' +
+    '<thead><tr style="background:#131313;color:white">' +
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase">Fecha</th>' +
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase">Nombre</th>' +
+      '<th style="padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase">Sede</th>' +
+      '<th style="padding:10px 14px;text-align:center;font-size:11px;text-transform:uppercase">Hora</th>' +
+      '<th style="padding:10px 14px;text-align:center;font-size:11px;text-transform:uppercase">Estado</th>' +
+    '</tr></thead><tbody>';
+  for(var i=0; i<registros.length; i++) {
+    var r = registros[i];
+    var bg = r.estado==='TARDE' ? '#fff5f5' : 'white';
+    var badgeColor = r.estado==='TARDE' ? '#ef4444' : '#10b981';
+    var badgeTxt = r.estado==='TARDE' ? 'TARDE (' + r.minutos_tarde + ' min)' : 'PUNTUAL';
+    var fp = r.fecha.split('-');
+    html += '<tr style="border-bottom:1px solid #F3F4F6;background:' + bg + '">' +
+      '<td style="padding:9px 14px;color:#374151">' + fp[2]+'/'+fp[1]+'/'+fp[0] + '</td>' +
+      '<td style="padding:9px 14px;font-weight:700;color:#131313">' + (r.nombre||r.uid) + '</td>' +
+      '<td style="padding:9px 14px;color:#6b82a0">' + r.sede + '</td>' +
+      '<td style="padding:9px 14px;text-align:center;color:#374151">' + r.hora_real + '</td>' +
+      '<td style="padding:9px 14px;text-align:center"><span style="background:' + badgeColor + ';color:white;border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700">' + badgeTxt + '</span></td>' +
+    '</tr>';
+  }
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+
 function renderRadar() {
   var container = document.getElementById('radarContainer');
   if(!container) return;
@@ -9917,6 +10243,12 @@ function renderUsuarios() {
     cb.onclick=(function(uid){return function(){resetPassUsuario(uid);};})(id);
     btns.appendChild(cb);
 
+    var hb=document.createElement('button');
+    hb.style.cssText='background:#fff8eb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
+    hb.innerHTML='⏰ Horario';
+    hb.onclick=(function(uid,nom){return function(){asistModalHorario(uid,nom);};})(id,u.nombre);
+    btns.appendChild(hb);
+
     if(id!=='iki'){
       var db=document.createElement('button');
       db.style.cssText='background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer';
@@ -11235,6 +11567,7 @@ function mostrarApp(){
   mostrarAvisoIOS();
   if(!window._notifChequeada){ window._notifChequeada=true; setTimeout(chequearNotificaciones, 2000); }
   iniciarPollingNotificaciones();
+  insertarBotonAsistencia();
   // Sincronizar usuarios del servidor al entrar (para asignación de técnicos completa)
   if(GM_CONFIG.workerUrl) {
     loadUsersFromSheets(function(){
@@ -11250,6 +11583,8 @@ function mostrarApp(){
   if(navCred) navCred.style.display=puedeVerCreditos?'':'none';
   var navVid=document.getElementById('navVideoteca');
   if(navVid) navVid.style.display=(CU && CU.role!=='tecnico')?'':'none';
+  var navAsist=document.getElementById('navAsistencia');
+  if(navAsist) navAsist.style.display=(CU && (CU.role==='admin'||CU.role==='jefe'))?'':'none';
   var adminLabel=document.getElementById('navAdminLabel');
   if(adminLabel)adminLabel.style.display=isAdm?'':'none';
   document.getElementById('navFise').style.display=(isAdm||isFis)?'':'none';
