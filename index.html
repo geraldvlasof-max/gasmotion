@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
-    var GM_VERSION = '4.7.2';
+    var GM_VERSION = '4.7.3';
     var savedVersion = localStorage.getItem('gm_version');
     if(savedVersion && savedVersion !== GM_VERSION) {
       localStorage.setItem('gm_version', GM_VERSION);
@@ -7095,7 +7095,7 @@ function asistMostrarBannerGrande(minutosTarde) {
   var color = minutosTarde > 5 ? '#ef4444' : '#FFC165';
   var textColor = minutosTarde > 5 ? 'white' : '#131313';
   var mensaje = minutosTarde > 5
-    ? 'Ya pasaron ' + minutosTarde + ' minutos de tu hora de entrada'
+    ? 'Tu tarea debio iniciar hace ' + minutosTarde + ' minutos'
     : 'Es hora de registrar tu ingreso';
 
   ov.innerHTML =
