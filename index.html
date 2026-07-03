@@ -3994,9 +3994,11 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
       '</div>';
     } else {
       var mfHist = exp.e1.matrizFISE;
-      docsHtml += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-top:10px;font-size:12px;color:#15803d">' +
-        '✓ Matriz FISE generada — Correlativo ' + (mfHist.correlativo||'') +
-        ' · <a href="' + mfHist.viewUrl + '" target="_blank" style="color:#5C8CF5">Ver</a>' +
+      var puedeRegenerarHist = CU && (CU.role==='admin'||CU.role==='asistente_fise'||CU.role==='jefe');
+      docsHtml += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:12px;margin-top:10px;font-size:12px;color:#15803d;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">' +
+        '<span>✓ Matriz FISE generada — Correlativo ' + (mfHist.correlativo||'') +
+        ' · <a href="' + mfHist.viewUrl + '" target="_blank" style="color:#5C8CF5">Ver</a></span>' +
+        (puedeRegenerarHist ? '<button id="btnRegenMatrizHist_' + exp.id + '" style="background:none;border:1px solid #86efac;border-radius:6px;padding:4px 10px;font-size:11px;color:#15803d;cursor:pointer;font-family:inherit">🔄 Volver a generar</button>' : '') +
       '</div>';
     }
   }
@@ -4125,6 +4127,13 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     body.style.display = 'block'; // abrir automaticamente si falta la matriz
     var arrowAuto = document.getElementById('arrow_' + sectionId);
     if(arrowAuto) arrowAuto.style.transform = 'rotate(180deg)';
+  }
+  var btnRegenHist = document.getElementById('btnRegenMatrizHist_' + exp.id);
+  if(btnRegenHist) {
+    btnRegenHist.onclick = (function(eid){ return function(){
+      if(!confirm('Ya existe una Matriz FISE generada para este expediente. ¿Deseas volver a generarla? Los datos anteriores se reemplazarán.')) return;
+      fiseAbrirModalChecklist(eid);
+    }; })(exp.id);
   }
 
   // Toggle colapsar/expandir
@@ -8415,15 +8424,19 @@ function renderEtapa1(cont, exp) {
     if(!sf1ok) {
       matrizDiv.innerHTML += '<div style="font-size:12px;color:#f59e0b;font-weight:600">⚠ Sube primero el SCANFILE 1 para generar la Matriz FISE</div>';
     } else {
+      var yaGeneradaE1 = !!(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl);
       var btnMatriz = document.createElement('button');
       btnMatriz.id = 'btnMatrizFISE_' + exp.id;
       btnMatriz.style.cssText = 'width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px';
-      btnMatriz.innerHTML = '⚡ Generar Matriz FISE automáticamente';
-      btnMatriz.onclick = (function(eid){ return function(){ fiseAbrirModalChecklist(eid); }; })(exp.id);
+      btnMatriz.innerHTML = yaGeneradaE1 ? '🔄 Volver a generar Matriz FISE' : '⚡ Generar Matriz FISE automáticamente';
+      btnMatriz.onclick = (function(eid, existe){ return function(){
+        if(existe && !confirm('Ya existe una Matriz FISE generada para este expediente. ¿Deseas volver a generarla? Los datos anteriores se reemplazarán.')) return;
+        fiseAbrirModalChecklist(eid);
+      }; })(exp.id, yaGeneradaE1);
       matrizDiv.appendChild(btnMatriz);
 
       // Si ya hay una matriz generada, mostrar link
-      if(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl) {
+      if(yaGeneradaE1) {
         var mf = exp.e1.matrizFISE;
         var matrizInfo = document.createElement('div');
         matrizInfo.style.cssText = 'margin-top:10px;padding:10px;background:white;border-radius:8px;border:1px solid #D9D9D9;display:flex;justify-content:space-between;align-items:center';
