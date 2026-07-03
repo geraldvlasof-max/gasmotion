@@ -8503,10 +8503,13 @@ function renderEtapa2(cont, exp) {
   else{dlA1.className='btn btn-sm';dlA1.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default';dlA1.textContent='No disponible';}
   dl1.appendChild(dlA1);sec.appendChild(dl1);
 
-  // Matriz Excel
+  // Matriz Excel — reconoce automaticamente la Matriz FISE ya generada por IA en Etapa 1;
+  // solo pide subida manual si el expediente no paso por ese flujo (casos legacy/excepcion)
   var matrizMeta=exp.e2&&exp.e2.matrizExcel?exp.e2.matrizExcel:null;
-  var matrizBox=document.createElement('div');matrizBox.className='doc-box'+(matrizMeta?' done':'');
-  matrizBox.innerHTML='<div class="doc-box-title">'+(matrizMeta?'&#10003;':'▦')+' Matriz Excel FISE</div>';
+  var matrizIA=(exp.e1&&exp.e1.matrizFISE&&exp.e1.matrizFISE.viewUrl)?exp.e1.matrizFISE:null;
+  var matrizLista=!!(matrizMeta||matrizIA);
+  var matrizBox=document.createElement('div');matrizBox.className='doc-box'+(matrizLista?' done':'');
+  matrizBox.innerHTML='<div class="doc-box-title">'+(matrizLista?'&#10003;':'▦')+' Matriz Excel FISE</div>';
   if(matrizMeta){
     var murl=getFileUrl(exp.id,'matriz');
     var mi=document.createElement('div');mi.innerHTML='<div class="meta-row"><span>∷</span><span>'+matrizMeta.nombre+'</span></div><div class="meta-row"><span>◯</span><span>Subido por: <strong>'+matrizMeta.subidoPor+'</strong></span></div><div class="meta-row"><span>▦</span><span>'+matrizMeta.fecha+' '+matrizMeta.hora+'</span></div>';
@@ -8515,6 +8518,17 @@ function renderEtapa2(cont, exp) {
     if(murl){dlM.href=murl;dlM.download=matrizMeta.nombre;dlM.className='btn btn-teal btn-sm';dlM.style.marginTop='8px';dlM.innerHTML='↓ Descargar Matriz';}
     else{dlM.className='btn btn-sm';dlM.style.cssText='background:#e5e7eb;color:#9ca3af;cursor:default;margin-top:8px';dlM.textContent='Re-subir para descargar';}
     matrizBox.appendChild(dlM);
+  } else if(matrizIA){
+    var mi2=document.createElement('div');
+    mi2.innerHTML='<div style="background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;padding:9px 12px;font-size:11px;color:#1e40af;margin-bottom:8px">🤖 Generada automáticamente por IA en Etapa 1' + (matrizIA.correlativo?(' — Correlativo '+matrizIA.correlativo):'') + '</div>' +
+      '<div class="meta-row"><span>∷</span><span>'+(matrizIA.nombreArchivo||'')+'</span></div>';
+    matrizBox.appendChild(mi2);
+    var actsIA=document.createElement('div');actsIA.style.cssText='display:flex;gap:6px;margin-top:8px';
+    var vIA=document.createElement('a');vIA.href=matrizIA.viewUrl;vIA.target='_blank';vIA.className='btn btn-sm';vIA.style.cssText='background:#5C8CF5;color:white';vIA.innerHTML='◉ Ver';
+    actsIA.appendChild(vIA);
+    var dIA=document.createElement('a');dIA.href=matrizIA.downloadUrl;dIA.target='_blank';dIA.className='btn btn-teal btn-sm';dIA.innerHTML='↓ Descargar Matriz';
+    actsIA.appendChild(dIA);
+    matrizBox.appendChild(actsIA);
   } else if(puedeSub){
     var instrM=document.createElement('div');instrM.style.cssText='font-size:12px;color:#6b82a0;margin-bottom:10px';instrM.textContent='Sube la Matriz Excel generada con Claude. Los datos del cliente se autocompletan automaticamente.';
     matrizBox.appendChild(instrM);
@@ -8598,7 +8612,7 @@ function renderEtapa2(cont, exp) {
 
   // Progreso y botón avanzar
   var reqsMet=0,reqs=4;
-  if(matrizMeta)reqsMet++;
+  if(matrizLista)reqsMet++;
   if(exp.e2&&exp.e2.datosGuardados)reqsMet++;
   if(exp.e2&&exp.e2.declaracionJurada&&exp.e2.declaracionJurada.completado)reqsMet++;
   if(exp.e2&&exp.e2.cronograma&&exp.e2.cronograma.completado)reqsMet++;
