@@ -7269,6 +7269,15 @@ function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
                 nombreArchivo: d.nombreArchivo, correlativo: d.correlativo,
                 placa: (d.datosExtraidos||{}).placa || '', fecha: nowFecha()
               };
+              // Guardar tambien los datos del checklist comercial (celular,
+              // correo, kilometraje, kit, precio) — vienen directo del
+              // vendedor, no de la IA, asi que no necesitan pantalla de
+              // revision. Sin esto se perdian y Etapa 2 los pedia de nuevo.
+              expedientes[i].celular = checklist.celular || expedientes[i].celular;
+              expedientes[i].correo = checklist.correo || expedientes[i].correo;
+              expedientes[i].kilometraje = checklist.kilometraje || expedientes[i].kilometraje;
+              expedientes[i].kitMarca = checklist.kit_marca || expedientes[i].kitMarca;
+              expedientes[i].precio = checklist.precio || expedientes[i].precio;
               break;
             }
           }
