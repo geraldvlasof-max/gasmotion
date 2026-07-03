@@ -668,6 +668,8 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" onclick="switchTab('config',this)" id="navConfig"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span> Configuracion</button>
         <button class="nav-item" onclick="switchTab('radar',this)" id="navRadar"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Radar de Conversiones</button>
         <button class="nav-item" onclick="switchTab('agendaGral',this)" id="navAgendaGral"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Agenda</button>
+        <button class="nav-item" onclick="switchTab('tareasEquipo',this)" id="navTareasEquipo"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Tareas del Equipo</button>
+        <button class="nav-item" onclick="switchTab('agendaServicios',this)" id="navAgendaServicios"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 15"/></svg></span> Agendamiento de Servicios</button>
         <button class="nav-item" onclick="switchTab('videoteca',this)" id="navVideoteca"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Videoteca</button>
         <button class="nav-item" onclick="switchTab('asistencia',this)" id="navAsistencia"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Asistencia</button>
         <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
@@ -1041,6 +1043,16 @@ input,select,textarea{font-size:16px!important}
           <div id="agendaGralContent" style="padding:16px 0"></div>
         </div>
 
+        <!-- TAREAS DEL EQUIPO -->
+        <div class="tab-content" id="tab-tareasEquipo">
+          <div id="tareasEquipoContent" style="padding:16px 0"></div>
+        </div>
+
+        <!-- AGENDAMIENTO DE SERVICIOS -->
+        <div class="tab-content" id="tab-agendaServicios">
+          <div id="agendaServiciosContent" style="padding:16px 0"></div>
+        </div>
+
         <!-- VIDEOTECA -->
         <div class="tab-content" id="tab-videoteca">
           <div id="videotecaContent" style="padding:16px 0"></div>
@@ -1312,7 +1324,17 @@ var GM_CONFIG={
   driveFolder:   '190IfSEViIZvn_78nIreo9M3u-o9qljyf',
   sheetsId:      '1rjDfZjdqWBbkclHPJJIY3v2Zg9wOE0iE8DPLzy34dYg',
   workerUrl:     'https://gasmotion-sync.geraldvlasof.workers.dev',
-  gmKey:         'gmk_369420912baf970a5c8f1dab6742674eb8bd94e8a6c4d37e'
+  gmKey:         'gmk_369420912baf970a5c8f1dab6742674eb8bd94e8a6c4d37e',
+  // Worker independiente para Agenda de Tareas y Agendamiento de Servicios
+  // (repo geraldvlasof-max/gasmotion-worker). Completar tras desplegar:
+  // agendaWorkerUrl = URL que entrega "npm run deploy"; agendaKey = el
+  // valor que definiste con "wrangler secret put GM_KEY" en ese Worker.
+  agendaWorkerUrl: 'https://gasmotion-worker.geraldvlasof.workers.dev',
+  // El Worker no tiene GM_KEY configurado como secreto todavia, asi que
+  // no valida esta clave (ver checkAuth en gasmotion-worker/src/utils.js).
+  // Recomendado: correr "wrangler secret put GM_KEY" en gasmotion-worker
+  // y reemplazar este valor por el mismo que definas alla.
+  agendaKey:       'gmk_agenda_pendiente_de_clave'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
@@ -2394,7 +2416,9 @@ var TAB_TITLES={
   usuarios:['Usuarios','Administra accesos al sistema'],
   config:['Configuracion','Ajustes del sistema'],
   radar:['Radar de Conversiones','Vehículos en proceso activo de conversión']
-,tecnico:['Mis Tareas','Tareas asignadas']};
+,tecnico:['Mis Tareas','Tareas asignadas']
+,tareasEquipo:['Tareas del Equipo','Panel interno de tareas y responsables']
+,agendaServicios:['Agendamiento de Servicios','Reserva de horarios por especialista']};
 
 function switchTab(name, el) {
   document.querySelectorAll('.tab-content').forEach(function(e){e.classList.remove('active');});
@@ -2412,6 +2436,8 @@ function switchTab(name, el) {
   if(name==='creditos') renderCreditos();
   if(name==='videoteca') renderVideoteca();
   if(name==='agendaGral') renderAgendaGeneral();
+  if(name==='tareasEquipo') renderPanelTareasEquipo();
+  if(name==='agendaServicios') renderPanelAgendaServicios();
   if(name==='asistencia') renderAsistenciaReporte();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
@@ -7821,6 +7847,494 @@ function agendaGuardarNuevo() {
       agendaCargar();
     } else showToast('Error creando recordatorio', 'error');
   });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO TAREAS DEL EQUIPO + AGENDAMIENTO DE SERVICIOS
+// Worker independiente (gasmotion-worker / gasmotion-agenda) — ver
+// GM_CONFIG.agendaWorkerUrl / agendaKey. Comparte el mismo patron
+// action= por query param que ya usa gasmotion-sync.
+// ═══════════════════════════════════════════════════════════
+
+function agendaWorkerListo() {
+  return !!(GM_CONFIG.agendaWorkerUrl && GM_CONFIG.agendaKey);
+}
+
+function agendaWorkerAvisoNoConfigurado(cont) {
+  cont.innerHTML =
+    '<div style="text-align:center;padding:48px 24px;background:#fff8eb;border:1.5px solid #fde68a;border-radius:14px;color:#92400e">' +
+      '<div style="font-size:32px;margin-bottom:10px">⚙️</div>' +
+      '<div style="font-size:14px;font-weight:800;margin-bottom:6px">Falta conectar el Worker de Agenda</div>' +
+      '<div style="font-size:12px;max-width:420px;margin:0 auto">Completa <code>GM_CONFIG.agendaWorkerUrl</code> y <code>GM_CONFIG.agendaKey</code> en el codigo con los datos del Worker desplegado (repo gasmotion-worker).</div>' +
+    '</div>';
+}
+
+function agendaWorkerFetch(action, query, opts) {
+  var qs = '?key=' + encodeURIComponent(GM_CONFIG.agendaKey) + '&action=' + action;
+  for (var k in (query || {})) {
+    if (query[k] !== undefined && query[k] !== null && query[k] !== '') qs += '&' + k + '=' + encodeURIComponent(query[k]);
+  }
+  var fetchOpts = { cache: 'no-store' };
+  if (opts && opts.method === 'POST') {
+    fetchOpts.method = 'POST';
+    fetchOpts.headers = { 'Content-Type': 'application/json' };
+    fetchOpts.body = JSON.stringify(opts.body || {});
+  }
+  return fetch(GM_CONFIG.agendaWorkerUrl + qs, fetchOpts).then(function (r) { return r.json(); });
+}
+
+function prioridadColor(p) {
+  return { Alta: '#ef4444', Media: '#f59e0b', Baja: '#10b981' }[p] || '#8a8a8a';
+}
+function estadoTareaColor(e) {
+  return { Pendiente: '#8a8a8a', 'En Progreso': '#5C8CF5', Completado: '#10b981' }[e] || '#8a8a8a';
+}
+function estadoServicioColor(e) {
+  return { Confirmado: '#5C8CF5', Cancelado: '#ef4444', Realizado: '#10b981' }[e] || '#8a8a8a';
+}
+
+// ── TAREAS DEL EQUIPO ──────────────────────────────────────
+var TAREAS_FILTRO = { estado: '', asignadoUid: '', desde: '', hasta: '' };
+
+function renderPanelTareasEquipo() {
+  var cont = document.getElementById('tareasEquipoContent');
+  if (!cont) return;
+  cont.innerHTML = '';
+  if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px';
+  hdr.innerHTML =
+    '<div><div style="font-size:20px;font-weight:900;color:#131313">Tareas del Equipo</div>' +
+    '<div style="font-size:12px;color:#8a8a8a">Asigna, filtra y da seguimiento a las tareas internas</div></div>' +
+    '<button onclick="tareaAbrirModal()" style="background:#131313;color:#FFC165;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Nueva tarea</button>';
+  cont.appendChild(hdr);
+
+  var users = getUsers();
+  var uidOpts = '<option value="">Todos los miembros</option>';
+  for (var uid in users) uidOpts += '<option value="' + uid + '">' + users[uid].nombre + '</option>';
+
+  var filtros = document.createElement('div');
+  filtros.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:12px';
+  filtros.innerHTML =
+    '<select id="tfEstado" onchange="tareasAplicarFiltros()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;background:white">' +
+      '<option value="">Todos los estados</option><option value="Pendiente">Pendiente</option><option value="En Progreso">En Progreso</option><option value="Completado">Completado</option>' +
+    '</select>' +
+    '<select id="tfAsignado" onchange="tareasAplicarFiltros()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;background:white">' + uidOpts + '</select>' +
+    '<input id="tfDesde" type="date" onchange="tareasAplicarFiltros()" title="Fecha limite desde" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit">' +
+    '<input id="tfHasta" type="date" onchange="tareasAplicarFiltros()" title="Fecha limite hasta" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit">' +
+    '<button onclick="tareasLimpiarFiltros()" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer;color:#374151">Limpiar</button>';
+  cont.appendChild(filtros);
+
+  var lista = document.createElement('div');
+  lista.id = 'tareasListaWrap';
+  cont.appendChild(lista);
+
+  tareasCargar();
+}
+
+function tareasAplicarFiltros() {
+  TAREAS_FILTRO.estado = document.getElementById('tfEstado').value;
+  TAREAS_FILTRO.asignadoUid = document.getElementById('tfAsignado').value;
+  TAREAS_FILTRO.desde = document.getElementById('tfDesde').value;
+  TAREAS_FILTRO.hasta = document.getElementById('tfHasta').value;
+  tareasCargar();
+}
+
+function tareasLimpiarFiltros() {
+  TAREAS_FILTRO = { estado: '', asignadoUid: '', desde: '', hasta: '' };
+  renderPanelTareasEquipo();
+}
+
+function tareasCargar() {
+  var wrap = document.getElementById('tareasListaWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando...</div>';
+  agendaWorkerFetch('tareasListar', TAREAS_FILTRO).then(function (d) {
+    if (!d.ok) { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error cargando tareas: ' + (d.error || '') + '</div>'; return; }
+    tareasRenderLista(wrap, d.tareas || []);
+  }).catch(function () { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error de conexion con el Worker de Agenda</div>'; });
+}
+
+function tareasRenderLista(wrap, tareas) {
+  if (!tareas.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:48px;background:white;border:1.5px solid #E5E7EB;border-radius:14px;color:#8a8a8a"><div style="font-size:36px;margin-bottom:10px">✓</div>Sin tareas que coincidan con el filtro</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < tareas.length; i++) {
+    var t = tareas[i];
+    html += '<div style="background:white;border:1.5px solid #E5E7EB;border-left:4px solid ' + prioridadColor(t.prioridad) + ';border-radius:12px;padding:14px;margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="font-size:14px;font-weight:800;color:#131313">' + t.titulo + '</div>' +
+          (t.descripcion ? '<div style="font-size:12px;color:#6b7280;margin-top:3px">' + t.descripcion + '</div>' : '') +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+            '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:' + prioridadColor(t.prioridad) + '20;color:' + prioridadColor(t.prioridad) + '">' + t.prioridad + '</span>' +
+            '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:' + estadoTareaColor(t.estado) + '20;color:' + estadoTareaColor(t.estado) + '">' + t.estado + '</span>' +
+            (t.fecha_limite ? '<span style="font-size:10px;color:#8a8a8a;padding:3px 0">📅 ' + t.fecha_limite + '</span>' : '') +
+            (t.asignado_nombre ? '<span style="font-size:10px;color:#8a8a8a;padding:3px 0">👤 ' + t.asignado_nombre + '</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+          '<button onclick="tareaAbrirModal(\'' + t.id + '\')" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#374151">Editar</button>' +
+          '<button onclick="tareaVerHistorial(\'' + t.id + '\')" style="background:#eff6ff;border:1px solid #93c5fd;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#1e40af">Historial</button>' +
+          '<button onclick="tareaEliminar(\'' + t.id + '\')" style="background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#dc2626">Eliminar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function tareaAbrirModal(id) {
+  var users = getUsers();
+  var uidsOpts = '<option value="">Sin asignar</option>';
+  for (var uid in users) uidsOpts += '<option value="' + uid + '">' + users[uid].nombre + '</option>';
+
+  var esEdicion = !!id;
+  var ov = document.createElement('div');
+  ov.id = 'tareaModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick = function (e) { if (e.target === ov) document.body.removeChild(ov); };
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto">' +
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:16px">' + (esEdicion ? 'Editar tarea' : 'Nueva tarea') + '</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Titulo *</label>' +
+      '<input id="tk_titulo" type="text" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Descripcion</label>' +
+      '<textarea id="tk_desc" rows="2" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical"></textarea></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Fecha limite</label>' +
+        '<input id="tk_fecha" type="date" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Prioridad</label>' +
+        '<select id="tk_prioridad" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:white"><option>Alta</option><option selected>Media</option><option>Baja</option></select></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Estado</label>' +
+        '<select id="tk_estado" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:white"><option>Pendiente</option><option>En Progreso</option><option>Completado</option></select></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Asignar a</label>' +
+        '<select id="tk_asignado" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:white">' + uidsOpts + '</select></div>' +
+      '</div>' +
+      '<button id="tkBtnGuardar" style="width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">' + (esEdicion ? 'Guardar cambios' : 'Crear tarea') + '</button>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+
+  if (esEdicion) {
+    agendaWorkerFetch('tareasListar', {}).then(function (d) {
+      var t = (d.tareas || []).find(function (x) { return x.id === id; });
+      if (!t) return;
+      document.getElementById('tk_titulo').value = t.titulo || '';
+      document.getElementById('tk_desc').value = t.descripcion || '';
+      document.getElementById('tk_fecha').value = t.fecha_limite || '';
+      document.getElementById('tk_prioridad').value = t.prioridad || 'Media';
+      document.getElementById('tk_estado').value = t.estado || 'Pendiente';
+      document.getElementById('tk_asignado').value = t.asignado_uid || '';
+    });
+  }
+
+  document.getElementById('tkBtnGuardar').onclick = function () { tareaGuardar(id); };
+}
+
+function tareaGuardar(id) {
+  var titulo = document.getElementById('tk_titulo').value.trim();
+  if (!titulo) { showToast('El titulo es obligatorio', 'error'); return; }
+  var asignadoSel = document.getElementById('tk_asignado');
+  var asignadoNombre = asignadoSel.value ? asignadoSel.options[asignadoSel.selectedIndex].text : '';
+
+  var datos = {
+    titulo: titulo,
+    descripcion: document.getElementById('tk_desc').value.trim(),
+    fechaLimite: document.getElementById('tk_fecha').value || null,
+    prioridad: document.getElementById('tk_prioridad').value,
+    estado: document.getElementById('tk_estado').value,
+    asignadoUid: asignadoSel.value,
+    asignadoNombre: asignadoNombre,
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  };
+
+  var accion = id
+    ? agendaWorkerFetch('tareasActualizar', {}, { method: 'POST', body: { id: id, cambios: datos, uid: datos.uid, nombre: datos.nombre } })
+    : agendaWorkerFetch('tareasCrear', {}, { method: 'POST', body: datos });
+
+  accion.then(function (d) {
+    if (d.ok) {
+      showToast(id ? 'Tarea actualizada' : 'Tarea creada', 'success');
+      var ov = document.getElementById('tareaModalOv');
+      if (ov) document.body.removeChild(ov);
+      tareasCargar();
+    } else showToast('Error: ' + (d.error || 'no se pudo guardar'), 'error');
+  }).catch(function () { showToast('Error de conexion', 'error'); });
+}
+
+function tareaEliminar(id) {
+  if (!confirm('¿Eliminar esta tarea? Esta accion no se puede deshacer.')) return;
+  agendaWorkerFetch('tareasEliminar', {}, { method: 'POST', body: { id: id, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : '' } })
+    .then(function (d) {
+      if (d.ok) { showToast('Tarea eliminada', 'success'); tareasCargar(); }
+      else showToast('Error eliminando', 'error');
+    });
+}
+
+function tareaVerHistorial(id) {
+  var ov = document.createElement('div');
+  ov.id = 'tareaHistOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9700;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick = function (e) { if (e.target === ov) document.body.removeChild(ov); };
+  ov.innerHTML = '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto">' +
+    '<div style="font-size:15px;font-weight:800;color:#131313;margin-bottom:14px">Historial de la tarea</div>' +
+    '<div id="tareaHistList" style="font-size:12px;color:#8a8a8a">Cargando...</div></div>';
+  document.body.appendChild(ov);
+
+  agendaWorkerFetch('tareaHistorial', { id: id }).then(function (d) {
+    var cont = document.getElementById('tareaHistList');
+    if (!cont) return;
+    if (!d.ok || !d.historial.length) { cont.textContent = 'Sin historial registrado.'; return; }
+    var html = '';
+    for (var i = 0; i < d.historial.length; i++) {
+      var h = d.historial[i];
+      html += '<div style="border-left:2px solid #D9D9D9;padding:6px 0 6px 12px;margin-bottom:6px">' +
+        '<div style="font-size:12px;font-weight:700;color:#131313">' + (h.nombre || 'Sistema') + ' — ' + h.accion + '</div>' +
+        '<div style="font-size:11px;color:#6b7280">' + (h.detalle || '') + '</div>' +
+        '<div style="font-size:10px;color:#a8a8a8;margin-top:2px">' + new Date(h.fecha).toLocaleString('es-PE') + '</div>' +
+      '</div>';
+    }
+    cont.innerHTML = html;
+  });
+}
+
+// ── AGENDAMIENTO DE SERVICIOS ───────────────────────────────
+var SERVICIOS_FILTRO = { fecha: '', especialistaUid: '', estado: '' };
+
+function renderPanelAgendaServicios() {
+  var cont = document.getElementById('agendaServiciosContent');
+  if (!cont) return;
+  cont.innerHTML = '';
+  if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
+
+  var hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px';
+  hdr.innerHTML =
+    '<div><div style="font-size:20px;font-weight:900;color:#131313">Agendamiento de Servicios</div>' +
+    '<div style="font-size:12px;color:#8a8a8a">Reserva horarios y evita choques automaticamente</div></div>' +
+    '<button onclick="servicioAbrirModal()" style="background:#131313;color:#FFC165;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Nueva reserva</button>';
+  cont.appendChild(hdr);
+
+  var users = getUsers();
+  var uidOpts = '<option value="">Todos los especialistas</option>';
+  for (var uid in users) uidOpts += '<option value="' + uid + '">' + users[uid].nombre + '</option>';
+
+  var filtros = document.createElement('div');
+  filtros.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;background:white;border:1.5px solid #E5E7EB;border-radius:12px;padding:12px';
+  filtros.innerHTML =
+    '<input id="sfFecha" type="date" onchange="serviciosAplicarFiltros()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:7px 10px;font-size:12px;font-family:inherit">' +
+    '<select id="sfEspecialista" onchange="serviciosAplicarFiltros()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;background:white">' + uidOpts + '</select>' +
+    '<select id="sfEstado" onchange="serviciosAplicarFiltros()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;background:white">' +
+      '<option value="">Todos los estados</option><option>Confirmado</option><option>Cancelado</option><option>Realizado</option>' +
+    '</select>' +
+    '<button onclick="serviciosLimpiarFiltros()" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:8px;padding:7px 12px;font-size:12px;font-family:inherit;cursor:pointer;color:#374151">Limpiar</button>';
+  cont.appendChild(filtros);
+
+  var lista = document.createElement('div');
+  lista.id = 'serviciosListaWrap';
+  cont.appendChild(lista);
+
+  serviciosCargar();
+}
+
+function serviciosAplicarFiltros() {
+  SERVICIOS_FILTRO.fecha = document.getElementById('sfFecha').value;
+  SERVICIOS_FILTRO.especialistaUid = document.getElementById('sfEspecialista').value;
+  SERVICIOS_FILTRO.estado = document.getElementById('sfEstado').value;
+  serviciosCargar();
+}
+
+function serviciosLimpiarFiltros() {
+  SERVICIOS_FILTRO = { fecha: '', especialistaUid: '', estado: '' };
+  renderPanelAgendaServicios();
+}
+
+function serviciosCargar() {
+  var wrap = document.getElementById('serviciosListaWrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#8a8a8a">Cargando...</div>';
+  agendaWorkerFetch('serviciosListar', SERVICIOS_FILTRO).then(function (d) {
+    if (!d.ok) { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error cargando servicios: ' + (d.error || '') + '</div>'; return; }
+    serviciosRenderLista(wrap, d.servicios || []);
+  }).catch(function () { wrap.innerHTML = '<div style="color:#ef4444;padding:20px">Error de conexion con el Worker de Agenda</div>'; });
+}
+
+function serviciosRenderLista(wrap, servicios) {
+  if (!servicios.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:48px;background:white;border:1.5px solid #E5E7EB;border-radius:14px;color:#8a8a8a"><div style="font-size:36px;margin-bottom:10px">🗓️</div>Sin reservas que coincidan con el filtro</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < servicios.length; i++) {
+    var s = servicios[i];
+    var color = estadoServicioColor(s.estado);
+    html += '<div style="background:white;border:1.5px solid #E5E7EB;border-left:4px solid ' + color + ';border-radius:12px;padding:14px;margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="font-size:14px;font-weight:800;color:#131313">' + s.cliente + ' — ' + s.tipo_servicio + '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">' +
+            '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:' + color + '20;color:' + color + '">' + s.estado + '</span>' +
+            '<span style="font-size:10px;color:#8a8a8a;padding:3px 0">📅 ' + s.fecha + ' · ' + s.hora_inicio + ' (' + s.duracion_min + ' min)</span>' +
+            (s.especialista_nombre ? '<span style="font-size:10px;color:#8a8a8a;padding:3px 0">🔧 ' + s.especialista_nombre + '</span>' : '') +
+            (s.recurso ? '<span style="font-size:10px;color:#8a8a8a;padding:3px 0">📍 ' + s.recurso + '</span>' : '') +
+          '</div>' +
+          (s.notas ? '<div style="font-size:11px;color:#6b7280;margin-top:6px">' + s.notas + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+          (s.estado === 'Confirmado' ? '<button onclick="servicioCambiarEstado(\'' + s.id + '\',\'Realizado\')" style="background:#f0fdf4;border:1px solid #86efac;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#16a34a">✓ Realizado</button>' : '') +
+          (s.estado === 'Confirmado' ? '<button onclick="servicioCambiarEstado(\'' + s.id + '\',\'Cancelado\')" style="background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#dc2626">Cancelar</button>' : '') +
+          '<button onclick="servicioAbrirModal(\'' + s.id + '\')" style="background:#F0F0F0;border:1px solid #D9D9D9;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#374151">Editar</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function servicioAbrirModal(id) {
+  var users = getUsers();
+  var uidsOpts = '<option value="">Sin asignar</option>';
+  for (var uid in users) uidsOpts += '<option value="' + uid + '">' + users[uid].nombre + '</option>';
+
+  var esEdicion = !!id;
+  var ov = document.createElement('div');
+  ov.id = 'servicioModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9600;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick = function (e) { if (e.target === ov) document.body.removeChild(ov); };
+
+  ov.innerHTML =
+    '<div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">' +
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:16px">' + (esEdicion ? 'Editar reserva' : 'Nueva reserva') + '</div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Cliente *</label>' +
+      '<input id="sk_cliente" type="text" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box"></div>' +
+      '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Tipo de servicio *</label>' +
+      '<input id="sk_tipo" type="text" placeholder="Ej: Instalacion GNV, Mantenimiento" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Especialista</label>' +
+        '<select id="sk_especialista" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box;background:white">' + uidsOpts + '</select></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Recurso / Bahia</label>' +
+        '<input id="sk_recurso" type="text" placeholder="Ej: Bahia 1" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Fecha *</label>' +
+        '<input id="sk_fecha" type="date" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Hora *</label>' +
+        '<input id="sk_hora" type="time" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+        '<div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Duracion (min) *</label>' +
+        '<input id="sk_duracion" type="number" min="5" step="5" value="60" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px;font-size:13px;box-sizing:border-box"></div>' +
+      '</div>' +
+      '<button type="button" onclick="servicioVerDisponibilidad()" style="width:100%;background:#eff6ff;color:#1e40af;border:1px solid #93c5fd;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px">🔍 Ver horarios libres de este especialista</button>' +
+      '<div id="sk_disponibilidad" style="margin-bottom:8px"></div>' +
+      '<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Notas</label>' +
+      '<textarea id="sk_notas" rows="2" style="width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:13px;box-sizing:border-box;resize:vertical"></textarea></div>' +
+      '<div id="sk_error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#dc2626"></div>' +
+      '<button id="skBtnGuardar" style="width:100%;background:#131313;color:#FFC165;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">' + (esEdicion ? 'Guardar cambios' : 'Crear reserva') + '</button>' +
+    '</div>';
+
+  document.body.appendChild(ov);
+  var hoy = new Date().toISOString().slice(0, 10);
+  document.getElementById('sk_fecha').value = hoy;
+
+  if (esEdicion) {
+    agendaWorkerFetch('serviciosListar', {}).then(function (d) {
+      var s = (d.servicios || []).find(function (x) { return x.id === id; });
+      if (!s) return;
+      document.getElementById('sk_cliente').value = s.cliente || '';
+      document.getElementById('sk_tipo').value = s.tipo_servicio || '';
+      document.getElementById('sk_especialista').value = s.especialista_uid || '';
+      document.getElementById('sk_recurso').value = s.recurso || '';
+      document.getElementById('sk_fecha').value = s.fecha || hoy;
+      document.getElementById('sk_hora').value = s.hora_inicio || '';
+      document.getElementById('sk_duracion').value = s.duracion_min || 60;
+      document.getElementById('sk_notas').value = s.notas || '';
+    });
+  }
+
+  document.getElementById('skBtnGuardar').onclick = function () { servicioGuardar(id); };
+}
+
+function servicioVerDisponibilidad() {
+  var especialistaUid = document.getElementById('sk_especialista').value;
+  var fecha = document.getElementById('sk_fecha').value;
+  var duracionMin = document.getElementById('sk_duracion').value || 60;
+  var out = document.getElementById('sk_disponibilidad');
+  if (!especialistaUid) { showToast('Selecciona un especialista primero', 'error'); return; }
+  if (!fecha) { showToast('Selecciona una fecha primero', 'error'); return; }
+  out.innerHTML = '<div style="font-size:11px;color:#8a8a8a">Calculando...</div>';
+
+  agendaWorkerFetch('serviciosDisponibilidad', { fecha: fecha, especialistaUid: especialistaUid, duracionMin: duracionMin }).then(function (d) {
+    if (!d.ok) { out.innerHTML = '<div style="font-size:11px;color:#ef4444">Error calculando disponibilidad</div>'; return; }
+    if (!d.disponibilidad.length) { out.innerHTML = '<div style="font-size:11px;color:#ef4444">Sin horarios libres suficientes ese dia</div>'; return; }
+    var html = '<div style="font-size:11px;color:#6b7280;margin-bottom:6px">Bloques libres (clic para usar la hora de inicio):</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+    for (var i = 0; i < d.disponibilidad.length; i++) {
+      var b = d.disponibilidad[i];
+      html += '<button type="button" onclick="document.getElementById(\'sk_hora\').value=\'' + b.inicio + '\'" style="background:#f0fdf4;border:1px solid #86efac;border-radius:7px;padding:6px 10px;font-size:11px;font-family:inherit;cursor:pointer;color:#16a34a">' + b.inicio + ' – ' + b.fin + '</button>';
+    }
+    html += '</div>';
+    out.innerHTML = html;
+  });
+}
+
+function servicioGuardar(id) {
+  var cliente = document.getElementById('sk_cliente').value.trim();
+  var tipo = document.getElementById('sk_tipo').value.trim();
+  var fecha = document.getElementById('sk_fecha').value;
+  var hora = document.getElementById('sk_hora').value;
+  var duracion = parseInt(document.getElementById('sk_duracion').value, 10);
+  var errBox = document.getElementById('sk_error');
+  errBox.style.display = 'none';
+
+  if (!cliente || !tipo || !fecha || !hora || !duracion) {
+    showToast('Completa cliente, tipo de servicio, fecha, hora y duracion', 'error');
+    return;
+  }
+
+  var especialistaSel = document.getElementById('sk_especialista');
+  var datos = {
+    cliente: cliente, tipoServicio: tipo,
+    especialistaUid: especialistaSel.value,
+    especialistaNombre: especialistaSel.value ? especialistaSel.options[especialistaSel.selectedIndex].text : '',
+    recurso: document.getElementById('sk_recurso').value.trim(),
+    fecha: fecha, horaInicio: hora, duracionMin: duracion,
+    notas: document.getElementById('sk_notas').value.trim(),
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  };
+
+  var accion = id
+    ? agendaWorkerFetch('serviciosActualizar', {}, { method: 'POST', body: { id: id, cambios: datos } })
+    : agendaWorkerFetch('serviciosCrear', {}, { method: 'POST', body: datos });
+
+  accion.then(function (d) {
+    if (d.ok) {
+      showToast(id ? 'Reserva actualizada' : 'Reserva creada', 'success');
+      var ov = document.getElementById('servicioModalOv');
+      if (ov) document.body.removeChild(ov);
+      serviciosCargar();
+    } else if (d.error === 'colision') {
+      var c = d.detalle || {};
+      errBox.textContent = '⚠ Choca con otra reserva: ' + (c.cliente || '') + ' — ' + (c.hora_inicio || '') + ' (' + (c.duracion_min || '') + ' min). Elige otro horario.';
+      errBox.style.display = 'block';
+    } else {
+      showToast('Error: ' + (d.error || 'no se pudo guardar'), 'error');
+    }
+  }).catch(function () { showToast('Error de conexion', 'error'); });
+}
+
+function servicioCambiarEstado(id, nuevoEstado) {
+  var msg = nuevoEstado === 'Cancelado' ? '¿Cancelar esta reserva?' : '¿Marcar esta reserva como realizada?';
+  if (!confirm(msg)) return;
+  agendaWorkerFetch('serviciosActualizar', {}, { method: 'POST', body: { id: id, cambios: { estado: nuevoEstado } } })
+    .then(function (d) {
+      if (d.ok) { showToast('Reserva actualizada', 'success'); serviciosCargar(); }
+      else showToast('Error actualizando', 'error');
+    });
 }
 
 
