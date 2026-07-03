@@ -8391,6 +8391,7 @@ function renderEtapa1(cont, exp) {
   sec.appendChild(box);
   var isAdmin=CU&&CU.role==='admin';
   var isFise=CU&&CU.role==='asistente_fise';
+  var isJefeEtapa1=CU&&CU.role==='jefe';
   var esVendedorModal = CU && CU.role==='vendedor' && (
     exp.registradoPor===CU.nombre ||
     exp.vendedorSede===CU.nombre ||
@@ -8398,7 +8399,7 @@ function renderEtapa1(cont, exp) {
     exp.sede===CU.sede
   );
   // ── BOTÓN GENERAR MATRIZ FISE ──
-  if(isAdmin || isFise) {
+  if(isAdmin || isFise || isJefeEtapa1) {
     var sf1ok = !!(exp.e1 && exp.e1.scanfile1 && exp.e1.scanfile1.completado);
     var matrizDiv = document.createElement('div');
     matrizDiv.style.cssText = 'margin-top:14px;background:' + (sf1ok?'#f0fdf4':'#F7F7F2') + ';border:1.5px solid ' + (sf1ok?'#86efac':'#D9D9D9') + ';border-radius:12px;padding:14px';
@@ -8441,7 +8442,7 @@ function renderEtapa1(cont, exp) {
     sec.appendChild(matrizDiv);
   }
 
-  if(isAdmin||isFise||esVendedorModal){
+  if(isAdmin||isFise||esVendedorModal||isJefeEtapa1){
     var matrizGenerada = !!(exp.e1 && exp.e1.matrizFISE && exp.e1.matrizFISE.viewUrl);
     var avBtn=document.createElement('button');avBtn.className='btn btn-navy';
     avBtn.style.cssText='width:100%;justify-content:center;margin-top:14px';
