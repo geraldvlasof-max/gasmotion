@@ -1330,7 +1330,11 @@ var GM_CONFIG={
   // agendaWorkerUrl = URL que entrega "npm run deploy"; agendaKey = el
   // valor que definiste con "wrangler secret put GM_KEY" en ese Worker.
   agendaWorkerUrl: 'https://gasmotion-worker.geraldvlasof.workers.dev',
-  agendaKey:       ''
+  // El Worker no tiene GM_KEY configurado como secreto todavia, asi que
+  // no valida esta clave (ver checkAuth en gasmotion-worker/src/utils.js).
+  // Recomendado: correr "wrangler secret put GM_KEY" en gasmotion-worker
+  // y reemplazar este valor por el mismo que definas alla.
+  agendaKey:       'gmk_agenda_pendiente_de_clave'
 };
 // ═══════════════════════════════════════════════════════
 // SISTEMA DE USUARIOS — Apps Script + localStorage cache
