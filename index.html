@@ -1054,72 +1054,141 @@ input,select,textarea{font-size:16px!important}
           <div id="agendaServiciosContent" style="padding:16px 0"></div>
         </div>
 
-        <!-- SALES HUB (leads WhatsApp + llamadas) -->
+        <!-- SALES HUB (CRM WhatsApp: bandeja, pipeline, dashboard) -->
         <div class="tab-content" id="tab-salesHub">
           <style>
-            /* ── Sales Hub: paleta propia azul oscuro + verde, mobile-first ── */
+            /* ── Sales Hub: WhatsApp Web 2025 + dark premium ── */
             #tab-salesHub{padding:0}
-            .sh-app{display:flex;height:calc(100vh - 150px);min-height:420px;background:#0d1f3c;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(13,31,60,.35);margin-top:10px}
-            .sh-pane-list{display:flex;flex-direction:column;width:100%;background:#0d1f3c;min-width:0}
-            .sh-pane-chat{display:none;flex-direction:column;flex:1;background:#0b141a;min-width:0}
-            .sh-app.sh-chat-open .sh-pane-list{display:none}
-            .sh-app.sh-chat-open .sh-pane-chat{display:flex}
-            @media(min-width:900px){
-              .sh-pane-list{width:350px;min-width:350px;border-right:1px solid #1c3357}
-              .sh-pane-chat{display:flex}
-              .sh-app.sh-chat-open .sh-pane-list{display:flex}
+            .sh-root,.sh-root *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;box-sizing:border-box}
+            .sh-root{margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr)}
+            .sh-viewtabs{display:flex;gap:2px;background:#111b21;border-radius:12px 12px 0 0;padding:6px 8px 0;border-bottom:1px solid #1f2c33}
+            .sh-viewtab{background:none;border:none;color:#8696a0;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;border-bottom:2.5px solid transparent}
+            .sh-viewtab.on{color:#e9edef;border-bottom-color:#00a884}
+            .sh-app{position:relative;display:flex;height:calc(100vh - 195px);min-height:430px;background:#111b21;border-radius:0 0 12px 12px;overflow:hidden}
+            /* scrollbars 4px, invisibles hasta hover */
+            .sh-scroll{scrollbar-width:thin;scrollbar-color:transparent transparent}
+            .sh-scroll:hover{scrollbar-color:#ffffff26 transparent}
+            .sh-scroll::-webkit-scrollbar{width:4px;height:4px}
+            .sh-scroll::-webkit-scrollbar-thumb{background:transparent;border-radius:4px}
+            .sh-scroll:hover::-webkit-scrollbar-thumb{background:#ffffff15}
+            /* ── panel lista ── */
+            .sh-pane-list{display:flex;flex-direction:column;width:100%;background:#111b21;min-width:0}
+            .sh-pane-chat{position:absolute;inset:0;display:flex;flex-direction:column;background:#0b141a;min-width:0;transform:translateX(100%);transition:transform .2s ease-out;z-index:5}
+            .sh-app.sh-chat-open .sh-pane-chat{transform:translateX(0)}
+            @media(min-width:768px){
+              .sh-pane-list{width:35%;min-width:300px;border-right:1px solid #1f2c33}
+              .sh-pane-chat{position:static;flex:1;transform:none;transition:none}
             }
-            .sh-list-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0a1830}
-            .sh-list-head h3{margin:0;color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
-            .sh-filtros{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;background:#0a1830;border-bottom:1px solid #1c3357}
-            .sh-filtro{border:1px solid #24406b;background:transparent;color:#9fb3d1;font-size:11.5px;font-weight:700;border-radius:14px;padding:4px 11px;cursor:pointer;white-space:nowrap}
-            .sh-filtro.on{background:#00c853;border-color:#00c853;color:#04240f}
+            @media(min-width:1200px){.sh-pane-list{width:30%}}
+            .sh-list-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;position:relative}
+            .sh-list-head h3{margin:0;color:#e9edef;font-size:19px;font-weight:800}
+            .sh-hicons{display:flex;gap:2px}
+            .sh-hicon{background:none;border:none;color:#8696a0;cursor:pointer;padding:8px;border-radius:50%;display:flex;font-size:15px;line-height:1}
+            .sh-hicon:hover{background:#202c33}
+            .sh-buscar{margin:0 12px 8px;display:flex;align-items:center;gap:9px;background:#202c33;border-radius:9px;padding:7px 12px}
+            .sh-buscar input{flex:1;background:none;border:none;outline:none;color:#e9edef;font-size:13.5px;min-width:0}
+            .sh-buscar input::placeholder{color:#8696a0}
+            .sh-filtros{display:flex;gap:7px;padding:2px 12px 10px;overflow-x:auto;scrollbar-width:none}
+            .sh-filtros::-webkit-scrollbar{display:none}
+            .sh-filtro{border:none;background:#202c33;color:#8696a0;font-size:12px;font-weight:700;border-radius:15px;padding:5px 13px;cursor:pointer;white-space:nowrap}
+            .sh-filtro.on{background:#00a884;color:#0b141a}
             .sh-chats{flex:1;overflow-y:auto}
-            .sh-chat-item{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #16294a}
-            .sh-chat-item:active,.sh-chat-item:hover{background:#132c54}
-            .sh-avatar{width:47px;height:47px;min-width:47px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:19px}
+            .sh-chat-item{display:flex;align-items:center;gap:13px;padding:0 0 0 13px;cursor:pointer}
+            .sh-chat-item:hover,.sh-chat-item:active{background:#202c33}
+            .sh-av-wrap{position:relative;min-width:49px}
+            .sh-avatar{width:49px;height:49px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px}
+            .sh-dot{position:absolute;bottom:0;right:0;width:13px;height:13px;border-radius:50%;border:2.5px solid #111b21}
+            .sh-ci-body{flex:1;display:flex;align-items:center;gap:8px;min-width:0;border-bottom:1px solid #1f2c33;padding:12px 14px 12px 0}
+            .sh-chats .sh-chat-item:last-child .sh-ci-body{border-bottom:none}
             .sh-ci-mid{flex:1;min-width:0}
-            .sh-ci-nombre{color:#f1f5fb;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-            .sh-ci-prev{color:#8ea4c4;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-            .sh-ci-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:52px}
-            .sh-ci-hora{color:#8ea4c4;font-size:11px}
-            .sh-ci-hora.sh-hay-nuevo{color:#00c853;font-weight:700}
-            .sh-ci-badge{background:#00c853;color:#04240f;font-size:11px;font-weight:800;border-radius:11px;min-width:19px;height:19px;line-height:19px;text-align:center;padding:0 5px}
-            .sh-vacio{color:#8ea4c4;text-align:center;padding:46px 20px;font-size:13px}
-            /* cabecera del chat */
-            .sh-chat-head{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0d1f3c;border-bottom:1px solid #1c3357;flex-wrap:wrap}
-            .sh-back{background:none;border:none;color:#cfe0f5;font-size:22px;cursor:pointer;padding:2px 6px;line-height:1}
-            @media(min-width:900px){.sh-back{display:none}}
-            .sh-ch-nombre{color:#fff;font-size:14.5px;font-weight:800;line-height:1.2}
-            .sh-ch-tel{color:#8ea4c4;font-size:11.5px}
-            .sh-estado{border:none;border-radius:10px;font-size:10.5px;font-weight:800;padding:3px 9px;color:#fff;cursor:pointer;-webkit-appearance:none;appearance:none}
-            .sh-ch-btns{display:flex;gap:6px;margin-left:auto}
-            .sh-btn-accion{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:9px;font-size:11.5px;font-weight:800;padding:7px 11px;cursor:pointer;text-decoration:none}
-            .sh-btn-llamar{background:#00c853;color:#04240f}
-            .sh-btn-regllam{background:#1c3357;color:#cfe0f5}
-            /* zona de mensajes: fondo gris oscuro con textura sutil */
-            .sh-msgs{flex:1;overflow-y:auto;padding:14px 12px;background:#0b141a;background-image:radial-gradient(rgba(255,255,255,.028) 1px,transparent 1px);background-size:22px 22px;display:flex;flex-direction:column;gap:5px}
-            .sh-burbuja{max-width:78%;padding:7px 10px 5px;border-radius:10px;font-size:13.5px;line-height:1.35;word-wrap:break-word;position:relative}
-            .sh-burbuja.in{align-self:flex-start;background:#202c33;color:#e9edf2;border-top-left-radius:2px}
-            .sh-burbuja.out{align-self:flex-end;background:#00c853;color:#04240f;border-top-right-radius:2px}
-            .sh-b-meta{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:10px;margin-top:2px;opacity:.75}
-            .sh-ticks{letter-spacing:-2px;font-weight:700}
-            .sh-ticks.leido{color:#0847d6;opacity:1}
-            .sh-dia{align-self:center;background:#16232e;color:#9fb3d1;font-size:10.5px;font-weight:700;border-radius:8px;padding:4px 10px;margin:8px 0 4px}
-            /* barra inferior de escritura */
-            .sh-composer{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1f3c}
-            .sh-input{flex:1;border:none;border-radius:20px;background:#16294a;color:#f1f5fb;font-size:14px;padding:11px 15px;outline:none;min-width:0}
-            .sh-input::placeholder{color:#7189ad}
-            .sh-send{width:44px;height:44px;min-width:44px;border:none;border-radius:50%;background:#00c853;color:#04240f;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-            .sh-send:disabled{opacity:.5}
-            /* modal registrar llamada */
-            .sh-modal-bg{position:fixed;inset:0;background:rgba(4,10,20,.72);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px}
-            .sh-modal{background:#0d1f3c;border:1px solid #1c3357;border-radius:16px;padding:20px;width:100%;max-width:400px;color:#f1f5fb}
-            .sh-modal h4{margin:0 0 14px;font-size:15.5px}
-            .sh-modal label{display:block;font-size:11.5px;font-weight:700;color:#9fb3d1;margin:10px 0 4px}
-            .sh-modal select,.sh-modal input,.sh-modal textarea{width:100%;border:1px solid #24406b;border-radius:9px;background:#16294a;color:#f1f5fb;font-size:13.5px;padding:9px 11px;outline:none;box-sizing:border-box}
-            .sh-modal-btns{display:flex;gap:8px;margin-top:16px}
-            .sh-modal-btns button{flex:1;border:none;border-radius:10px;font-size:13px;font-weight:800;padding:11px;cursor:pointer}
+            .sh-ci-nombre{color:#e9edef;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-ci-prev{color:#8696a0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2.5px}
+            .sh-ci-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:48px}
+            .sh-ci-hora{color:#8696a0;font-size:11.5px}
+            .sh-ci-hora.sh-hay-nuevo{color:#00a884;font-weight:700}
+            .sh-ci-badge{background:#00a884;color:#0b141a;font-size:11px;font-weight:800;border-radius:11px;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 6px}
+            .sh-vacio{color:#8696a0;text-align:center;padding:46px 20px;font-size:13px}
+            /* dropdowns */
+            .sh-menu{position:absolute;top:46px;right:12px;background:#233138;border-radius:10px;box-shadow:0 10px 26px rgba(0,0,0,.45);padding:6px 0;z-index:60;min-width:200px}
+            .sh-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:#e9edef;font-size:13.5px;padding:11px 18px;cursor:pointer}
+            .sh-menu button:hover{background:#202c33}
+            /* ── chat ── */
+            .sh-chat-head{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#202c33;position:relative}
+            .sh-back{background:none;border:none;color:#8696a0;font-size:23px;cursor:pointer;padding:0 4px;line-height:1}
+            @media(min-width:768px){.sh-back{display:none}}
+            .sh-ch-info{flex:1;min-width:0}
+            .sh-ch-nombre{color:#e9edef;font-size:15.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-ch-sub{color:#8696a0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-msgs{flex:1;overflow-y:auto;padding:16px 14px 10px;display:flex;flex-direction:column;gap:3px;scroll-behavior:smooth;background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cpath d='M26 6l7 7-7 7-7-7zM26 32l7 7-7 7-7-7z' fill='none' stroke='%23ffffff' stroke-opacity='.03'/%3E%3C/svg%3E")}
+            .sh-burbuja{max-width:75%;padding:7px 9px 6px 11px;font-size:14px;line-height:1.4;color:#e9edef;word-wrap:break-word;margin-bottom:2px}
+            .sh-burbuja.in{align-self:flex-start;background:#202c33;border-radius:18px 18px 18px 4px}
+            .sh-burbuja.out{align-self:flex-end;background:#005c4b;border-radius:18px 18px 4px 18px}
+            .sh-b-meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;color:#8696a0;margin-top:3px}
+            .sh-burbuja.out .sh-b-meta{color:#99b9b2}
+            .sh-ticks{letter-spacing:-2.5px;font-weight:600}
+            .sh-ticks.leido{color:#53bdeb}
+            .sh-dia{align-self:center;background:#1f2c33;color:#8696a0;font-size:11.5px;font-weight:600;border-radius:8px;padding:5px 12px;margin:10px 0 6px}
+            /* barra de escritura */
+            .sh-composer{display:flex;align-items:center;gap:4px;padding:8px 10px;background:#202c33}
+            .sh-cicon{background:none;border:none;color:#8696a0;cursor:pointer;padding:8px 6px;display:flex;border-radius:50%;font-size:17px;line-height:1}
+            .sh-cicon:hover{color:#e9edef}
+            .sh-input-wrap{flex:1;display:flex;align-items:center;background:#2a3942;border-radius:24px;padding:2px 8px 2px 14px;min-width:0}
+            .sh-input{flex:1;background:none;border:none;outline:none;color:#e9edef;font-size:14.5px;padding:9px 0;min-width:0}
+            .sh-input::placeholder{color:#8696a0}
+            .sh-send{width:44px;height:44px;min-width:44px;border:none;border-radius:50%;background:#00a884;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+            .sh-send.sh-mic{background:transparent;color:#8696a0}
+            /* bottom sheets */
+            .sh-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2100;display:flex;align-items:flex-end;justify-content:center}
+            .sh-sheet{background:#1f2c33;border-radius:18px 18px 0 0;padding:18px 18px 26px;width:100%;max-width:480px;color:#e9edef;animation:shSubir .2s ease-out;max-height:78vh;overflow-y:auto}
+            @keyframes shSubir{from{transform:translateY(40%);opacity:.4}to{transform:translateY(0);opacity:1}}
+            .sh-sheet h4{margin:0 0 4px;font-size:15.5px;font-weight:800}
+            .sh-sheet .sh-sub{color:#8696a0;font-size:12px;margin-bottom:12px}
+            .sh-sheet label{display:block;font-size:11px;font-weight:700;color:#8696a0;margin:14px 0 7px;text-transform:uppercase;letter-spacing:.4px}
+            .sh-sheet input,.sh-sheet textarea{width:100%;border:none;border-radius:10px;background:#2a3942;color:#e9edef;font-size:14px;padding:11px 13px;outline:none}
+            .sh-chips{display:flex;flex-wrap:wrap;gap:8px}
+            .sh-chip{border:1.5px solid #2a3942;background:#202c33;color:#e9edef;font-size:13px;font-weight:700;border-radius:18px;padding:8px 15px;cursor:pointer}
+            .sh-chip.on{background:#00a884;border-color:#00a884;color:#0b141a}
+            .sh-sheet-btn{width:100%;border:none;border-radius:12px;background:#00a884;color:#0b141a;font-size:14.5px;font-weight:800;padding:13px;cursor:pointer;margin-top:18px}
+            .sh-lista-op{display:flex;align-items:center;gap:12px;width:100%;background:none;border:none;color:#e9edef;font-size:13.5px;padding:13px 6px;cursor:pointer;border-bottom:1px solid #2a3942;text-align:left;line-height:1.4}
+            .sh-lista-op:last-of-type{border-bottom:none}
+            .sh-lista-op:hover{background:#202c33}
+            .sh-emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+            .sh-emojis button{background:none;border:none;font-size:23px;padding:7px 0;cursor:pointer;border-radius:8px}
+            .sh-emojis button:hover{background:#2a3942}
+            /* toast */
+            .sh-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#233138;color:#e9edef;font-size:13px;font-weight:600;border-radius:10px;padding:10px 18px;z-index:2300;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+            /* pipeline kanban */
+            .sh-pipe{display:flex;gap:10px;overflow-x:auto;padding:14px;width:100%;background:#0b141a;align-items:flex-start}
+            .sh-col{background:#111b21;border-radius:12px;min-width:228px;width:228px;padding:10px;flex-shrink:0;max-height:100%;display:flex;flex-direction:column}
+            .sh-col-h{display:flex;align-items:center;gap:7px;color:#e9edef;font-size:13px;font-weight:800;padding:2px 4px 10px}
+            .sh-col-n{margin-left:auto;color:#8696a0;font-weight:700;font-size:12px;background:#1f2c33;border-radius:9px;padding:1px 8px}
+            .sh-col-cards{display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:40px;flex:1}
+            .sh-card{background:#1f2c33;border-radius:10px;padding:10px 12px;cursor:grab;border:1px solid transparent}
+            .sh-card:hover{border-color:#2a3942}
+            .sh-card.sh-arrastrando{opacity:.45}
+            .sh-col.sh-encima{outline:1.5px dashed #00a884;outline-offset:-4px}
+            .sh-card-n{color:#e9edef;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-card-t{color:#8696a0;font-size:12px;margin-top:2px}
+            .sh-card-f{display:flex;justify-content:space-between;align-items:center;gap:6px;color:#8696a0;font-size:11px;margin-top:8px}
+            .sh-card-v{background:#202c33;border-radius:8px;padding:2px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+            /* dashboard */
+            .sh-dash{padding:16px;overflow-y:auto;width:100%;background:#0b141a}
+            .sh-metricas{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+            @media(min-width:900px){.sh-metricas{grid-template-columns:repeat(4,1fr)}}
+            .sh-met{background:#111b21;border:1px solid #1f2c33;border-radius:14px;padding:16px}
+            .sh-met-n{color:#e9edef;font-size:28px;font-weight:800;line-height:1.1}
+            .sh-met-l{color:#8696a0;font-size:11px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.4px}
+            .sh-dash h4{color:#e9edef;font-size:14px;font-weight:800;margin:22px 0 10px}
+            .sh-tabla-wrap{overflow-x:auto;border:1px solid #1f2c33;border-radius:14px;background:#111b21}
+            .sh-tabla{width:100%;border-collapse:collapse;min-width:520px}
+            .sh-tabla th{color:#8696a0;font-size:11px;text-transform:uppercase;letter-spacing:.4px;text-align:left;padding:11px 13px;border-bottom:1px solid #1f2c33}
+            .sh-tabla td{color:#e9edef;font-size:13px;padding:11px 13px;border-bottom:1px solid #1f2c33}
+            .sh-tabla tr:last-child td{border-bottom:none}
+            .sh-barra{height:5px;background:#1f2c33;border-radius:3px;overflow:hidden;min-width:56px;margin-top:4px}
+            .sh-barra i{display:block;height:100%;background:#00a884;border-radius:3px}
+            .sh-urgente{background:#111b21;border:1px solid #7f1d1d;border-radius:14px;overflow:hidden}
+            .sh-urg-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1f2c33;color:#e9edef;font-size:13px;flex-wrap:wrap}
+            .sh-urg-item:last-child{border-bottom:none}
           </style>
           <div id="salesHubContent"></div>
         </div>
@@ -7932,26 +8001,53 @@ function agendaGuardarNuevo() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// MÓDULO SALES HUB — leads de WhatsApp (Meta) + llamadas
-// Bandeja tipo WhatsApp, mobile-first. Usa el mismo Worker de
+// MÓDULO SALES HUB — CRM de WhatsApp (bandeja, pipeline, dashboard)
+// Estetica WhatsApp Web 2025 + dark premium. Usa el Worker de
 // agenda (GM_CONFIG.agendaWorkerUrl) con acciones sh*.
 // ═══════════════════════════════════════════════════════════
 
 var shLeadsCache = [];
 var shLeadActivo = null;
-var shFiltroEstado = '';
+var shFiltro = '';
+var shBusqueda = '';
+var shVista = 'bandeja';
 var shTimer = null;
 var shBadgeTimer = null;
 var shEnviando = false;
+var shDragId = null;
 
+// estado interno -> etiqueta, color del dot y columna del pipeline
 var SH_ESTADOS = {
-  nuevo:          { t: 'Nuevo',        c: '#ef4444' },
-  asignado:       { t: 'Asignado',     c: '#3b82f6' },
-  en_conversacion:{ t: 'En conversa.', c: '#06b6d4' },
-  calificado:     { t: 'Calificado',   c: '#a855f7' },
-  convertido:     { t: 'Convertido',   c: '#00c853' },
-  descartado:     { t: 'Descartado',   c: '#64748b' }
+  nuevo:           { t: 'Lead nuevo',      dot: '#ef4444', col: 'nuevo' },
+  asignado:        { t: 'Lead nuevo',      dot: '#ef4444', col: 'nuevo' },
+  contactado:      { t: 'Contactado',      dot: '#fbbf24', col: 'contactado' },
+  en_conversacion: { t: 'Contactado',      dot: '#fbbf24', col: 'contactado' },
+  interesado:      { t: 'Interesado',      dot: '#22c55e', col: 'interesado' },
+  calificado:      { t: 'Interesado',      dot: '#22c55e', col: 'interesado' },
+  visita_agendada: { t: 'Visita agendada', dot: '#53bdeb', col: 'visita' },
+  convertido:      { t: 'Convertido',      dot: '#f59e0b', col: 'convertido' },
+  perdido:         { t: 'Perdido',         dot: '#64748b', col: 'perdido' },
+  descartado:      { t: 'Perdido',         dot: '#64748b', col: 'perdido' }
 };
+
+var SH_COLUMNAS = [
+  { id: 'nuevo',      emoji: '🔴', t: 'Nuevo',           estado: 'nuevo' },
+  { id: 'contactado', emoji: '🟡', t: 'Contactado',      estado: 'contactado' },
+  { id: 'interesado', emoji: '🟢', t: 'Interesado',      estado: 'interesado' },
+  { id: 'visita',     emoji: '📅', t: 'Visita agendada', estado: 'visita_agendada' },
+  { id: 'convertido', emoji: '⭐', t: 'Convertido',      estado: 'convertido' },
+  { id: 'perdido',    emoji: '❌', t: 'Perdido',         estado: 'perdido' }
+];
+
+var SH_RESPUESTAS = [
+  'Hola 👋 soy [nombre] de Carrigas Perú. ¿En qué te puedo ayudar?',
+  '¿Qué tipo de vehículo tienes? (marca, modelo, año)',
+  'Te paso el presupuesto de conversión ahora mismo 🚗',
+  '¿Puedes venir a uno de nuestros talleres esta semana?',
+  'Tu conversión califica para el programa FISE del gobierno ✅'
+];
+
+var SH_EMOJIS = ['😊','😃','👋','🙌','👍','🙏','❤️','🔥','🚗','🚙','⛽','💰','✅','⭐','📅','📍','📞','💬','🎉','😉','🤝','💪','⏰','❓'];
 
 function shEsc(s) {
   return String(s === undefined || s === null ? '' : s)
@@ -7962,8 +8058,14 @@ function shEsc(s) {
 function shPuedeVerTodo() {
   return CU && (CU.role === 'admin' || CU.role === 'jefe' || CU.role === 'supervisor');
 }
+function shEsJefe() {
+  return CU && (CU.role === 'admin' || CU.role === 'jefe');
+}
 
-// Color de avatar estable por nombre/telefono
+function shEstadoInfo(e) {
+  return SH_ESTADOS[e] || { t: e || '—', dot: '#64748b', col: 'nuevo' };
+}
+
 function shAvatarColor(semilla) {
   var colores = ['#0e7490', '#7c3aed', '#be185d', '#b45309', '#15803d', '#1d4ed8', '#a21caf', '#0f766e'];
   var h = 0;
@@ -7990,10 +8092,9 @@ function shHoraCorta(iso) {
   var d = new Date(iso);
   if (isNaN(d.getTime())) return '';
   var hoy = new Date();
-  var esHoy = d.toDateString() === hoy.toDateString();
   var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
   var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-  if (esHoy) return hh + ':' + mm;
+  if (d.toDateString() === hoy.toDateString()) return hh + ':' + mm;
   var ayer = new Date(hoy.getTime() - 86400000);
   if (d.toDateString() === ayer.toDateString()) return 'Ayer';
   return (d.getDate() < 10 ? '0' : '') + d.getDate() + '/' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
@@ -8005,105 +8106,256 @@ function shDiaEtiqueta(iso) {
   if (d.toDateString() === hoy.toDateString()) return 'Hoy';
   var ayer = new Date(hoy.getTime() - 86400000);
   if (d.toDateString() === ayer.toDateString()) return 'Ayer';
-  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-// ── Render principal ─────────────────────────────────────
+function shTiempoRelativo(iso) {
+  if (!iso) return '—';
+  var ms = Date.now() - new Date(iso).getTime();
+  if (isNaN(ms) || ms < 0) return '—';
+  var min = Math.floor(ms / 60000);
+  if (min < 1) return 'ahora';
+  if (min < 60) return min + 'm';
+  var h = Math.floor(min / 60);
+  if (h < 24) return h + 'h';
+  return Math.floor(h / 24) + 'd';
+}
+
+function shToast(txt) {
+  var viejo = document.getElementById('shToast');
+  if (viejo) viejo.remove();
+  var t = document.createElement('div');
+  t.className = 'sh-toast';
+  t.id = 'shToast';
+  t.textContent = txt;
+  document.body.appendChild(t);
+  setTimeout(function () { if (t.parentNode) t.remove(); }, 2200);
+}
+
+// ── Render raiz: tabs Bandeja / Pipeline / Dashboard ─────
 function renderSalesHub() {
   var cont = document.getElementById('salesHubContent');
   if (!cont) return;
   if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
 
-  var btnRoster = shPuedeVerTodo()
-    ? '<button class="sh-filtro" onclick="shAbrirRoster()" style="border-color:#00c853;color:#00c853">👥 Vendedoras</button>'
-    : '';
+  var tabs =
+    '<button class="sh-viewtab" data-v="bandeja" onclick="shCambiarVista(\'bandeja\')">💬 Bandeja</button>' +
+    '<button class="sh-viewtab" data-v="pipeline" onclick="shCambiarVista(\'pipeline\')">📊 Pipeline</button>' +
+    (shEsJefe() ? '<button class="sh-viewtab" data-v="dashboard" onclick="shCambiarVista(\'dashboard\')">📈 Dashboard</button>' : '');
 
   cont.innerHTML =
-    '<div class="sh-app" id="shApp">' +
-      '<div class="sh-pane-list">' +
-        '<div class="sh-list-head"><h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00c853" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg> Sales Hub</h3>' + btnRoster + '</div>' +
-        '<div class="sh-filtros" id="shFiltros"></div>' +
-        '<div class="sh-chats" id="shChats"><div class="sh-vacio">Cargando conversaciones…</div></div>' +
-      '</div>' +
-      '<div class="sh-pane-chat" id="shPaneChat">' +
-        '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>' +
-      '</div>' +
+    '<div class="sh-root">' +
+      '<div class="sh-viewtabs" id="shViewTabs">' + tabs + '</div>' +
+      '<div id="shVistaCont"></div>' +
     '</div>';
 
-  shRenderFiltros();
+  shRenderVista();
   shCargarLeads();
   if (shTimer) clearInterval(shTimer);
   shTimer = setInterval(function () {
     var tab = document.getElementById('tab-salesHub');
     if (!tab || !tab.classList.contains('active')) return;
+    if (shDragId) return; // no refrescar en medio de un arrastre
     shCargarLeads();
-    if (shLeadActivo) shCargarMensajes(false);
+    if (shVista === 'bandeja' && shLeadActivo) shCargarMensajes(false);
   }, 12000);
 }
 
-function shRenderFiltros() {
-  var el = document.getElementById('shFiltros');
-  if (!el) return;
-  var defs = [['', 'Todos'], ['nuevo', 'Nuevos'], ['asignado', 'Asignados'], ['en_conversacion', 'En conversación'], ['calificado', 'Calificados'], ['convertido', 'Convertidos']];
-  var html = '';
-  for (var i = 0; i < defs.length; i++) {
-    html += '<button class="sh-filtro' + (shFiltroEstado === defs[i][0] ? ' on' : '') + '" onclick="shFiltrar(\'' + defs[i][0] + '\')">' + defs[i][1] + '</button>';
+function shCambiarVista(v) {
+  shVista = v;
+  shLeadActivo = null;
+  shRenderVista();
+  shRefrescarVistaActual();
+}
+
+function shRenderVista() {
+  var tabs = document.querySelectorAll('#shViewTabs .sh-viewtab');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.toggle('on', tabs[i].getAttribute('data-v') === shVista);
   }
-  el.innerHTML = html;
+  var cont = document.getElementById('shVistaCont');
+  if (!cont) return;
+
+  if (shVista === 'bandeja') {
+    cont.innerHTML =
+      '<div class="sh-app" id="shApp">' +
+        '<div class="sh-pane-list">' +
+          '<div class="sh-list-head" id="shListHead">' +
+            '<h3>Sales Hub</h3>' +
+            '<div class="sh-hicons">' +
+              '<button class="sh-hicon" title="Buscar" onclick="shFocoBusqueda()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>' +
+              '<button class="sh-hicon" title="Filtrar" onclick="shMenuFiltros(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg></button>' +
+              '<button class="sh-hicon" title="Menú" onclick="shMenuLista(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sh-buscar"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8696a0" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '<input id="shBusca" type="text" placeholder="Buscar lead..." autocomplete="off" oninput="shBuscar(this.value)"></div>' +
+          '<div class="sh-filtros" id="shFiltros"></div>' +
+          '<div class="sh-chats sh-scroll" id="shChats"><div class="sh-vacio">Cargando conversaciones…</div></div>' +
+        '</div>' +
+        '<div class="sh-pane-chat" id="shPaneChat">' +
+          '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>' +
+        '</div>' +
+      '</div>';
+    shRenderFiltros();
+    shRenderLista();
+  } else if (shVista === 'pipeline') {
+    cont.innerHTML = '<div class="sh-app"><div class="sh-pipe sh-scroll" id="shPipe"></div></div>';
+    shRenderPipeline();
+  } else {
+    cont.innerHTML = '<div class="sh-app"><div class="sh-dash sh-scroll" id="shDash"></div></div>';
+    shRenderDashboard();
+  }
 }
 
-function shFiltrar(estado) {
-  shFiltroEstado = estado;
-  shRenderFiltros();
-  shRenderLista();
+function shRefrescarVistaActual() {
+  if (shVista === 'bandeja') shRenderLista();
+  else if (shVista === 'pipeline') shRenderPipeline();
+  else shRenderDashboard();
 }
 
+// ── Carga de datos ───────────────────────────────────────
 function shCargarLeads() {
   var q = {};
   if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
   agendaWorkerFetch('shLeadsListar', q).then(function (d) {
     if (!d || !d.ok) return;
     shLeadsCache = d.leads || [];
-    shRenderLista();
+    shRefrescarVistaActual();
     shActualizarNavBadge(shLeadsCache);
   }).catch(function () {});
+}
+
+// ── Bandeja: filtros + busqueda ──────────────────────────
+function shRenderFiltros() {
+  var el = document.getElementById('shFiltros');
+  if (!el) return;
+  var defs = [['', 'Todos'], ['sinleer', 'Sin leer'], ['nuevos', 'Nuevos'], ['interesados', 'Interesados']];
+  var html = '';
+  for (var i = 0; i < defs.length; i++) {
+    html += '<button class="sh-filtro' + (shFiltro === defs[i][0] ? ' on' : '') + '" onclick="shFiltrar(\'' + defs[i][0] + '\')">' + defs[i][1] + '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function shFiltrar(f) {
+  shFiltro = f;
+  shRenderFiltros();
+  shRenderLista();
+}
+
+function shBuscar(txt) {
+  shBusqueda = String(txt || '').toLowerCase();
+  shRenderLista();
+}
+
+function shFocoBusqueda() {
+  var b = document.getElementById('shBusca');
+  if (b) b.focus();
+}
+
+function shAplicarFiltros(lista) {
+  var out = [];
+  for (var i = 0; i < lista.length; i++) {
+    var l = lista[i];
+    if (shFiltro === 'sinleer' && !(parseInt(l.no_leidos, 10) > 0)) continue;
+    if (shFiltro === 'nuevos' && shEstadoInfo(l.estado).col !== 'nuevo') continue;
+    if (shFiltro === 'interesados' && shEstadoInfo(l.estado).col !== 'interesado') continue;
+    if (shBusqueda) {
+      var blob = ((l.nombre || '') + ' ' + (l.telefono || '') + ' ' + (l.ultimo_mensaje_texto || '')).toLowerCase();
+      if (blob.indexOf(shBusqueda) === -1) continue;
+    }
+    out.push(l);
+  }
+  return out;
 }
 
 function shRenderLista() {
   var el = document.getElementById('shChats');
   if (!el) return;
-  var lista = shLeadsCache;
-  if (shFiltroEstado) {
-    lista = lista.filter(function (l) { return l.estado === shFiltroEstado; });
-  }
+  var lista = shAplicarFiltros(shLeadsCache);
   if (!lista.length) {
-    el.innerHTML = '<div class="sh-vacio">Sin conversaciones' + (shFiltroEstado ? ' en este filtro' : ' todavía.<br><br>Cuando un cliente escriba al WhatsApp del negocio, aparecerá aquí y se asignará automáticamente a una vendedora') + '</div>';
+    el.innerHTML = '<div class="sh-vacio">' + (shBusqueda || shFiltro
+      ? 'Sin resultados para este filtro'
+      : 'Sin conversaciones todavía.<br><br>Cuando un cliente escriba al WhatsApp del negocio, aparecerá aquí y se asignará automáticamente a una vendedora') + '</div>';
     return;
   }
   var html = '';
   for (var i = 0; i < lista.length; i++) {
     var l = lista[i];
     var noLeidos = parseInt(l.no_leidos, 10) || 0;
+    var info = shEstadoInfo(l.estado);
     var prev = l.ultimo_mensaje_texto || '';
     if (l.ultimo_mensaje_de === 'vendedora') prev = '✓ ' + prev;
-    var quien = shPuedeVerTodo() && l.vendedora_nombre ? '<span style="color:#5b7ba6">' + shEsc(l.vendedora_nombre.split(' ')[0]) + ' · </span>' : '';
+    var quien = shPuedeVerTodo() && l.vendedora_nombre ? '<span style="color:#5f7285">' + shEsc(l.vendedora_nombre.split(' ')[0]) + ' · </span>' : '';
     html +=
       '<div class="sh-chat-item" onclick="shAbrirChat(\'' + shEsc(l.id) + '\')">' +
-        '<div class="sh-avatar" style="background:' + shAvatarColor(l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
-        '<div class="sh-ci-mid">' +
-          '<div class="sh-ci-nombre">' + shEsc(l.nombre || shTelBonito(l.telefono)) + '</div>' +
-          '<div class="sh-ci-prev">' + quien + shEsc(prev) + '</div>' +
+        '<div class="sh-av-wrap">' +
+          '<div class="sh-avatar" style="background:' + shAvatarColor(l.nombre || l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
+          '<span class="sh-dot" style="background:' + info.dot + '" title="' + shEsc(info.t) + '"></span>' +
         '</div>' +
-        '<div class="sh-ci-right">' +
-          '<span class="sh-ci-hora' + (noLeidos ? ' sh-hay-nuevo' : '') + '">' + shHoraCorta(l.ultimo_mensaje_en) + '</span>' +
-          (noLeidos ? '<span class="sh-ci-badge">' + noLeidos + '</span>' : '<span style="height:19px"></span>') +
+        '<div class="sh-ci-body">' +
+          '<div class="sh-ci-mid">' +
+            '<div class="sh-ci-nombre">' + shEsc(l.nombre || shTelBonito(l.telefono)) + '</div>' +
+            '<div class="sh-ci-prev">' + quien + shEsc(prev) + '</div>' +
+          '</div>' +
+          '<div class="sh-ci-right">' +
+            '<span class="sh-ci-hora' + (noLeidos ? ' sh-hay-nuevo' : '') + '">' + shHoraCorta(l.ultimo_mensaje_en) + '</span>' +
+            (noLeidos ? '<span class="sh-ci-badge">' + noLeidos + '</span>' : '<span style="height:20px"></span>') +
+          '</div>' +
         '</div>' +
       '</div>';
   }
   el.innerHTML = html;
 }
 
-// ── Chat abierto ─────────────────────────────────────────
+// ── Menus (dropdowns) ────────────────────────────────────
+function shCerrarMenus() {
+  var m = document.getElementById('shMenuFlot');
+  if (m) m.remove();
+  document.removeEventListener('click', shCerrarMenus);
+}
+
+function shAbrirMenu(anchorSel, botones) {
+  shCerrarMenus();
+  var anchor = document.querySelector(anchorSel);
+  if (!anchor) return;
+  var div = document.createElement('div');
+  div.className = 'sh-menu';
+  div.id = 'shMenuFlot';
+  div.innerHTML = botones;
+  anchor.appendChild(div);
+  setTimeout(function () { document.addEventListener('click', shCerrarMenus); }, 10);
+}
+
+function shMenuFiltros(ev) {
+  ev.stopPropagation();
+  var html = '';
+  var defs = [['', 'Todos'], ['sinleer', 'Sin leer'], ['nuevos', 'Nuevos'], ['interesados', 'Interesados']];
+  for (var i = 0; i < defs.length; i++) {
+    html += '<button onclick="shFiltrar(\'' + defs[i][0] + '\');shCerrarMenus()">' + (shFiltro === defs[i][0] ? '✓ ' : '') + defs[i][1] + '</button>';
+  }
+  shAbrirMenu('#shListHead', html);
+}
+
+function shMenuLista(ev) {
+  ev.stopPropagation();
+  var html = '';
+  if (shPuedeVerTodo()) html += '<button onclick="shCerrarMenus();shAbrirRoster()">👥 Vendedoras del round-robin</button>';
+  html += '<button onclick="shCerrarMenus();shCargarLeads();shToast(\'Actualizado\')">⟳ Actualizar</button>';
+  shAbrirMenu('#shListHead', html);
+}
+
+function shMenuChat(ev) {
+  ev.stopPropagation();
+  var html =
+    '<button onclick="shCerrarMenus();shSheetEstado()">🔄 Cambiar estado</button>' +
+    '<button onclick="shCerrarMenus();shSheetReasignar()">👤 Reasignar vendedora</button>' +
+    '<button onclick="shCerrarMenus();shMarcarPerdido()" style="color:#f87171">❌ Marcar como perdido</button>';
+  shAbrirMenu('#shChatHead', html);
+}
+
+// ── Chat ─────────────────────────────────────────────────
 function shAbrirChat(leadId) {
   var lead = null;
   for (var i = 0; i < shLeadsCache.length; i++) {
@@ -8127,38 +8379,74 @@ function shVolverLista() {
   shLeadActivo = null;
   var app = document.getElementById('shApp');
   if (app) app.classList.remove('sh-chat-open');
-  var pane = document.getElementById('shPaneChat');
-  if (pane) pane.innerHTML = '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>';
+  setTimeout(function () {
+    if (shLeadActivo) return;
+    var pane = document.getElementById('shPaneChat');
+    if (pane) pane.innerHTML = '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>';
+  }, 220);
 }
 
 function shRenderChatPane() {
   var pane = document.getElementById('shPaneChat');
   var l = shLeadActivo;
   if (!pane || !l) return;
-  var est = SH_ESTADOS[l.estado] || { t: l.estado, c: '#64748b' };
-  var opts = '';
-  for (var k in SH_ESTADOS) {
-    opts += '<option value="' + k + '"' + (l.estado === k ? ' selected' : '') + '>' + SH_ESTADOS[k].t + '</option>';
-  }
+  var info = shEstadoInfo(l.estado);
   pane.innerHTML =
-    '<div class="sh-chat-head">' +
+    '<div class="sh-chat-head" id="shChatHead">' +
       '<button class="sh-back" onclick="shVolverLista()" title="Volver">‹</button>' +
-      '<div class="sh-avatar" style="width:38px;height:38px;min-width:38px;font-size:15px;background:' + shAvatarColor(l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
-      '<div style="min-width:0">' +
+      '<div class="sh-av-wrap" style="min-width:40px">' +
+        '<div class="sh-avatar" style="width:40px;height:40px;font-size:16px;background:' + shAvatarColor(l.nombre || l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
+        '<span class="sh-dot" style="width:11px;height:11px;border-color:#202c33;background:' + info.dot + '"></span>' +
+      '</div>' +
+      '<div class="sh-ch-info">' +
         '<div class="sh-ch-nombre">' + shEsc(l.nombre || 'Sin nombre') + '</div>' +
-        '<div class="sh-ch-tel">' + shEsc(shTelBonito(l.telefono)) + '</div>' +
+        '<div class="sh-ch-sub"><span style="color:' + info.dot + '">' + shEsc(info.t) + '</span> · ' + shEsc(shTelBonito(l.telefono)) + '</div>' +
       '</div>' +
-      '<select class="sh-estado" style="background:' + est.c + '" onchange="shCambiarEstado(this.value)">' + opts + '</select>' +
-      '<div class="sh-ch-btns">' +
-        '<a class="sh-btn-accion sh-btn-llamar" href="tel:+' + shEsc(l.telefono) + '">📞 Llamar</a>' +
-        '<button class="sh-btn-accion sh-btn-regllam" onclick="shAbrirModalLlamada()">📝 Registrar llamada WA</button>' +
-      '</div>' +
+      '<button class="sh-hicon" title="Llamar" onclick="shModalTwilio()" style="color:#00a884"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>' +
+      '<button class="sh-hicon" title="Registrar llamada WA" onclick="shSheetLlamada()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>' +
+      '<button class="sh-hicon" title="Menú" onclick="shMenuChat(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>' +
     '</div>' +
-    '<div class="sh-msgs" id="shMsgs"><div class="sh-vacio">Cargando mensajes…</div></div>' +
+    '<div class="sh-msgs sh-scroll" id="shMsgs"><div class="sh-vacio">Cargando mensajes…</div></div>' +
     '<div class="sh-composer">' +
-      '<input class="sh-input" id="shInput" type="text" placeholder="Escribe un mensaje" autocomplete="off" onkeydown="if(event.key===\'Enter\')shEnviarMensaje()">' +
-      '<button class="sh-send" id="shSend" onclick="shEnviarMensaje()" title="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
+      '<button class="sh-cicon" title="Emoji" onclick="shSheetEmojis()"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>' +
+      '<button class="sh-cicon" title="Adjuntar" onclick="shToast(\'Adjuntos: próximamente\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' +
+      '<button class="sh-cicon" title="Respuestas rápidas" onclick="shSheetRespuestas()" style="font-weight:800;font-size:16px;color:#00a884;padding:8px 8px">/</button>' +
+      '<div class="sh-input-wrap">' +
+        '<input class="sh-input" id="shInput" type="text" placeholder="Escribe un mensaje" autocomplete="off" oninput="shInputCambio(this)" onkeydown="if(event.key===\'Enter\')shEnviarMensaje()">' +
+      '</div>' +
+      '<button class="sh-send sh-mic" id="shSend" onclick="shSendClick()" title="Enviar"></button>' +
     '</div>';
+  shPintarSend('');
+}
+
+function shPintarSend(valor) {
+  var btn = document.getElementById('shSend');
+  if (!btn) return;
+  if (String(valor || '').trim()) {
+    btn.classList.remove('sh-mic');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
+  } else {
+    btn.classList.add('sh-mic');
+    btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>';
+  }
+}
+
+function shInputCambio(inp) {
+  var v = inp.value;
+  if (v === '/') {
+    inp.value = '';
+    shPintarSend('');
+    shSheetRespuestas();
+    return;
+  }
+  shPintarSend(v);
+}
+
+function shSendClick() {
+  var inp = document.getElementById('shInput');
+  var v = inp ? inp.value.trim() : '';
+  if (!v) { shToast('Notas de voz: próximamente'); return; }
+  shEnviarMensaje();
 }
 
 function shCargarMensajes(scrollAlFinal) {
@@ -8174,7 +8462,7 @@ function shTicks(m) {
   var e = m.estado_entrega || '';
   if (e === 'read') return '<span class="sh-ticks leido">✓✓</span>';
   if (e === 'delivered') return '<span class="sh-ticks">✓✓</span>';
-  if (e === 'failed') return '<span style="color:#b91c1c;font-weight:800">!</span>';
+  if (e === 'failed') return '<span style="color:#f87171;font-weight:800">!</span>';
   return '<span class="sh-ticks">✓</span>';
 }
 
@@ -8212,10 +8500,7 @@ function shEnviarMensaje() {
   var texto = input ? input.value.trim() : '';
   if (!texto) return;
   shEnviando = true;
-  var btn = document.getElementById('shSend');
-  if (btn) btn.disabled = true;
 
-  // burbuja optimista con relojito mientras confirma Meta
   var el = document.getElementById('shMsgs');
   if (el) {
     var d = new Date();
@@ -8228,76 +8513,115 @@ function shEnviarMensaje() {
   agendaWorkerFetch('shResponder', {}, { method: 'POST', body: { leadId: shLeadActivo.id, texto: texto, uid: CU ? CU.id : '' } })
     .then(function (d2) {
       shEnviando = false;
-      if (btn) btn.disabled = false;
       if (d2 && d2.ok) {
-        if (input) input.value = '';
+        if (input) { input.value = ''; shPintarSend(''); }
         shCargarMensajes(true);
         shCargarLeads();
       } else {
         var pend = document.getElementById('shPendiente');
         if (pend) pend.remove();
-        alert('No se pudo enviar: ' + (d2 && d2.error ? d2.error : 'error de red'));
+        shToast('No se pudo enviar: ' + (d2 && d2.error ? d2.error : 'error de red'));
       }
     })
     .catch(function () {
       shEnviando = false;
-      if (btn) btn.disabled = false;
       var pend = document.getElementById('shPendiente');
       if (pend) pend.remove();
-      alert('No se pudo enviar: revisa tu conexión');
+      shToast('No se pudo enviar: revisa tu conexión');
     });
 }
 
-function shCambiarEstado(nuevo) {
-  if (!shLeadActivo) return;
-  var l = shLeadActivo;
-  agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: l.id, estado: nuevo } })
-    .then(function (d) {
-      if (d && d.ok) { l.estado = nuevo; shRenderChatPane(); shCargarMensajes(false); shCargarLeads(); }
-      else alert('No se pudo cambiar el estado');
-    }).catch(function () { alert('No se pudo cambiar el estado'); });
-}
-
-// ── Registrar llamada WA (manual) ────────────────────────
-function shAbrirModalLlamada() {
-  if (!shLeadActivo) return;
-  var viejo = document.getElementById('shModalBg');
-  if (viejo) viejo.remove();
+// ── Bottom sheets genericos ──────────────────────────────
+function shAbrirSheet(html) {
+  shCerrarSheet();
   var div = document.createElement('div');
-  div.className = 'sh-modal-bg';
-  div.id = 'shModalBg';
-  div.innerHTML =
-    '<div class="sh-modal">' +
-      '<h4>📝 Registrar llamada — ' + shEsc(shLeadActivo.nombre || shTelBonito(shLeadActivo.telefono)) + '</h4>' +
-      '<label>Resultado</label>' +
-      '<select id="shLlamResultado">' +
-        '<option value="contesto">Contestó</option>' +
-        '<option value="no_contesto">No contestó</option>' +
-        '<option value="buzon">Buzón de voz</option>' +
-        '<option value="numero_errado">Número errado</option>' +
-        '<option value="volver_a_llamar">Pidió volver a llamar</option>' +
-      '</select>' +
-      '<label>Duración (minutos)</label>' +
-      '<input id="shLlamDur" type="number" min="0" step="1" placeholder="0" inputmode="numeric">' +
-      '<label>Notas</label>' +
-      '<textarea id="shLlamNotas" rows="3" placeholder="Qué se conversó, acuerdos, próxima acción…"></textarea>' +
-      '<div class="sh-modal-btns">' +
-        '<button style="background:#1c3357;color:#cfe0f5" onclick="shCerrarModalLlamada()">Cancelar</button>' +
-        '<button style="background:#00c853;color:#04240f" onclick="shGuardarLlamada()">Guardar</button>' +
-      '</div>' +
-    '</div>';
-  div.onclick = function (ev) { if (ev.target === div) shCerrarModalLlamada(); };
+  div.className = 'sh-sheet-bg';
+  div.id = 'shSheetBg';
+  div.innerHTML = '<div class="sh-sheet sh-scroll">' + html + '</div>';
+  div.onclick = function (ev) { if (ev.target === div) shCerrarSheet(); };
   document.body.appendChild(div);
 }
 
-function shCerrarModalLlamada() {
-  var m = document.getElementById('shModalBg');
+function shCerrarSheet() {
+  var m = document.getElementById('shSheetBg');
   if (m) m.remove();
+}
+
+// ── Respuestas rapidas ───────────────────────────────────
+function shSheetRespuestas() {
+  var nombre = CU && CU.nombre ? CU.nombre.split(' ')[0] : '';
+  var html = '<h4>⚡ Respuestas rápidas</h4><div class="sh-sub">Toca una para insertarla — la puedes editar antes de enviar</div>';
+  for (var i = 0; i < SH_RESPUESTAS.length; i++) {
+    var txt = SH_RESPUESTAS[i].split('[nombre]').join(nombre);
+    html += '<button class="sh-lista-op" onclick="shUsarRespuesta(' + i + ')">' + shEsc(txt) + '</button>';
+  }
+  shAbrirSheet(html);
+}
+
+function shUsarRespuesta(i) {
+  var nombre = CU && CU.nombre ? CU.nombre.split(' ')[0] : '';
+  var txt = SH_RESPUESTAS[i].split('[nombre]').join(nombre);
+  shCerrarSheet();
+  var input = document.getElementById('shInput');
+  if (input) { input.value = txt; shPintarSend(txt); input.focus(); }
+}
+
+// ── Emojis ───────────────────────────────────────────────
+function shSheetEmojis() {
+  var html = '<h4>😊 Emojis</h4><div class="sh-emojis">';
+  for (var i = 0; i < SH_EMOJIS.length; i++) {
+    html += '<button onclick="shPonerEmoji(' + i + ')">' + SH_EMOJIS[i] + '</button>';
+  }
+  html += '</div>';
+  shAbrirSheet(html);
+}
+
+function shPonerEmoji(i) {
+  var input = document.getElementById('shInput');
+  if (input) { input.value += SH_EMOJIS[i]; shPintarSend(input.value); input.focus(); }
+  shCerrarSheet();
+}
+
+// ── Llamadas ─────────────────────────────────────────────
+function shModalTwilio() {
+  shAbrirSheet(
+    '<h4>📞 Llamada con grabación</h4>' +
+    '<div class="sh-sub">Integrando Twilio — disponible pronto. La llamada saldrá desde el sistema, conectará tu celular con el cliente y quedará grabada automáticamente.</div>' +
+    '<div style="color:#8696a0;font-size:12.5px;background:#202c33;border-radius:10px;padding:12px">Mientras tanto: llama por WhatsApp y usa <b style="color:#e9edef">Registrar llamada WA</b> (el ícono de lápiz ✏️) para dejar constancia.</div>' +
+    '<button class="sh-sheet-btn" onclick="shCerrarSheet()">Entendido</button>'
+  );
+}
+
+function shSheetLlamada() {
+  if (!shLeadActivo) return;
+  var html =
+    '<h4>📝 Registrar llamada WA</h4>' +
+    '<div class="sh-sub">' + shEsc(shLeadActivo.nombre || shTelBonito(shLeadActivo.telefono)) + '</div>' +
+    '<label>Resultado</label>' +
+    '<div class="sh-chips" id="shChipsRes">' +
+      '<button class="sh-chip" data-r="interesado" onclick="shChipRes(this)">Interesado</button>' +
+      '<button class="sh-chip" data-r="no_contesta" onclick="shChipRes(this)">No contesta</button>' +
+      '<button class="sh-chip" data-r="callback" onclick="shChipRes(this)">Callback</button>' +
+      '<button class="sh-chip" data-r="no_interesa" onclick="shChipRes(this)">No interesa</button>' +
+    '</div>' +
+    '<label>Duración (minutos)</label>' +
+    '<input id="shLlamDur" type="number" min="0" step="1" placeholder="0" inputmode="numeric">' +
+    '<label>Nota</label>' +
+    '<textarea id="shLlamNotas" rows="3" placeholder="Qué se conversó, acuerdos, próxima acción…"></textarea>' +
+    '<button class="sh-sheet-btn" onclick="shGuardarLlamada()">Guardar llamada</button>';
+  shAbrirSheet(html);
+}
+
+function shChipRes(btn) {
+  var chips = document.querySelectorAll('#shChipsRes .sh-chip');
+  for (var i = 0; i < chips.length; i++) chips[i].classList.remove('on');
+  btn.classList.add('on');
 }
 
 function shGuardarLlamada() {
   if (!shLeadActivo) return;
-  var res = document.getElementById('shLlamResultado');
+  var sel = document.querySelector('#shChipsRes .sh-chip.on');
+  if (!sel) { shToast('Elige un resultado'); return; }
   var dur = document.getElementById('shLlamDur');
   var notas = document.getElementById('shLlamNotas');
   var minutos = dur ? parseInt(dur.value, 10) || 0 : 0;
@@ -8306,16 +8630,255 @@ function shGuardarLlamada() {
     vendedoraUid: CU ? CU.id : '',
     vendedoraNombre: CU ? CU.nombre : '',
     tipo: 'whatsapp_manual',
-    resultado: res ? res.value : '',
+    resultado: sel.getAttribute('data-r'),
     duracionSeg: minutos * 60,
     notas: notas ? notas.value.trim() : ''
   } }).then(function (d) {
-    if (d && d.ok) { shCerrarModalLlamada(); alert('Llamada registrada ✔'); }
-    else alert('No se pudo registrar: ' + (d && d.error ? d.error : 'error'));
-  }).catch(function () { alert('No se pudo registrar: revisa tu conexión'); });
+    if (d && d.ok) {
+      shCerrarSheet();
+      shToast('Llamada registrada ✔');
+      if (sel.getAttribute('data-r') === 'interesado') shMoverLead(shLeadActivo.id, 'interesado');
+    } else shToast('No se pudo registrar: ' + (d && d.error ? d.error : 'error'));
+  }).catch(function () { shToast('No se pudo registrar: revisa tu conexión'); });
 }
 
-// ── Roster de vendedoras (solo admin/jefe/supervisor) ────
+// ── Estado / reasignar / perdido ─────────────────────────
+function shSheetEstado(leadId) {
+  var lead = leadId ? shBuscarLead(leadId) : shLeadActivo;
+  if (!lead) return;
+  var html = '<h4>🔄 Cambiar estado</h4><div class="sh-sub">' + shEsc(lead.nombre || shTelBonito(lead.telefono)) + '</div><div class="sh-chips">';
+  for (var i = 0; i < SH_COLUMNAS.length; i++) {
+    var c = SH_COLUMNAS[i];
+    var activo = shEstadoInfo(lead.estado).col === c.id;
+    html += '<button class="sh-chip' + (activo ? ' on' : '') + '" onclick="shMoverLead(\'' + shEsc(lead.id) + '\',\'' + c.estado + '\');shCerrarSheet()">' + c.emoji + ' ' + c.t + '</button>';
+  }
+  html += '</div>';
+  shAbrirSheet(html);
+}
+
+function shBuscarLead(id) {
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    if (shLeadsCache[i].id === id) return shLeadsCache[i];
+  }
+  return null;
+}
+
+function shMoverLead(id, estado) {
+  var lead = shBuscarLead(id);
+  if (!lead) return;
+  var anterior = lead.estado;
+  lead.estado = estado;
+  lead.actualizado_en = new Date().toISOString();
+  if (shLeadActivo && shLeadActivo.id === id) shRenderChatPane();
+  shRefrescarVistaActual();
+  agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: id, estado: estado } })
+    .then(function (d) {
+      if (!d || !d.ok) { lead.estado = anterior; shRefrescarVistaActual(); shToast('No se pudo cambiar el estado'); }
+      if (shLeadActivo && shLeadActivo.id === id) shCargarMensajes(false);
+    })
+    .catch(function () { lead.estado = anterior; shRefrescarVistaActual(); shToast('Sin conexión'); });
+}
+
+function shSheetReasignar() {
+  if (!shLeadActivo) return;
+  agendaWorkerFetch('shVendedorasListar', {}).then(function (d) {
+    var lista = (d && d.ok ? d.vendedoras : []) || [];
+    var html = '<h4>👤 Reasignar vendedora</h4><div class="sh-sub">' + shEsc(shLeadActivo.nombre || shTelBonito(shLeadActivo.telefono)) + '</div>';
+    var hay = 0;
+    for (var i = 0; i < lista.length; i++) {
+      if (parseInt(lista[i].activa, 10) !== 1) continue;
+      hay++;
+      html += '<button class="sh-lista-op" onclick="shReasignarA(\'' + shEsc(lista[i].uid) + '\')">' +
+        '<span class="sh-avatar" style="width:34px;height:34px;min-width:34px;font-size:14px;background:' + shAvatarColor(lista[i].nombre) + '">' + shEsc(lista[i].nombre.charAt(0).toUpperCase()) + '</span>' +
+        shEsc(lista[i].nombre) + (shLeadActivo.vendedora_uid === lista[i].uid ? ' <span style="color:#00a884">· actual</span>' : '') + '</button>';
+    }
+    if (!hay) html += '<div class="sh-vacio">No hay vendedoras activas. Configúralas en el menú ⋮ de la lista.</div>';
+    shAbrirSheet(html);
+  }).catch(function () { shToast('No se pudo cargar vendedoras'); });
+}
+
+function shReasignarA(uid) {
+  if (!shLeadActivo) return;
+  var lead = shLeadActivo;
+  agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: lead.id, vendedoraUid: uid } })
+    .then(function (d) {
+      shCerrarSheet();
+      if (d && d.ok) { shToast('Lead reasignado ✔'); shCargarLeads(); }
+      else shToast('No se pudo reasignar');
+    }).catch(function () { shToast('Sin conexión'); });
+}
+
+function shMarcarPerdido() {
+  if (!shLeadActivo) return;
+  if (!confirm('¿Marcar este lead como perdido?')) return;
+  shMoverLead(shLeadActivo.id, 'perdido');
+  shToast('Lead marcado como perdido');
+}
+
+// ── Pipeline kanban ──────────────────────────────────────
+function shRenderPipeline() {
+  var el = document.getElementById('shPipe');
+  if (!el) return;
+  var porCol = {};
+  for (var c = 0; c < SH_COLUMNAS.length; c++) porCol[SH_COLUMNAS[c].id] = [];
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    var l = shLeadsCache[i];
+    var col = shEstadoInfo(l.estado).col;
+    if (porCol[col]) porCol[col].push(l);
+  }
+  var html = '';
+  for (var k = 0; k < SH_COLUMNAS.length; k++) {
+    var colDef = SH_COLUMNAS[k];
+    var cards = porCol[colDef.id];
+    var cardsHtml = '';
+    for (var j = 0; j < cards.length; j++) {
+      var ld = cards[j];
+      cardsHtml +=
+        '<div class="sh-card" draggable="true" ' +
+          'ondragstart="shDragStart(event,\'' + shEsc(ld.id) + '\')" ondragend="shDragEnd(event)" ' +
+          'onclick="shCardTap(\'' + shEsc(ld.id) + '\')">' +
+          '<div class="sh-card-n">' + shEsc(ld.nombre || shTelBonito(ld.telefono)) + '</div>' +
+          '<div class="sh-card-t">' + shEsc(shTelBonito(ld.telefono)) + '</div>' +
+          '<div class="sh-card-f">' +
+            '<span>⏱ ' + shTiempoRelativo(ld.actualizado_en) + ' en etapa</span>' +
+            (ld.vendedora_nombre ? '<span class="sh-card-v">' + shEsc(ld.vendedora_nombre.split(' ')[0]) + '</span>' : '') +
+          '</div>' +
+        '</div>';
+    }
+    if (!cards.length) cardsHtml = '<div style="color:#5f7285;font-size:11.5px;text-align:center;padding:14px 4px">Sin leads</div>';
+    html +=
+      '<div class="sh-col" ondragover="shDragOver(event,this)" ondragleave="shDragLeave(this)" ondrop="shDrop(event,this,\'' + colDef.estado + '\')">' +
+        '<div class="sh-col-h">' + colDef.emoji + ' ' + colDef.t + '<span class="sh-col-n">' + cards.length + '</span></div>' +
+        '<div class="sh-col-cards sh-scroll">' + cardsHtml + '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function shDragStart(ev, id) {
+  shDragId = id;
+  if (ev.dataTransfer) { ev.dataTransfer.effectAllowed = 'move'; try { ev.dataTransfer.setData('text/plain', id); } catch (e) {} }
+  ev.target.classList.add('sh-arrastrando');
+}
+
+function shDragEnd(ev) {
+  ev.target.classList.remove('sh-arrastrando');
+  setTimeout(function () { shDragId = null; }, 250);
+}
+
+function shDragOver(ev, col) {
+  ev.preventDefault();
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move';
+  col.classList.add('sh-encima');
+}
+
+function shDragLeave(col) {
+  col.classList.remove('sh-encima');
+}
+
+function shDrop(ev, col, estado) {
+  ev.preventDefault();
+  col.classList.remove('sh-encima');
+  var id = shDragId;
+  if (!id && ev.dataTransfer) { try { id = ev.dataTransfer.getData('text/plain'); } catch (e) {} }
+  if (id) shMoverLead(id, estado);
+  shDragId = null;
+}
+
+function shCardTap(id) {
+  if (shDragId) return; // fue un arrastre, no un tap
+  shSheetEstado(id);
+}
+
+// ── Dashboard (jefe/admin) ───────────────────────────────
+function shRenderDashboard() {
+  var el = document.getElementById('shDash');
+  if (!el) return;
+  var leads = shLeadsCache;
+  var hoy = new Date().toDateString();
+  var leadsHoy = 0, contactados = 0, convertidos = 0;
+  var sumaResp = 0, nResp = 0;
+  var urgentes = [];
+  var porVend = {};
+
+  for (var i = 0; i < leads.length; i++) {
+    var l = leads[i];
+    if (l.creado_en && new Date(l.creado_en).toDateString() === hoy) leadsHoy++;
+    if (l.primer_contacto_en) contactados++;
+    if (l.estado === 'convertido') convertidos++;
+    if (l.primer_contacto_en && l.primer_mensaje_en) {
+      var dif = new Date(l.primer_contacto_en).getTime() - new Date(l.primer_mensaje_en).getTime();
+      if (dif >= 0) { sumaResp += dif; nResp++; }
+    }
+    var colL = shEstadoInfo(l.estado).col;
+    if (!l.primer_contacto_en && colL !== 'perdido' && colL !== 'convertido' &&
+        l.primer_mensaje_en && (Date.now() - new Date(l.primer_mensaje_en).getTime()) > 86400000) {
+      urgentes.push(l);
+    }
+    var vk = l.vendedora_nombre || 'Sin asignar';
+    if (!porVend[vk]) porVend[vk] = { asignados: 0, contactados: 0, interesados: 0, conversiones: 0 };
+    porVend[vk].asignados++;
+    if (l.primer_contacto_en) porVend[vk].contactados++;
+    if (colL === 'interesado' || colL === 'visita') porVend[vk].interesados++;
+    if (l.estado === 'convertido') porVend[vk].conversiones++;
+  }
+
+  var tasa = leads.length ? Math.round(contactados * 100 / leads.length) : 0;
+  var tResp = '—';
+  if (nResp) {
+    var minProm = Math.round(sumaResp / nResp / 60000);
+    tResp = minProm < 60 ? minProm + 'm' : Math.floor(minProm / 60) + 'h ' + (minProm % 60) + 'm';
+  }
+
+  var html =
+    '<div class="sh-metricas">' +
+      '<div class="sh-met"><div class="sh-met-n">' + leadsHoy + '</div><div class="sh-met-l">Leads hoy</div></div>' +
+      '<div class="sh-met"><div class="sh-met-n">' + tasa + '%</div><div class="sh-met-l">Tasa contacto</div></div>' +
+      '<div class="sh-met"><div class="sh-met-n">' + convertidos + '</div><div class="sh-met-l">Conversiones</div></div>' +
+      '<div class="sh-met"><div class="sh-met-n">' + tResp + '</div><div class="sh-met-l">T. respuesta prom.</div></div>' +
+    '</div>';
+
+  html += '<h4>Rendimiento por vendedora</h4><div class="sh-tabla-wrap sh-scroll"><table class="sh-tabla"><tr><th>Vendedora</th><th>Leads</th><th>Contactados</th><th>Interesados</th><th>Conversiones</th></tr>';
+  var maxAsig = 1;
+  for (var v1 in porVend) { if (porVend[v1].asignados > maxAsig) maxAsig = porVend[v1].asignados; }
+  var hayVend = false;
+  for (var v in porVend) {
+    hayVend = true;
+    var s = porVend[v];
+    var pct = function (n, d) { return d ? Math.round(n * 100 / d) : 0; };
+    html += '<tr>' +
+      '<td style="font-weight:700">' + shEsc(v) + '</td>' +
+      '<td>' + s.asignados + '<div class="sh-barra"><i style="width:' + pct(s.asignados, maxAsig) + '%"></i></div></td>' +
+      '<td>' + s.contactados + '<div class="sh-barra"><i style="width:' + pct(s.contactados, s.asignados) + '%"></i></div></td>' +
+      '<td>' + s.interesados + '<div class="sh-barra"><i style="width:' + pct(s.interesados, s.asignados) + '%"></i></div></td>' +
+      '<td>' + s.conversiones + '<div class="sh-barra"><i style="width:' + pct(s.conversiones, s.asignados) + '%"></i></div></td>' +
+    '</tr>';
+  }
+  if (!hayVend) html += '<tr><td colspan="5" style="color:#8696a0;text-align:center">Aún no hay leads registrados</td></tr>';
+  html += '</table></div>';
+
+  html += '<h4 style="color:#f87171">⚠️ Sin contacto hace más de 24 h</h4>';
+  if (!urgentes.length) {
+    html += '<div class="sh-vacio" style="padding:18px;background:#111b21;border:1px solid #1f2c33;border-radius:14px">Ninguno — todo el mundo fue contactado a tiempo 🎉</div>';
+  } else {
+    html += '<div class="sh-urgente">';
+    for (var u = 0; u < urgentes.length; u++) {
+      var ul = urgentes[u];
+      html += '<div class="sh-urg-item">' +
+        '<span style="color:#f87171;font-weight:800">●</span>' +
+        '<b>' + shEsc(ul.nombre || shTelBonito(ul.telefono)) + '</b>' +
+        '<span style="color:#8696a0">' + shEsc(shTelBonito(ul.telefono)) + '</span>' +
+        '<span style="color:#f87171;margin-left:auto">hace ' + shTiempoRelativo(ul.primer_mensaje_en) + '</span>' +
+        '<span class="sh-card-v">' + shEsc((ul.vendedora_nombre || 'Sin asignar').split(' ')[0]) + '</span>' +
+      '</div>';
+    }
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Roster de vendedoras (round-robin) ───────────────────
 function shAbrirRoster() {
   agendaWorkerFetch('shVendedorasListar', {}).then(function (d) {
     var actuales = {};
@@ -8331,28 +8894,19 @@ function shAbrirRoster() {
       var reg = actuales[uid];
       var activa = reg ? (parseInt(reg.activa, 10) === 1) : false;
       filas +=
-        '<label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #1c3357;cursor:pointer;font-size:13.5px">' +
-          '<input type="checkbox" class="shRosterChk" data-uid="' + shEsc(uid) + '" data-nombre="' + shEsc(u.nombre) + '"' + (activa ? ' checked' : '') + '>' +
+        '<label class="sh-lista-op" style="cursor:pointer">' +
+          '<input type="checkbox" class="shRosterChk" data-uid="' + shEsc(uid) + '" data-nombre="' + shEsc(u.nombre) + '"' + (activa ? ' checked' : '') + ' style="width:auto;accent-color:#00a884">' +
           '<span>' + shEsc(u.nombre) + '</span>' +
         '</label>';
     }
     if (!n) filas = '<div class="sh-vacio">No hay usuarios con rol vendedor.<br>Créalos primero en la pestaña Usuarios.</div>';
-    var div = document.createElement('div');
-    div.className = 'sh-modal-bg';
-    div.id = 'shModalBg';
-    div.innerHTML =
-      '<div class="sh-modal">' +
-        '<h4>👥 Vendedoras del round-robin</h4>' +
-        '<div style="font-size:11.5px;color:#9fb3d1;margin-bottom:8px">Los leads nuevos se reparten en orden rotativo solo entre las marcadas.</div>' +
-        filas +
-        '<div class="sh-modal-btns">' +
-          '<button style="background:#1c3357;color:#cfe0f5" onclick="shCerrarModalLlamada()">Cancelar</button>' +
-          '<button style="background:#00c853;color:#04240f" onclick="shGuardarRoster()">Guardar</button>' +
-        '</div>' +
-      '</div>';
-    div.onclick = function (ev) { if (ev.target === div) shCerrarModalLlamada(); };
-    document.body.appendChild(div);
-  }).catch(function () { alert('No se pudo cargar la lista de vendedoras'); });
+    shAbrirSheet(
+      '<h4>👥 Vendedoras del round-robin</h4>' +
+      '<div class="sh-sub">Los leads nuevos se reparten en orden rotativo solo entre las marcadas.</div>' +
+      filas +
+      '<button class="sh-sheet-btn" onclick="shGuardarRoster()">Guardar</button>'
+    );
+  }).catch(function () { shToast('No se pudo cargar la lista de vendedoras'); });
 }
 
 function shGuardarRoster() {
@@ -8366,12 +8920,12 @@ function shGuardarRoster() {
       orden: i + 1
     });
   }
-  if (!vendedoras.length) { shCerrarModalLlamada(); return; }
+  if (!vendedoras.length) { shCerrarSheet(); return; }
   agendaWorkerFetch('shVendedorasGuardar', {}, { method: 'POST', body: { vendedoras: vendedoras } })
     .then(function (d) {
-      if (d && d.ok) { shCerrarModalLlamada(); alert('Vendedoras guardadas ✔'); }
-      else alert('No se pudo guardar: ' + (d && d.error ? d.error : 'error'));
-    }).catch(function () { alert('No se pudo guardar: revisa tu conexión'); });
+      if (d && d.ok) { shCerrarSheet(); shToast('Vendedoras guardadas ✔'); }
+      else shToast('No se pudo guardar: ' + (d && d.error ? d.error : 'error'));
+    }).catch(function () { shToast('No se pudo guardar: revisa tu conexión'); });
 }
 
 // ── Badge rojo global en el menú ─────────────────────────
