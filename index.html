@@ -670,6 +670,7 @@ input,select,textarea{font-size:16px!important}
         <button class="nav-item" onclick="switchTab('agendaGral',this)" id="navAgendaGral"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span> Agenda</button>
         <button class="nav-item" onclick="switchTab('tareasEquipo',this)" id="navTareasEquipo"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Tareas del Equipo</button>
         <button class="nav-item" onclick="switchTab('agendaServicios',this)" id="navAgendaServicios"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 15"/></svg></span> Agendamiento de Servicios</button>
+        <button class="nav-item" onclick="switchTab('salesHub',this)" id="navSalesHub" style="display:none;position:relative"><span class="nav-icon" style="background:#0d1f3c;border-radius:7px;padding:3px;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00c853" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></span> Sales Hub<span id="shNavBadge" style="display:none;position:absolute;top:7px;right:10px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;border-radius:10px;min-width:17px;height:17px;line-height:17px;text-align:center;padding:0 4px">0</span></button>
         <button class="nav-item" onclick="switchTab('videoteca',this)" id="navVideoteca"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Videoteca</button>
         <button class="nav-item" onclick="switchTab('asistencia',this)" id="navAsistencia"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Asistencia</button>
         <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
@@ -1051,6 +1052,76 @@ input,select,textarea{font-size:16px!important}
         <!-- AGENDAMIENTO DE SERVICIOS -->
         <div class="tab-content" id="tab-agendaServicios">
           <div id="agendaServiciosContent" style="padding:16px 0"></div>
+        </div>
+
+        <!-- SALES HUB (leads WhatsApp + llamadas) -->
+        <div class="tab-content" id="tab-salesHub">
+          <style>
+            /* ── Sales Hub: paleta propia azul oscuro + verde, mobile-first ── */
+            #tab-salesHub{padding:0}
+            .sh-app{display:flex;height:calc(100vh - 150px);min-height:420px;background:#0d1f3c;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(13,31,60,.35);margin-top:10px}
+            .sh-pane-list{display:flex;flex-direction:column;width:100%;background:#0d1f3c;min-width:0}
+            .sh-pane-chat{display:none;flex-direction:column;flex:1;background:#0b141a;min-width:0}
+            .sh-app.sh-chat-open .sh-pane-list{display:none}
+            .sh-app.sh-chat-open .sh-pane-chat{display:flex}
+            @media(min-width:900px){
+              .sh-pane-list{width:350px;min-width:350px;border-right:1px solid #1c3357}
+              .sh-pane-chat{display:flex}
+              .sh-app.sh-chat-open .sh-pane-list{display:flex}
+            }
+            .sh-list-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0a1830}
+            .sh-list-head h3{margin:0;color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
+            .sh-filtros{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;background:#0a1830;border-bottom:1px solid #1c3357}
+            .sh-filtro{border:1px solid #24406b;background:transparent;color:#9fb3d1;font-size:11.5px;font-weight:700;border-radius:14px;padding:4px 11px;cursor:pointer;white-space:nowrap}
+            .sh-filtro.on{background:#00c853;border-color:#00c853;color:#04240f}
+            .sh-chats{flex:1;overflow-y:auto}
+            .sh-chat-item{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #16294a}
+            .sh-chat-item:active,.sh-chat-item:hover{background:#132c54}
+            .sh-avatar{width:47px;height:47px;min-width:47px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:19px}
+            .sh-ci-mid{flex:1;min-width:0}
+            .sh-ci-nombre{color:#f1f5fb;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-ci-prev{color:#8ea4c4;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+            .sh-ci-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:52px}
+            .sh-ci-hora{color:#8ea4c4;font-size:11px}
+            .sh-ci-hora.sh-hay-nuevo{color:#00c853;font-weight:700}
+            .sh-ci-badge{background:#00c853;color:#04240f;font-size:11px;font-weight:800;border-radius:11px;min-width:19px;height:19px;line-height:19px;text-align:center;padding:0 5px}
+            .sh-vacio{color:#8ea4c4;text-align:center;padding:46px 20px;font-size:13px}
+            /* cabecera del chat */
+            .sh-chat-head{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#0d1f3c;border-bottom:1px solid #1c3357;flex-wrap:wrap}
+            .sh-back{background:none;border:none;color:#cfe0f5;font-size:22px;cursor:pointer;padding:2px 6px;line-height:1}
+            @media(min-width:900px){.sh-back{display:none}}
+            .sh-ch-nombre{color:#fff;font-size:14.5px;font-weight:800;line-height:1.2}
+            .sh-ch-tel{color:#8ea4c4;font-size:11.5px}
+            .sh-estado{border:none;border-radius:10px;font-size:10.5px;font-weight:800;padding:3px 9px;color:#fff;cursor:pointer;-webkit-appearance:none;appearance:none}
+            .sh-ch-btns{display:flex;gap:6px;margin-left:auto}
+            .sh-btn-accion{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:9px;font-size:11.5px;font-weight:800;padding:7px 11px;cursor:pointer;text-decoration:none}
+            .sh-btn-llamar{background:#00c853;color:#04240f}
+            .sh-btn-regllam{background:#1c3357;color:#cfe0f5}
+            /* zona de mensajes: fondo gris oscuro con textura sutil */
+            .sh-msgs{flex:1;overflow-y:auto;padding:14px 12px;background:#0b141a;background-image:radial-gradient(rgba(255,255,255,.028) 1px,transparent 1px);background-size:22px 22px;display:flex;flex-direction:column;gap:5px}
+            .sh-burbuja{max-width:78%;padding:7px 10px 5px;border-radius:10px;font-size:13.5px;line-height:1.35;word-wrap:break-word;position:relative}
+            .sh-burbuja.in{align-self:flex-start;background:#202c33;color:#e9edf2;border-top-left-radius:2px}
+            .sh-burbuja.out{align-self:flex-end;background:#00c853;color:#04240f;border-top-right-radius:2px}
+            .sh-b-meta{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:10px;margin-top:2px;opacity:.75}
+            .sh-ticks{letter-spacing:-2px;font-weight:700}
+            .sh-ticks.leido{color:#0847d6;opacity:1}
+            .sh-dia{align-self:center;background:#16232e;color:#9fb3d1;font-size:10.5px;font-weight:700;border-radius:8px;padding:4px 10px;margin:8px 0 4px}
+            /* barra inferior de escritura */
+            .sh-composer{display:flex;align-items:center;gap:8px;padding:9px 10px;background:#0d1f3c}
+            .sh-input{flex:1;border:none;border-radius:20px;background:#16294a;color:#f1f5fb;font-size:14px;padding:11px 15px;outline:none;min-width:0}
+            .sh-input::placeholder{color:#7189ad}
+            .sh-send{width:44px;height:44px;min-width:44px;border:none;border-radius:50%;background:#00c853;color:#04240f;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+            .sh-send:disabled{opacity:.5}
+            /* modal registrar llamada */
+            .sh-modal-bg{position:fixed;inset:0;background:rgba(4,10,20,.72);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px}
+            .sh-modal{background:#0d1f3c;border:1px solid #1c3357;border-radius:16px;padding:20px;width:100%;max-width:400px;color:#f1f5fb}
+            .sh-modal h4{margin:0 0 14px;font-size:15.5px}
+            .sh-modal label{display:block;font-size:11.5px;font-weight:700;color:#9fb3d1;margin:10px 0 4px}
+            .sh-modal select,.sh-modal input,.sh-modal textarea{width:100%;border:1px solid #24406b;border-radius:9px;background:#16294a;color:#f1f5fb;font-size:13.5px;padding:9px 11px;outline:none;box-sizing:border-box}
+            .sh-modal-btns{display:flex;gap:8px;margin-top:16px}
+            .sh-modal-btns button{flex:1;border:none;border-radius:10px;font-size:13px;font-weight:800;padding:11px;cursor:pointer}
+          </style>
+          <div id="salesHubContent"></div>
         </div>
 
         <!-- VIDEOTECA -->
@@ -2418,7 +2489,8 @@ var TAB_TITLES={
   radar:['Radar de Conversiones','Vehículos en proceso activo de conversión']
 ,tecnico:['Mis Tareas','Tareas asignadas']
 ,tareasEquipo:['Tareas del Equipo','Panel interno de tareas y responsables']
-,agendaServicios:['Agendamiento de Servicios','Reserva de horarios por especialista']};
+,agendaServicios:['Agendamiento de Servicios','Reserva de horarios por especialista']
+,salesHub:['Sales Hub','Leads de WhatsApp y seguimiento de llamadas']};
 
 function switchTab(name, el) {
   document.querySelectorAll('.tab-content').forEach(function(e){e.classList.remove('active');});
@@ -2438,6 +2510,7 @@ function switchTab(name, el) {
   if(name==='agendaGral') renderAgendaGeneral();
   if(name==='tareasEquipo') renderPanelTareasEquipo();
   if(name==='agendaServicios') renderPanelAgendaServicios();
+  if(name==='salesHub') renderSalesHub();
   if(name==='asistencia') renderAsistenciaReporte();
   if(name==='config'){poblarUserSelects();renderVendedoresList();poblarConfigFise();poblarConfigSedeSelects();}
   if(name==='bandeja') renderBandeja();
@@ -7859,6 +7932,478 @@ function agendaGuardarNuevo() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// MÓDULO SALES HUB — leads de WhatsApp (Meta) + llamadas
+// Bandeja tipo WhatsApp, mobile-first. Usa el mismo Worker de
+// agenda (GM_CONFIG.agendaWorkerUrl) con acciones sh*.
+// ═══════════════════════════════════════════════════════════
+
+var shLeadsCache = [];
+var shLeadActivo = null;
+var shFiltroEstado = '';
+var shTimer = null;
+var shBadgeTimer = null;
+var shEnviando = false;
+
+var SH_ESTADOS = {
+  nuevo:          { t: 'Nuevo',        c: '#ef4444' },
+  asignado:       { t: 'Asignado',     c: '#3b82f6' },
+  en_conversacion:{ t: 'En conversa.', c: '#06b6d4' },
+  calificado:     { t: 'Calificado',   c: '#a855f7' },
+  convertido:     { t: 'Convertido',   c: '#00c853' },
+  descartado:     { t: 'Descartado',   c: '#64748b' }
+};
+
+function shEsc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function shPuedeVerTodo() {
+  return CU && (CU.role === 'admin' || CU.role === 'jefe' || CU.role === 'supervisor');
+}
+
+// Color de avatar estable por nombre/telefono
+function shAvatarColor(semilla) {
+  var colores = ['#0e7490', '#7c3aed', '#be185d', '#b45309', '#15803d', '#1d4ed8', '#a21caf', '#0f766e'];
+  var h = 0;
+  var s = String(semilla || '');
+  for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+  return colores[h % colores.length];
+}
+
+function shInicial(lead) {
+  var n = (lead.nombre || '').trim();
+  return n ? n.charAt(0).toUpperCase() : '#';
+}
+
+function shTelBonito(t) {
+  var s = String(t || '');
+  if (s.indexOf('51') === 0 && s.length === 11) {
+    return '+51 ' + s.slice(2, 5) + ' ' + s.slice(5, 8) + ' ' + s.slice(8);
+  }
+  return '+' + s;
+}
+
+function shHoraCorta(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var hoy = new Date();
+  var esHoy = d.toDateString() === hoy.toDateString();
+  var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+  var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  if (esHoy) return hh + ':' + mm;
+  var ayer = new Date(hoy.getTime() - 86400000);
+  if (d.toDateString() === ayer.toDateString()) return 'Ayer';
+  return (d.getDate() < 10 ? '0' : '') + d.getDate() + '/' + (d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1);
+}
+
+function shDiaEtiqueta(iso) {
+  var d = new Date(iso);
+  var hoy = new Date();
+  if (d.toDateString() === hoy.toDateString()) return 'Hoy';
+  var ayer = new Date(hoy.getTime() - 86400000);
+  if (d.toDateString() === ayer.toDateString()) return 'Ayer';
+  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// ── Render principal ─────────────────────────────────────
+function renderSalesHub() {
+  var cont = document.getElementById('salesHubContent');
+  if (!cont) return;
+  if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
+
+  var btnRoster = shPuedeVerTodo()
+    ? '<button class="sh-filtro" onclick="shAbrirRoster()" style="border-color:#00c853;color:#00c853">👥 Vendedoras</button>'
+    : '';
+
+  cont.innerHTML =
+    '<div class="sh-app" id="shApp">' +
+      '<div class="sh-pane-list">' +
+        '<div class="sh-list-head"><h3><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#00c853" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg> Sales Hub</h3>' + btnRoster + '</div>' +
+        '<div class="sh-filtros" id="shFiltros"></div>' +
+        '<div class="sh-chats" id="shChats"><div class="sh-vacio">Cargando conversaciones…</div></div>' +
+      '</div>' +
+      '<div class="sh-pane-chat" id="shPaneChat">' +
+        '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>' +
+      '</div>' +
+    '</div>';
+
+  shRenderFiltros();
+  shCargarLeads();
+  if (shTimer) clearInterval(shTimer);
+  shTimer = setInterval(function () {
+    var tab = document.getElementById('tab-salesHub');
+    if (!tab || !tab.classList.contains('active')) return;
+    shCargarLeads();
+    if (shLeadActivo) shCargarMensajes(false);
+  }, 12000);
+}
+
+function shRenderFiltros() {
+  var el = document.getElementById('shFiltros');
+  if (!el) return;
+  var defs = [['', 'Todos'], ['nuevo', 'Nuevos'], ['asignado', 'Asignados'], ['en_conversacion', 'En conversación'], ['calificado', 'Calificados'], ['convertido', 'Convertidos']];
+  var html = '';
+  for (var i = 0; i < defs.length; i++) {
+    html += '<button class="sh-filtro' + (shFiltroEstado === defs[i][0] ? ' on' : '') + '" onclick="shFiltrar(\'' + defs[i][0] + '\')">' + defs[i][1] + '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function shFiltrar(estado) {
+  shFiltroEstado = estado;
+  shRenderFiltros();
+  shRenderLista();
+}
+
+function shCargarLeads() {
+  var q = {};
+  if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
+  agendaWorkerFetch('shLeadsListar', q).then(function (d) {
+    if (!d || !d.ok) return;
+    shLeadsCache = d.leads || [];
+    shRenderLista();
+    shActualizarNavBadge(shLeadsCache);
+  }).catch(function () {});
+}
+
+function shRenderLista() {
+  var el = document.getElementById('shChats');
+  if (!el) return;
+  var lista = shLeadsCache;
+  if (shFiltroEstado) {
+    lista = lista.filter(function (l) { return l.estado === shFiltroEstado; });
+  }
+  if (!lista.length) {
+    el.innerHTML = '<div class="sh-vacio">Sin conversaciones' + (shFiltroEstado ? ' en este filtro' : ' todavía.<br><br>Cuando un cliente escriba al WhatsApp del negocio, aparecerá aquí y se asignará automáticamente a una vendedora') + '</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < lista.length; i++) {
+    var l = lista[i];
+    var noLeidos = parseInt(l.no_leidos, 10) || 0;
+    var prev = l.ultimo_mensaje_texto || '';
+    if (l.ultimo_mensaje_de === 'vendedora') prev = '✓ ' + prev;
+    var quien = shPuedeVerTodo() && l.vendedora_nombre ? '<span style="color:#5b7ba6">' + shEsc(l.vendedora_nombre.split(' ')[0]) + ' · </span>' : '';
+    html +=
+      '<div class="sh-chat-item" onclick="shAbrirChat(\'' + shEsc(l.id) + '\')">' +
+        '<div class="sh-avatar" style="background:' + shAvatarColor(l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
+        '<div class="sh-ci-mid">' +
+          '<div class="sh-ci-nombre">' + shEsc(l.nombre || shTelBonito(l.telefono)) + '</div>' +
+          '<div class="sh-ci-prev">' + quien + shEsc(prev) + '</div>' +
+        '</div>' +
+        '<div class="sh-ci-right">' +
+          '<span class="sh-ci-hora' + (noLeidos ? ' sh-hay-nuevo' : '') + '">' + shHoraCorta(l.ultimo_mensaje_en) + '</span>' +
+          (noLeidos ? '<span class="sh-ci-badge">' + noLeidos + '</span>' : '<span style="height:19px"></span>') +
+        '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── Chat abierto ─────────────────────────────────────────
+function shAbrirChat(leadId) {
+  var lead = null;
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    if (shLeadsCache[i].id === leadId) { lead = shLeadsCache[i]; break; }
+  }
+  if (!lead) return;
+  shLeadActivo = lead;
+  var app = document.getElementById('shApp');
+  if (app) app.classList.add('sh-chat-open');
+  shRenderChatPane();
+  shCargarMensajes(true);
+  if ((parseInt(lead.no_leidos, 10) || 0) > 0) {
+    lead.no_leidos = 0;
+    shRenderLista();
+    shActualizarNavBadge(shLeadsCache);
+    agendaWorkerFetch('shMarcarLeido', {}, { method: 'POST', body: { id: lead.id } }).catch(function () {});
+  }
+}
+
+function shVolverLista() {
+  shLeadActivo = null;
+  var app = document.getElementById('shApp');
+  if (app) app.classList.remove('sh-chat-open');
+  var pane = document.getElementById('shPaneChat');
+  if (pane) pane.innerHTML = '<div class="sh-vacio" style="margin:auto">Elige una conversación para abrirla</div>';
+}
+
+function shRenderChatPane() {
+  var pane = document.getElementById('shPaneChat');
+  var l = shLeadActivo;
+  if (!pane || !l) return;
+  var est = SH_ESTADOS[l.estado] || { t: l.estado, c: '#64748b' };
+  var opts = '';
+  for (var k in SH_ESTADOS) {
+    opts += '<option value="' + k + '"' + (l.estado === k ? ' selected' : '') + '>' + SH_ESTADOS[k].t + '</option>';
+  }
+  pane.innerHTML =
+    '<div class="sh-chat-head">' +
+      '<button class="sh-back" onclick="shVolverLista()" title="Volver">‹</button>' +
+      '<div class="sh-avatar" style="width:38px;height:38px;min-width:38px;font-size:15px;background:' + shAvatarColor(l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
+      '<div style="min-width:0">' +
+        '<div class="sh-ch-nombre">' + shEsc(l.nombre || 'Sin nombre') + '</div>' +
+        '<div class="sh-ch-tel">' + shEsc(shTelBonito(l.telefono)) + '</div>' +
+      '</div>' +
+      '<select class="sh-estado" style="background:' + est.c + '" onchange="shCambiarEstado(this.value)">' + opts + '</select>' +
+      '<div class="sh-ch-btns">' +
+        '<a class="sh-btn-accion sh-btn-llamar" href="tel:+' + shEsc(l.telefono) + '">📞 Llamar</a>' +
+        '<button class="sh-btn-accion sh-btn-regllam" onclick="shAbrirModalLlamada()">📝 Registrar llamada WA</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sh-msgs" id="shMsgs"><div class="sh-vacio">Cargando mensajes…</div></div>' +
+    '<div class="sh-composer">' +
+      '<input class="sh-input" id="shInput" type="text" placeholder="Escribe un mensaje" autocomplete="off" onkeydown="if(event.key===\'Enter\')shEnviarMensaje()">' +
+      '<button class="sh-send" id="shSend" onclick="shEnviarMensaje()" title="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
+    '</div>';
+}
+
+function shCargarMensajes(scrollAlFinal) {
+  if (!shLeadActivo) return;
+  agendaWorkerFetch('shMensajesListar', { leadId: shLeadActivo.id }).then(function (d) {
+    if (!d || !d.ok) return;
+    shRenderMensajes(d.mensajes || [], scrollAlFinal);
+  }).catch(function () {});
+}
+
+function shTicks(m) {
+  if (m.direccion !== 'out') return '';
+  var e = m.estado_entrega || '';
+  if (e === 'read') return '<span class="sh-ticks leido">✓✓</span>';
+  if (e === 'delivered') return '<span class="sh-ticks">✓✓</span>';
+  if (e === 'failed') return '<span style="color:#b91c1c;font-weight:800">!</span>';
+  return '<span class="sh-ticks">✓</span>';
+}
+
+function shRenderMensajes(mensajes, scrollAlFinal) {
+  var el = document.getElementById('shMsgs');
+  if (!el) return;
+  if (!mensajes.length) {
+    el.innerHTML = '<div class="sh-vacio">Aún no hay mensajes en esta conversación</div>';
+    return;
+  }
+  var html = '';
+  var diaPrevio = '';
+  for (var i = 0; i < mensajes.length; i++) {
+    var m = mensajes[i];
+    var cuando = m.timestamp_wa || m.creado_en;
+    var dia = shDiaEtiqueta(cuando);
+    if (dia !== diaPrevio) { html += '<div class="sh-dia">' + shEsc(dia) + '</div>'; diaPrevio = dia; }
+    var d = new Date(cuando);
+    var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+    var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    html +=
+      '<div class="sh-burbuja ' + (m.direccion === 'out' ? 'out' : 'in') + '">' +
+        shEsc(m.contenido || '') +
+        '<div class="sh-b-meta">' + hh + ':' + mm + ' ' + shTicks(m) + '</div>' +
+      '</div>';
+  }
+  var estabaAbajo = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+  el.innerHTML = html;
+  if (scrollAlFinal || estabaAbajo) el.scrollTop = el.scrollHeight;
+}
+
+function shEnviarMensaje() {
+  if (shEnviando || !shLeadActivo) return;
+  var input = document.getElementById('shInput');
+  var texto = input ? input.value.trim() : '';
+  if (!texto) return;
+  shEnviando = true;
+  var btn = document.getElementById('shSend');
+  if (btn) btn.disabled = true;
+
+  // burbuja optimista con relojito mientras confirma Meta
+  var el = document.getElementById('shMsgs');
+  if (el) {
+    var d = new Date();
+    var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+    var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    el.innerHTML += '<div class="sh-burbuja out" id="shPendiente">' + shEsc(texto) + '<div class="sh-b-meta">' + hh + ':' + mm + ' 🕓</div></div>';
+    el.scrollTop = el.scrollHeight;
+  }
+
+  agendaWorkerFetch('shResponder', {}, { method: 'POST', body: { leadId: shLeadActivo.id, texto: texto, uid: CU ? CU.id : '' } })
+    .then(function (d2) {
+      shEnviando = false;
+      if (btn) btn.disabled = false;
+      if (d2 && d2.ok) {
+        if (input) input.value = '';
+        shCargarMensajes(true);
+        shCargarLeads();
+      } else {
+        var pend = document.getElementById('shPendiente');
+        if (pend) pend.remove();
+        alert('No se pudo enviar: ' + (d2 && d2.error ? d2.error : 'error de red'));
+      }
+    })
+    .catch(function () {
+      shEnviando = false;
+      if (btn) btn.disabled = false;
+      var pend = document.getElementById('shPendiente');
+      if (pend) pend.remove();
+      alert('No se pudo enviar: revisa tu conexión');
+    });
+}
+
+function shCambiarEstado(nuevo) {
+  if (!shLeadActivo) return;
+  var l = shLeadActivo;
+  agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: l.id, estado: nuevo } })
+    .then(function (d) {
+      if (d && d.ok) { l.estado = nuevo; shRenderChatPane(); shCargarMensajes(false); shCargarLeads(); }
+      else alert('No se pudo cambiar el estado');
+    }).catch(function () { alert('No se pudo cambiar el estado'); });
+}
+
+// ── Registrar llamada WA (manual) ────────────────────────
+function shAbrirModalLlamada() {
+  if (!shLeadActivo) return;
+  var viejo = document.getElementById('shModalBg');
+  if (viejo) viejo.remove();
+  var div = document.createElement('div');
+  div.className = 'sh-modal-bg';
+  div.id = 'shModalBg';
+  div.innerHTML =
+    '<div class="sh-modal">' +
+      '<h4>📝 Registrar llamada — ' + shEsc(shLeadActivo.nombre || shTelBonito(shLeadActivo.telefono)) + '</h4>' +
+      '<label>Resultado</label>' +
+      '<select id="shLlamResultado">' +
+        '<option value="contesto">Contestó</option>' +
+        '<option value="no_contesto">No contestó</option>' +
+        '<option value="buzon">Buzón de voz</option>' +
+        '<option value="numero_errado">Número errado</option>' +
+        '<option value="volver_a_llamar">Pidió volver a llamar</option>' +
+      '</select>' +
+      '<label>Duración (minutos)</label>' +
+      '<input id="shLlamDur" type="number" min="0" step="1" placeholder="0" inputmode="numeric">' +
+      '<label>Notas</label>' +
+      '<textarea id="shLlamNotas" rows="3" placeholder="Qué se conversó, acuerdos, próxima acción…"></textarea>' +
+      '<div class="sh-modal-btns">' +
+        '<button style="background:#1c3357;color:#cfe0f5" onclick="shCerrarModalLlamada()">Cancelar</button>' +
+        '<button style="background:#00c853;color:#04240f" onclick="shGuardarLlamada()">Guardar</button>' +
+      '</div>' +
+    '</div>';
+  div.onclick = function (ev) { if (ev.target === div) shCerrarModalLlamada(); };
+  document.body.appendChild(div);
+}
+
+function shCerrarModalLlamada() {
+  var m = document.getElementById('shModalBg');
+  if (m) m.remove();
+}
+
+function shGuardarLlamada() {
+  if (!shLeadActivo) return;
+  var res = document.getElementById('shLlamResultado');
+  var dur = document.getElementById('shLlamDur');
+  var notas = document.getElementById('shLlamNotas');
+  var minutos = dur ? parseInt(dur.value, 10) || 0 : 0;
+  agendaWorkerFetch('shLlamadaRegistrar', {}, { method: 'POST', body: {
+    leadId: shLeadActivo.id,
+    vendedoraUid: CU ? CU.id : '',
+    vendedoraNombre: CU ? CU.nombre : '',
+    tipo: 'whatsapp_manual',
+    resultado: res ? res.value : '',
+    duracionSeg: minutos * 60,
+    notas: notas ? notas.value.trim() : ''
+  } }).then(function (d) {
+    if (d && d.ok) { shCerrarModalLlamada(); alert('Llamada registrada ✔'); }
+    else alert('No se pudo registrar: ' + (d && d.error ? d.error : 'error'));
+  }).catch(function () { alert('No se pudo registrar: revisa tu conexión'); });
+}
+
+// ── Roster de vendedoras (solo admin/jefe/supervisor) ────
+function shAbrirRoster() {
+  agendaWorkerFetch('shVendedorasListar', {}).then(function (d) {
+    var actuales = {};
+    var lista = (d && d.ok ? d.vendedoras : []) || [];
+    for (var i = 0; i < lista.length; i++) actuales[lista[i].uid] = lista[i];
+    var users = getUsers();
+    var filas = '';
+    var n = 0;
+    for (var uid in users) {
+      var u = users[uid];
+      if (!u || u.role !== 'vendedor') continue;
+      n++;
+      var reg = actuales[uid];
+      var activa = reg ? (parseInt(reg.activa, 10) === 1) : false;
+      filas +=
+        '<label style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #1c3357;cursor:pointer;font-size:13.5px">' +
+          '<input type="checkbox" class="shRosterChk" data-uid="' + shEsc(uid) + '" data-nombre="' + shEsc(u.nombre) + '"' + (activa ? ' checked' : '') + '>' +
+          '<span>' + shEsc(u.nombre) + '</span>' +
+        '</label>';
+    }
+    if (!n) filas = '<div class="sh-vacio">No hay usuarios con rol vendedor.<br>Créalos primero en la pestaña Usuarios.</div>';
+    var div = document.createElement('div');
+    div.className = 'sh-modal-bg';
+    div.id = 'shModalBg';
+    div.innerHTML =
+      '<div class="sh-modal">' +
+        '<h4>👥 Vendedoras del round-robin</h4>' +
+        '<div style="font-size:11.5px;color:#9fb3d1;margin-bottom:8px">Los leads nuevos se reparten en orden rotativo solo entre las marcadas.</div>' +
+        filas +
+        '<div class="sh-modal-btns">' +
+          '<button style="background:#1c3357;color:#cfe0f5" onclick="shCerrarModalLlamada()">Cancelar</button>' +
+          '<button style="background:#00c853;color:#04240f" onclick="shGuardarRoster()">Guardar</button>' +
+        '</div>' +
+      '</div>';
+    div.onclick = function (ev) { if (ev.target === div) shCerrarModalLlamada(); };
+    document.body.appendChild(div);
+  }).catch(function () { alert('No se pudo cargar la lista de vendedoras'); });
+}
+
+function shGuardarRoster() {
+  var chks = document.querySelectorAll('.shRosterChk');
+  var vendedoras = [];
+  for (var i = 0; i < chks.length; i++) {
+    vendedoras.push({
+      uid: chks[i].getAttribute('data-uid'),
+      nombre: chks[i].getAttribute('data-nombre'),
+      activa: chks[i].checked ? 1 : 0,
+      orden: i + 1
+    });
+  }
+  if (!vendedoras.length) { shCerrarModalLlamada(); return; }
+  agendaWorkerFetch('shVendedorasGuardar', {}, { method: 'POST', body: { vendedoras: vendedoras } })
+    .then(function (d) {
+      if (d && d.ok) { shCerrarModalLlamada(); alert('Vendedoras guardadas ✔'); }
+      else alert('No se pudo guardar: ' + (d && d.error ? d.error : 'error'));
+    }).catch(function () { alert('No se pudo guardar: revisa tu conexión'); });
+}
+
+// ── Badge rojo global en el menú ─────────────────────────
+function shActualizarNavBadge(leads) {
+  var badge = document.getElementById('shNavBadge');
+  if (!badge) return;
+  var total = 0;
+  for (var i = 0; i < (leads || []).length; i++) {
+    total += parseInt(leads[i].no_leidos, 10) || 0;
+  }
+  if (total > 0) {
+    badge.textContent = total > 99 ? '99+' : String(total);
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function shIniciarBadgeGlobal() {
+  if (shBadgeTimer || !agendaWorkerListo()) return;
+  var tick = function () {
+    var q = {};
+    if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
+    agendaWorkerFetch('shLeadsListar', q).then(function (d) {
+      if (d && d.ok) shActualizarNavBadge(d.leads || []);
+    }).catch(function () {});
+  };
+  tick();
+  shBadgeTimer = setInterval(tick, 60000);
+}
+
+// ═══════════════════════════════════════════════════════════
 // MÓDULO TAREAS DEL EQUIPO + AGENDAMIENTO DE SERVICIOS
 // Worker independiente (gasmotion-worker / gasmotion-agenda) — ver
 // GM_CONFIG.agendaWorkerUrl / agendaKey. Comparte el mismo patron
@@ -12650,6 +13195,10 @@ function mostrarApp(){
   document.getElementById('navClientes').style.display=(!isTec)?'':'none';
   var navTec=document.getElementById('navTecnico');
   if(navTec) navTec.style.display=isTec?'':'none';
+  var navSH=document.getElementById('navSalesHub');
+  var puedeVerSH = CU && (CU.role==='admin'||CU.role==='jefe'||CU.role==='supervisor'||CU.role==='vendedor');
+  if(navSH) navSH.style.display=puedeVerSH?'':'none';
+  if(puedeVerSH) shIniciarBadgeGlobal();
 
   document.getElementById('topbarSede').textContent=CU.sede||'';
   if(isTec){
