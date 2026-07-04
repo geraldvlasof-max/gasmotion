@@ -1058,13 +1058,18 @@ input,select,textarea{font-size:16px!important}
         <div class="tab-content" id="tab-salesHub">
           <style>
             /* ── Sales Hub: WhatsApp Web 2025 + dark premium ── */
-            #tab-salesHub{padding:0}
-            .sh-root,.sh-root *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;box-sizing:border-box}
-            .sh-root{margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr)}
+            /* Rompe el padding de .content: los vendedores lo usan todo el
+               dia respondiendo, necesita el maximo de espacio posible. */
+            #tab-salesHub{padding:0;margin:0 -28px;width:calc(100% + 56px)}
+            @media(max-width:768px){#tab-salesHub{margin:0 -12px;width:calc(100% + 24px)}}
+            .sh-root,.sh-root *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;box-sizing:border-box}
+            .sh-root{margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr);padding:0 28px}
+            @media(max-width:768px){.sh-root{padding:0 12px}}
             .sh-viewtabs{display:flex;gap:2px;background:#111b21;border-radius:12px 12px 0 0;padding:6px 8px 0;border-bottom:1px solid #1f2c33}
             .sh-viewtab{background:none;border:none;color:#8696a0;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;border-bottom:2.5px solid transparent}
             .sh-viewtab.on{color:#e9edef;border-bottom-color:#00a884}
-            .sh-app{position:relative;display:flex;height:calc(100vh - 195px);min-height:430px;background:#111b21;border-radius:0 0 12px 12px;overflow:hidden}
+            .sh-app{position:relative;display:flex;height:calc(100vh - 128px);min-height:480px;background:#111b21;border-radius:0 0 12px 12px;overflow:hidden}
+            @media(max-width:768px){.sh-app{height:calc(100vh - 116px)}}
             /* scrollbars 4px, invisibles hasta hover */
             .sh-scroll{scrollbar-width:thin;scrollbar-color:transparent transparent}
             .sh-scroll:hover{scrollbar-color:#ffffff26 transparent}
