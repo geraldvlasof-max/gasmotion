@@ -8641,14 +8641,41 @@ function shPonerEmoji(i) {
   shCerrarSheet();
 }
 
-// ── Llamadas ─────────────────────────────────────────────
-function shModalTwilio() {
+// ── Llamadas por Twilio ──────────────────────────────────
+// Llama primero al lead; cuando contesta, el propio Worker lo conecta
+// con el celular de la vendedora y graba desde que ella contesta.
+function shLlamarConTwilio(lead) {
+  if (!lead) return;
   shAbrirSheet(
     '<h4>📞 Llamada con grabación</h4>' +
-    '<div class="sh-sub">Integrando Twilio — disponible pronto. La llamada saldrá desde el sistema, conectará tu celular con el cliente y quedará grabada automáticamente.</div>' +
-    '<div style="color:#8696a0;font-size:12.5px;background:#202c33;border-radius:10px;padding:12px">Mientras tanto: llama por WhatsApp y usa <b style="color:#e9edef">Registrar llamada WA</b> (el ícono de lápiz ✏️) para dejar constancia.</div>' +
-    '<button class="sh-sheet-btn" onclick="shCerrarSheet()">Entendido</button>'
+    '<div class="sh-sub">' + shEsc(lead.nombre || shTelBonito(lead.telefono)) + ' · ' + shEsc(shTelBonito(lead.telefono)) + '</div>' +
+    '<div id="shTwilioEstado" style="color:#8696a0;font-size:13px;background:#202c33;border-radius:10px;padding:14px;line-height:1.5">Marcando al cliente…</div>' +
+    '<button class="sh-sheet-btn" onclick="shCerrarSheet()" style="margin-top:14px">Cerrar</button>'
   );
+  agendaWorkerFetch('shLlamarTwilio', {}, { method: 'POST', body: { leadId: lead.id } })
+    .then(function (d) {
+      var el = document.getElementById('shTwilioEstado');
+      if (!el) return; // ya cerraron el sheet
+      if (d && d.ok) {
+        el.innerHTML =
+          '<b style="color:#00a884">✔ Llamada iniciada</b><br>' +
+          'Marcando a ' + shEsc(shTelBonito(lead.telefono)) + '. Cuando conteste, se conectará con tu celular (' +
+          shEsc(shTelBonito(d.vendedoraCelular || '')) + ') y quedará grabada automáticamente.';
+      } else {
+        var errTxt = d && d.error ? d.error : 'Error de conexión';
+        el.innerHTML =
+          '<b style="color:#f87171">No se pudo iniciar la llamada</b><br>' + shEsc(errTxt) +
+          '<div style="margin-top:10px"><a href="tel:+' + shEsc(lead.telefono) + '" style="color:#00a884;font-weight:700;text-decoration:none">📱 Llamar directo (sin grabar)</a></div>';
+      }
+    })
+    .catch(function () {
+      var el = document.getElementById('shTwilioEstado');
+      if (el) el.innerHTML = '<b style="color:#f87171">Sin conexión</b><br>Revisa tu internet e intenta de nuevo.';
+    });
+}
+
+function shModalTwilio() {
+  shLlamarConTwilio(shLeadActivo);
 }
 
 function shSheetLlamada() {
@@ -8822,7 +8849,7 @@ function shRenderCola() {
           '<div class="sh-cola-motivo"><span style="color:' + m.color + '">● ' + m.t + '</span> · ' + shEsc(tiempoTxt) + (quien ? ' · ' + quien : '') + '</div>' +
         '</div>' +
         '<div class="sh-cola-btns">' +
-          '<a class="sh-cola-btn sh-cola-llamar" href="tel:+' + shEsc(l.telefono) + '" title="Llamar">📞</a>' +
+          '<button class="sh-cola-btn sh-cola-llamar" onclick="shColaLlamar(\'' + shEsc(l.id) + '\')" title="Llamar">📞</button>' +
           '<button class="sh-cola-btn sh-cola-registrar" onclick="shColaAbrirRegistro(\'' + shEsc(l.id) + '\')" title="Registrar llamada">📝</button>' +
         '</div>' +
       '</div>';
@@ -8846,6 +8873,15 @@ function shColaAbrirRegistro(id) {
   if (!lead) return;
   shLeadActivo = lead;
   shSheetLlamada();
+}
+
+function shColaLlamar(id) {
+  var lead = null;
+  for (var i = 0; i < shColaOrden.length; i++) {
+    if (shColaOrden[i].id === id) { lead = shColaOrden[i]; break; }
+  }
+  if (!lead) lead = shBuscarLead(id);
+  shLlamarConTwilio(lead);
 }
 
 // ── Pipeline kanban ──────────────────────────────────────
