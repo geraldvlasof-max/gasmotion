@@ -1162,6 +1162,16 @@ input,select,textarea{font-size:16px!important}
             .sh-emojis button:hover{background:#2a3942}
             /* toast */
             .sh-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#233138;color:#e9edef;font-size:13px;font-weight:600;border-radius:10px;padding:10px 18px;z-index:2300;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+            /* cola predictiva de llamadas */
+            .sh-cola{width:100%;background:#0b141a;overflow-y:auto;padding-bottom:14px}
+            .sh-cola-lista{display:flex;flex-direction:column;padding:8px 14px 0}
+            .sh-cola-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #1f2c33}
+            .sh-cola-item:last-child{border-bottom:none}
+            .sh-cola-mid{flex:1;min-width:0;cursor:pointer}
+            .sh-cola-motivo{font-size:12px;color:#8696a0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-cola-btns{display:flex;gap:6px}
+            .sh-cola-btn{width:38px;height:38px;border-radius:50%;border:none;background:#1f2c33;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;text-decoration:none}
+            .sh-cola-llamar{background:#00a884}
             /* pipeline kanban */
             .sh-pipe{display:flex;gap:10px;overflow-x:auto;padding:14px;width:100%;background:#0b141a;align-items:flex-start}
             .sh-col{background:#111b21;border-radius:12px;min-width:228px;width:228px;padding:10px;flex-shrink:0;max-height:100%;display:flex;flex-direction:column}
@@ -8020,6 +8030,8 @@ var shTimer = null;
 var shBadgeTimer = null;
 var shEnviando = false;
 var shDragId = null;
+var shColaOrden = [];
+var shColaHorarioOptimo = false;
 
 // estado interno -> etiqueta, color del dot y columna del pipeline
 var SH_ESTADOS = {
@@ -8126,6 +8138,42 @@ function shTiempoRelativo(iso) {
   return Math.floor(h / 24) + 'd';
 }
 
+// Cuenta regresiva para una fecha FUTURA (reintento agendado); complementa
+// a shTiempoRelativo, que solo mide tiempo transcurrido hacia atras.
+function shCuentaRegresiva(iso) {
+  if (!iso) return '—';
+  var ms = new Date(iso).getTime() - Date.now();
+  if (isNaN(ms)) return '—';
+  if (ms <= 0) return 'ahora';
+  var min = Math.round(ms / 60000);
+  if (min < 60) return 'en ' + min + 'm';
+  var h = Math.round(min / 60);
+  if (h < 24) return 'en ' + h + 'h';
+  return 'en ' + Math.round(h / 24) + 'd';
+}
+
+// "Hoy 15:00" / "Mañana 09:00" / "lunes, 6 jul 09:00" — para toasts que
+// avisan cuando se reprogramo un reintento.
+function shFormatFechaHora(iso) {
+  var d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  var hoy = new Date();
+  var manana = new Date(hoy.getTime() + 86400000);
+  var dia = d.toDateString() === hoy.toDateString() ? 'Hoy'
+    : d.toDateString() === manana.toDateString() ? 'Mañana'
+    : d.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' });
+  var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+  var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+  return dia + ' ' + hh + ':' + mm;
+}
+
+var SH_COLA_MOTIVOS = {
+  sin_contactar:       { t: 'Sin contactar',       color: '#ef4444' },
+  reintento_vencido:   { t: 'Reintento pendiente',  color: '#fbbf24' },
+  reintento_programado:{ t: 'Agendado',             color: '#53bdeb' },
+  al_dia:              { t: 'Al día',               color: '#8696a0' }
+};
+
 function shToast(txt) {
   var viejo = document.getElementById('shToast');
   if (viejo) viejo.remove();
@@ -8145,6 +8193,7 @@ function renderSalesHub() {
 
   var tabs =
     '<button class="sh-viewtab" data-v="bandeja" onclick="shCambiarVista(\'bandeja\')">💬 Bandeja</button>' +
+    '<button class="sh-viewtab" data-v="cola" onclick="shCambiarVista(\'cola\')">📞 Cola</button>' +
     '<button class="sh-viewtab" data-v="pipeline" onclick="shCambiarVista(\'pipeline\')">📊 Pipeline</button>' +
     (shEsJefe() ? '<button class="sh-viewtab" data-v="dashboard" onclick="shCambiarVista(\'dashboard\')">📈 Dashboard</button>' : '');
 
@@ -8163,6 +8212,7 @@ function renderSalesHub() {
     if (shDragId) return; // no refrescar en medio de un arrastre
     shCargarLeads();
     if (shVista === 'bandeja' && shLeadActivo) shCargarMensajes(false);
+    if (shVista === 'cola') shCargarCola();
   }, 12000);
 }
 
@@ -8204,6 +8254,9 @@ function shRenderVista() {
       '</div>';
     shRenderFiltros();
     shRenderLista();
+  } else if (shVista === 'cola') {
+    cont.innerHTML = '<div class="sh-app"><div class="sh-cola sh-scroll" id="shCola"><div class="sh-vacio">Cargando cola…</div></div></div>';
+    shCargarCola();
   } else if (shVista === 'pipeline') {
     cont.innerHTML = '<div class="sh-app"><div class="sh-pipe sh-scroll" id="shPipe"></div></div>';
     shRenderPipeline();
@@ -8215,6 +8268,7 @@ function shRenderVista() {
 
 function shRefrescarVistaActual() {
   if (shVista === 'bandeja') shRenderLista();
+  else if (shVista === 'cola') shCargarCola();
   else if (shVista === 'pipeline') shRenderPipeline();
   else shRenderDashboard();
 }
@@ -8641,8 +8695,14 @@ function shGuardarLlamada() {
   } }).then(function (d) {
     if (d && d.ok) {
       shCerrarSheet();
-      shToast('Llamada registrada ✔');
-      if (sel.getAttribute('data-r') === 'interesado') shMoverLead(shLeadActivo.id, 'interesado');
+      // El backend ya calculo el reintento (horario optimo en Lima) y
+      // movio el estado del lead — solo reflejamos el resultado aca.
+      if (d.proximoReintento) shToast('Llamada registrada — próximo intento: ' + shFormatFechaHora(d.proximoReintento));
+      else if (d.estado === 'perdido') shToast('Llamada registrada — lead marcado como perdido');
+      else if (d.estado === 'interesado') shToast('Llamada registrada — lead marcado como interesado ✔');
+      else shToast('Llamada registrada ✔');
+      shCargarLeads();
+      shCargarCola();
     } else shToast('No se pudo registrar: ' + (d && d.error ? d.error : 'error'));
   }).catch(function () { shToast('No se pudo registrar: revisa tu conexión'); });
 }
@@ -8718,6 +8778,74 @@ function shMarcarPerdido() {
   if (!confirm('¿Marcar este lead como perdido?')) return;
   shMoverLead(shLeadActivo.id, 'perdido');
   shToast('Lead marcado como perdido');
+}
+
+// ── Cola predictiva de llamadas ──────────────────────────
+function shCargarCola() {
+  var q = {};
+  if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
+  agendaWorkerFetch('shColaLlamadas', q).then(function (d) {
+    if (!d || !d.ok) return;
+    shColaOrden = d.cola || [];
+    shColaHorarioOptimo = !!d.horarioOptimoAhora;
+    shRenderCola();
+  }).catch(function () {});
+}
+
+function shRenderCola() {
+  var el = document.getElementById('shCola');
+  if (!el) return;
+
+  var aviso = shColaHorarioOptimo
+    ? '<div style="display:flex;align-items:center;gap:8px;color:#00a884;font-size:12.5px;font-weight:700;padding:12px 14px 4px"><span style="width:8px;height:8px;border-radius:50%;background:#00a884;display:inline-block"></span>Horario óptimo para llamar ahora en Lima</div>'
+    : '<div style="display:flex;align-items:center;gap:8px;color:#8696a0;font-size:12.5px;font-weight:700;padding:12px 14px 4px"><span style="width:8px;height:8px;border-radius:50%;background:#8696a0;display:inline-block"></span>Fuera del horario óptimo (Lun-Sáb 9-13h y 15-19h, Lima) — los reintentos se agendan igual</div>';
+
+  if (!shColaOrden.length) {
+    el.innerHTML = aviso + '<div class="sh-vacio">No hay leads pendientes de llamar. Cuando entren leads nuevos o venzan reintentos, aparecerán aquí.</div>';
+    return;
+  }
+
+  var html = aviso + '<div class="sh-cola-lista">';
+  for (var i = 0; i < shColaOrden.length; i++) {
+    var l = shColaOrden[i];
+    var m = SH_COLA_MOTIVOS[l._colaMotivo] || SH_COLA_MOTIVOS.al_dia;
+    var tiempoTxt = l._colaMotivo === 'sin_contactar' ? 'esperando ' + shTiempoRelativo(l.primer_mensaje_en)
+      : l._colaMotivo === 'reintento_vencido' ? 'venció hace ' + shTiempoRelativo(l.proximo_reintento_en)
+      : l._colaMotivo === 'reintento_programado' ? 'próximo intento ' + shCuentaRegresiva(l.proximo_reintento_en)
+      : 'sin pendientes';
+    var quien = shPuedeVerTodo() && l.vendedora_nombre ? shEsc(l.vendedora_nombre.split(' ')[0]) : '';
+    html +=
+      '<div class="sh-cola-item">' +
+        '<div class="sh-avatar" style="background:' + shAvatarColor(l.nombre || l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
+        '<div class="sh-cola-mid" onclick="shColaAbrirChat(\'' + shEsc(l.id) + '\')">' +
+          '<div class="sh-ci-nombre">' + shEsc(l.nombre || shTelBonito(l.telefono)) + '</div>' +
+          '<div class="sh-cola-motivo"><span style="color:' + m.color + '">● ' + m.t + '</span> · ' + shEsc(tiempoTxt) + (quien ? ' · ' + quien : '') + '</div>' +
+        '</div>' +
+        '<div class="sh-cola-btns">' +
+          '<a class="sh-cola-btn sh-cola-llamar" href="tel:+' + shEsc(l.telefono) + '" title="Llamar">📞</a>' +
+          '<button class="sh-cola-btn sh-cola-registrar" onclick="shColaAbrirRegistro(\'' + shEsc(l.id) + '\')" title="Registrar llamada">📝</button>' +
+        '</div>' +
+      '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function shColaAbrirChat(id) {
+  shVista = 'bandeja';
+  shRenderVista();
+  shAbrirChat(id);
+}
+
+function shColaAbrirRegistro(id) {
+  var lead = null;
+  for (var i = 0; i < shColaOrden.length; i++) {
+    if (shColaOrden[i].id === id) { lead = shColaOrden[i]; break; }
+  }
+  if (!lead) lead = shBuscarLead(id);
+  if (!lead) return;
+  shLeadActivo = lead;
+  shSheetLlamada();
 }
 
 // ── Pipeline kanban ──────────────────────────────────────
