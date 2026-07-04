@@ -8410,6 +8410,7 @@ function shMenuChat(ev) {
   var html =
     '<button onclick="shCerrarMenus();shSheetEstado()">🔄 Cambiar estado</button>' +
     '<button onclick="shCerrarMenus();shSheetReasignar()">👤 Reasignar vendedora</button>' +
+    '<button onclick="shCerrarMenus();shSheetHistorialLlamadas()">🎙️ Historial de llamadas</button>' +
     '<button onclick="shCerrarMenus();shMarcarPerdido()" style="color:#f87171">❌ Marcar como perdido</button>';
   shAbrirMenu('#shChatHead', html);
 }
@@ -8807,6 +8808,76 @@ function shMarcarPerdido() {
   shToast('Lead marcado como perdido');
 }
 
+// ── Historial de llamadas (con reproductor de grabaciones) ──
+var SH_RESULTADO_ETIQUETAS = {
+  interesado: 'Interesado', no_contesta: 'No contestó', callback: 'Pidió que volvieran a llamar',
+  no_interesa: 'No le interesó', contesto: 'Contestó', buzon: 'Buzón de voz',
+  numero_errado: 'Número errado', volver_a_llamar: 'Volver a llamar'
+};
+
+function shFormatDuracion(segundos) {
+  var s = parseInt(segundos, 10) || 0;
+  var m = Math.floor(s / 60);
+  var r = s % 60;
+  return m + ':' + (r < 10 ? '0' : '') + r;
+}
+
+function shUrlGrabacion(llamadaId) {
+  return GM_CONFIG.agendaWorkerUrl + '?key=' + encodeURIComponent(GM_CONFIG.agendaKey) +
+    '&action=reproducirGrabacion&llamadaId=' + encodeURIComponent(llamadaId);
+}
+
+function shRenderItemLlamada(l) {
+  var fecha = shFormatFechaHora(l.creado_en);
+  var tipoIcono = l.tipo === 'twilio' ? '📞' : '📝';
+  var resultadoTxt = SH_RESULTADO_ETIQUETAS[l.resultado] || l.resultado || '';
+  var audioHtml = '';
+  if (l.grabacion_url) {
+    audioHtml = '<audio controls preload="none" style="width:100%;margin-top:8px;height:32px" src="' + shEsc(shUrlGrabacion(l.id)) + '"></audio>';
+  } else if (l.tipo === 'twilio') {
+    audioHtml = '<div style="color:#8696a0;font-size:11.5px;margin-top:6px">Sin grabación disponible (' + shEsc(l.estado || 'en curso') + ')</div>';
+  }
+  return (
+    '<div style="background:#202c33;border-radius:10px;padding:12px;margin-bottom:8px">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;color:#e9edef;font-size:13px;font-weight:700">' +
+        '<span>' + tipoIcono + ' ' + shEsc(l.vendedora_nombre || 'Sistema') + '</span>' +
+        '<span style="color:#8696a0;font-weight:400;font-size:11.5px">' + shEsc(fecha) + '</span>' +
+      '</div>' +
+      '<div style="color:#8696a0;font-size:12px;margin-top:3px">' +
+        (l.tipo === 'twilio' ? shFormatDuracion(l.duracion_seg) + ' min' : 'Registro manual') +
+        (resultadoTxt ? ' · ' + shEsc(resultadoTxt) : '') +
+      '</div>' +
+      (l.notas ? '<div style="color:#e9edef;font-size:12.5px;margin-top:6px">' + shEsc(l.notas) + '</div>' : '') +
+      audioHtml +
+    '</div>'
+  );
+}
+
+function shSheetHistorialLlamadas() {
+  if (!shLeadActivo) return;
+  var leadId = shLeadActivo.id;
+  shAbrirSheet(
+    '<h4>🎙️ Historial de llamadas</h4>' +
+    '<div class="sh-sub">' + shEsc(shLeadActivo.nombre || shTelBonito(shLeadActivo.telefono)) + '</div>' +
+    '<div id="shHistLlamadas" style="padding:6px 0">Cargando…</div>'
+  );
+  agendaWorkerFetch('shLlamadasListar', { leadId: leadId }).then(function (d) {
+    var el = document.getElementById('shHistLlamadas');
+    if (!el) return; // ya cerraron el sheet
+    var llamadas = (d && d.ok ? d.llamadas : []) || [];
+    if (!llamadas.length) {
+      el.innerHTML = '<div class="sh-vacio">Todavía no hay llamadas registradas para este lead.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = llamadas.length - 1; i >= 0; i--) html += shRenderItemLlamada(llamadas[i]); // mas reciente primero
+    el.innerHTML = html;
+  }).catch(function () {
+    var el = document.getElementById('shHistLlamadas');
+    if (el) el.innerHTML = '<div class="sh-vacio">No se pudo cargar el historial. Revisa tu conexión.</div>';
+  });
+}
+
 // ── Cola predictiva de llamadas ──────────────────────────
 function shCargarCola() {
   var q = {};
@@ -9062,16 +9133,19 @@ function shAbrirRoster() {
       n++;
       var reg = actuales[uid];
       var activa = reg ? (parseInt(reg.activa, 10) === 1) : false;
+      var celularActual = reg && reg.celular ? reg.celular : '';
       filas +=
-        '<label class="sh-lista-op" style="cursor:pointer">' +
+        '<div class="sh-lista-op" style="display:flex;align-items:center;gap:10px">' +
           '<input type="checkbox" class="shRosterChk" data-uid="' + shEsc(uid) + '" data-nombre="' + shEsc(u.nombre) + '"' + (activa ? ' checked' : '') + ' style="width:auto;accent-color:#00a884">' +
-          '<span>' + shEsc(u.nombre) + '</span>' +
-        '</label>';
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + shEsc(u.nombre) + '</span>' +
+          '<input type="tel" class="shRosterCel" data-uid="' + shEsc(uid) + '" placeholder="Celular" value="' + shEsc(celularActual) + '" ' +
+            'style="width:130px;border:1px solid #2a3942;border-radius:8px;background:#202c33;color:#e9edef;font-size:12.5px;padding:7px 9px">' +
+        '</div>';
     }
     if (!n) filas = '<div class="sh-vacio">No hay usuarios con rol vendedor.<br>Créalos primero en la pestaña Usuarios.</div>';
     shAbrirSheet(
       '<h4>👥 Vendedoras del round-robin</h4>' +
-      '<div class="sh-sub">Los leads nuevos se reparten en orden rotativo solo entre las marcadas.</div>' +
+      '<div class="sh-sub">Los leads nuevos se reparten en orden rotativo solo entre las marcadas. El celular es necesario para conectar las llamadas por Twilio.</div>' +
       filas +
       '<button class="sh-sheet-btn" onclick="shGuardarRoster()">Guardar</button>'
     );
@@ -9080,11 +9154,17 @@ function shAbrirRoster() {
 
 function shGuardarRoster() {
   var chks = document.querySelectorAll('.shRosterChk');
+  var celulares = {};
+  document.querySelectorAll('.shRosterCel').forEach(function (inp) {
+    celulares[inp.getAttribute('data-uid')] = inp.value.replace(/[^0-9]/g, '');
+  });
   var vendedoras = [];
   for (var i = 0; i < chks.length; i++) {
+    var uid = chks[i].getAttribute('data-uid');
     vendedoras.push({
-      uid: chks[i].getAttribute('data-uid'),
+      uid: uid,
       nombre: chks[i].getAttribute('data-nombre'),
+      celular: celulares[uid] || '',
       activa: chks[i].checked ? 1 : 0,
       orden: i + 1
     });
