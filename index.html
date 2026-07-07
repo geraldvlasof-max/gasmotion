@@ -147,6 +147,21 @@ body.sh-fullscreen .sidebar-overlay.show{display:block}
    alrededor, ni arriba ni a los costados — solo queda el topbar. */
 body.sh-fullscreen .content{padding:0!important;display:flex;flex-direction:column;min-height:0}
 body.sh-fullscreen .content .tab-content.active{flex:1;display:flex;flex-direction:column;min-height:0}
+/* El topbar crema también se achica al mínimo — Sales Hub no necesita
+   el subtítulo ni tanto alto, solo el hamburguesa para volver. */
+body.sh-fullscreen .topbar{height:38px;padding:0 12px;gap:8px}
+body.sh-fullscreen .topbar-title{font-size:13px}
+body.sh-fullscreen .topbar-sub{display:none}
+body.sh-fullscreen .mobile-btn{font-size:17px}
+body.sh-fullscreen #btnDarkMode{padding:3px 7px;font-size:12px;margin-right:4px}
+body.sh-fullscreen .sede-badge{font-size:10px;padding:3px 8px}
+body.sh-fullscreen #gmCampana{top:5px;right:12px;padding:5px 9px;font-size:12px}
+body.sh-fullscreen #btnSyncManual{padding:4px 8px!important;font-size:11px!important;gap:3px!important;margin-right:4px!important}
+body.sh-fullscreen #btnSyncManual svg{width:14px!important;height:14px!important}
+@media(max-width:480px){
+  body.sh-fullscreen #btnSyncManual{display:none!important}
+  body.sh-fullscreen .sede-badge{display:none}
+}
 .sidebar-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,0.07)}
 .sidebar-brand img{max-width:130px;height:auto;filter:brightness(1.1)}
 .sidebar-brand-sub{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px}
