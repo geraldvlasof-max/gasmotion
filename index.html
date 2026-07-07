@@ -143,6 +143,10 @@ body.sh-fullscreen .sidebar.open{transform:translateX(0)}
 body.sh-fullscreen .main{margin-left:0;transition:margin-left .25s ease}
 body.sh-fullscreen .mobile-btn{display:flex;align-items:center;justify-content:center}
 body.sh-fullscreen .sidebar-overlay.show{display:block}
+/* Sales Hub a pantalla completa: sin el padding cream de .content
+   alrededor, ni arriba ni a los costados — solo queda el topbar. */
+body.sh-fullscreen .content{padding:0!important;display:flex;flex-direction:column;min-height:0}
+body.sh-fullscreen .content .tab-content.active{flex:1;display:flex;flex-direction:column;min-height:0}
 .sidebar-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,0.07)}
 .sidebar-brand img{max-width:130px;height:auto;filter:brightness(1.1)}
 .sidebar-brand-sub{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px}
@@ -1074,18 +1078,20 @@ input,select,textarea{font-size:16px!important}
         <div class="tab-content" id="tab-salesHub">
           <style>
             /* ── Sales Hub: WhatsApp Web 2025 + dark premium ── */
-            /* Rompe el padding de .content: los vendedores lo usan todo el
-               dia respondiendo, necesita el maximo de espacio posible. */
-            #tab-salesHub{padding:0;margin:0 -28px;width:calc(100% + 56px)}
-            @media(max-width:768px){#tab-salesHub{margin:0 -12px;width:calc(100% + 24px)}}
+            /* Full-bleed real: .content ya llega con padding:0 aqui
+               (ver body.sh-fullscreen), asi que esta cadena solo tiene
+               que propagar flex:1 hacia abajo hasta .sh-app para que
+               ocupe exactamente el espacio que sobra bajo el topbar,
+               sin calc(100vh - Npx) fragiles ni tiras de fondo crema. */
+            #tab-salesHub{padding:0;margin:0;width:100%}
+            #salesHubContent{display:flex;flex-direction:column;flex:1;min-height:0}
             .sh-root,.sh-root *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;box-sizing:border-box}
-            .sh-root{margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr);padding:0 28px}
-            @media(max-width:768px){.sh-root{padding:0 12px}}
-            .sh-viewtabs{display:flex;gap:2px;background:#111b21;border-radius:12px 12px 0 0;padding:6px 8px 0;border-bottom:1px solid #1f2c33}
+            .sh-root{margin:0;padding:0;display:flex;flex-direction:column;flex:1;min-height:0}
+            #shVistaCont{display:flex;flex-direction:column;flex:1;min-height:0}
+            .sh-viewtabs{display:flex;gap:2px;background:#111b21;padding:6px 8px 0;border-bottom:1px solid #1f2c33;flex-shrink:0}
             .sh-viewtab{background:none;border:none;color:#8696a0;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;border-bottom:2.5px solid transparent}
             .sh-viewtab.on{color:#e9edef;border-bottom-color:#00a884}
-            .sh-app{position:relative;display:flex;height:calc(100vh - 128px);min-height:480px;background:#111b21;border-radius:0 0 12px 12px;overflow:hidden}
-            @media(max-width:768px){.sh-app{height:calc(100vh - 116px)}}
+            .sh-app{position:relative;display:flex;flex:1;min-height:0;background:#111b21;overflow:hidden}
             /* scrollbars 4px, invisibles hasta hover */
             .sh-scroll{scrollbar-width:thin;scrollbar-color:transparent transparent}
             .sh-scroll:hover{scrollbar-color:#ffffff26 transparent}
