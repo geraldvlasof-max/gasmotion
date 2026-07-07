@@ -1162,6 +1162,52 @@ input,select,textarea{font-size:16px!important}
             .sh-emojis button:hover{background:#2a3942}
             /* toast */
             .sh-toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#233138;color:#e9edef;font-size:13px;font-weight:600;border-radius:10px;padding:10px 18px;z-index:2300;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+            /* indicador "escribiendo..." con tres puntos animados */
+            .sh-typing{display:flex;align-items:center;gap:4px;color:#00a884;font-size:11.5px;font-weight:600}
+            .sh-typing i{width:5px;height:5px;border-radius:50%;background:#00a884;display:inline-block;animation:shTypingDot 1.2s infinite ease-in-out}
+            .sh-typing i:nth-child(2){animation-delay:.15s}
+            .sh-typing i:nth-child(3){animation-delay:.3s}
+            @keyframes shTypingDot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+            /* ticks con transicion suave entre estados */
+            .sh-ticks{transition:color .3s ease}
+            .sh-ticks.fail{color:#f87171;letter-spacing:0;font-weight:800}
+            /* badge con entrada bounce */
+            @keyframes shPop{0%{transform:scale(0)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+            .sh-pop{animation:shPop .35s cubic-bezier(.34,1.56,.64,1)}
+            .sh-fade{opacity:0;transition:opacity .3s ease}
+            .sh-ci-badge{transition:opacity .3s ease}
+            /* imagenes en burbujas + visor fullscreen */
+            .sh-img-thumb{display:block;max-width:200px;max-height:200px;border-radius:10px;cursor:pointer;margin:2px 0 4px;object-fit:cover}
+            .sh-img-full{position:fixed;inset:0;background:#000;z-index:2500;display:flex;align-items:center;justify-content:center}
+            .sh-img-full img{max-width:96%;max-height:92%;border-radius:6px}
+            .sh-img-cerrar{position:absolute;top:14px;right:16px;background:#233138;color:#e9edef;border:none;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer}
+            /* busqueda dentro de la conversacion */
+            .sh-chat-search{display:none;align-items:center;gap:6px;padding:7px 10px;background:#233138}
+            .sh-chat-search.on{display:flex}
+            .sh-chat-search input{flex:1;background:#2a3942;border:none;border-radius:8px;color:#e9edef;font-size:13px;padding:8px 11px;outline:none;min-width:0}
+            .sh-chat-search button{background:none;border:none;color:#8696a0;cursor:pointer;font-size:14px;padding:5px 7px}
+            .sh-busq-n{color:#8696a0;font-size:11.5px;min-width:34px;text-align:center}
+            mark.sh-mark{background:#ffd279;color:#111;border-radius:3px;padding:0 1px}
+            .sh-burbuja.sh-match-cur{outline:2px solid #ffd279}
+            /* boton flotante de mensajes nuevos */
+            .sh-msgs-wrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+            .sh-msgs-wrap .sh-msgs{flex:1}
+            .sh-scrolldown{position:absolute;right:14px;bottom:14px;width:42px;height:42px;border-radius:50%;border:none;background:#233138;color:#e9edef;font-size:17px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:8}
+            .sh-scrolldown.on{display:flex;animation:shPop .3s ease}
+            .sh-scrolldown b{position:absolute;top:-5px;right:-4px;background:#00a884;color:#0b141a;font-size:10.5px;font-weight:800;border-radius:10px;min-width:18px;height:18px;line-height:18px;padding:0 4px}
+            /* panel de emojis con categorias */
+            .sh-emoji-panel{background:#233138;border-radius:12px;max-height:44vh;overflow-y:auto;padding:8px 12px 12px}
+            .sh-emoji-cat{color:#8696a0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:10px 0 4px}
+            /* respuestas rapidas mejoradas */
+            .sh-resp-row{display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;border-bottom:1px solid #2a3942;padding:11px 4px;cursor:pointer;text-align:left}
+            .sh-resp-row:hover{background:#202c33}
+            .sh-resp-icono{font-size:20px;min-width:28px;text-align:center}
+            .sh-resp-txt{flex:1;min-width:0;color:#e9edef;font-size:13px;line-height:1.4}
+            .sh-resp-fav{background:none;border:none;font-size:17px;cursor:pointer;padding:4px}
+            /* tiempo de espera de primera respuesta en la lista */
+            .sh-ci-espera{font-size:11px;font-weight:700;margin-top:3px}
+            /* chip verde del filtro por vendedora activo */
+            .sh-filtro-vend{background:#00a884;color:#0b141a;font-size:12px;font-weight:800;border:none;border-radius:15px;padding:5px 13px;cursor:pointer;white-space:nowrap}
             /* cola predictiva de llamadas */
             .sh-cola{width:100%;background:#0b141a;overflow-y:auto;padding-bottom:14px}
             .sh-cola-lista{display:flex;flex-direction:column;padding:8px 14px 0}
@@ -8032,6 +8078,17 @@ var shEnviando = false;
 var shDragId = null;
 var shColaOrden = [];
 var shColaHorarioOptimo = false;
+var shFiltroVendedora = '';
+var shFiltroVendedoraNombre = '';
+var shMsgsCache = [];
+var shMsgsFirmaIds = '';
+var shNuevosAbajo = 0;
+var shBusqChatTxt = '';
+var shBusqChatMatches = [];
+var shBusqChatIdx = 0;
+var shPrevUnread = null; // mapa leadId -> no_leidos previo (detecta mensajes nuevos para el sonido)
+var shAudioCtx = null;
+var shTypingTimer = null;
 
 // estado interno -> etiqueta, color del dot y columna del pipeline
 var SH_ESTADOS = {
@@ -8057,14 +8114,19 @@ var SH_COLUMNAS = [
 ];
 
 var SH_RESPUESTAS = [
-  'Hola 👋 soy [nombre] de Carrigas Perú. ¿En qué te puedo ayudar?',
-  '¿Qué tipo de vehículo tienes? (marca, modelo, año)',
-  'Te paso el presupuesto de conversión ahora mismo 🚗',
-  '¿Puedes venir a uno de nuestros talleres esta semana?',
-  'Tu conversión califica para el programa FISE del gobierno ✅'
+  { icono: '👋', texto: 'Hola 👋 soy [nombre] de Carrigas Perú. ¿En qué te puedo ayudar?' },
+  { icono: '🚘', texto: '¿Qué tipo de vehículo tienes? (marca, modelo, año)' },
+  { icono: '💰', texto: 'Te paso el presupuesto de conversión ahora mismo 🚗' },
+  { icono: '📅', texto: '¿Puedes venir a uno de nuestros talleres esta semana?' },
+  { icono: '✅', texto: 'Tu conversión califica para el programa FISE del gobierno ✅' }
 ];
 
-var SH_EMOJIS = ['😊','😃','👋','🙌','👍','🙏','❤️','🔥','🚗','🚙','⛽','💰','✅','⭐','📅','📍','📞','💬','🎉','😉','🤝','💪','⏰','❓'];
+var SH_EMOJI_CATS = [
+  { t: 'Caritas', e: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','😉','😍','🥰','😘','😋','😎','🤩','🥳','😏','😢','😭','😤','😱','🤔','🤗','😴','🫡'] },
+  { t: 'Gestos', e: ['👋','🤚','✋','👌','✌️','🤞','👍','👎','👊','🙌','👏','🙏','💪','☝️','👆','👇','👉','👈','🤙','🤝'] },
+  { t: 'Objetos', e: ['🚗','🚙','🚕','🛻','🚐','⛽','🔧','🔩','⚙️','🛠️','📞','📱','💬','📅','📍','📝','💼','🧾','💳','💰','💵','🎁','🔑','⏰'] },
+  { t: 'Símbolos', e: ['✅','❌','⭐','🌟','🔥','🎉','❤️','💚','💙','⚠️','❓','❗','💯','🔴','🟡','🟢','➡️','⬅️','⬆️','⬇️'] }
+];
 
 function shEsc(s) {
   return String(s === undefined || s === null ? '' : s)
@@ -8174,6 +8236,78 @@ var SH_COLA_MOTIVOS = {
   al_dia:              { t: 'Al día',               color: '#8696a0' }
 };
 
+// "hace 3 min" / "hace 1h" / "hace 2d" — para el contador de espera
+function shHaceTexto(iso) {
+  var ms = Date.now() - new Date(iso).getTime();
+  if (isNaN(ms) || ms < 0) return 'hace 0 min';
+  var min = Math.floor(ms / 60000);
+  if (min < 60) return 'hace ' + min + ' min';
+  var h = Math.floor(min / 60);
+  if (h < 24) return 'hace ' + h + 'h';
+  return 'hace ' + Math.floor(h / 24) + 'd';
+}
+
+// ── Sonido de notificacion (Web Audio, sin archivos externos) ──
+// El AudioContext solo puede crearse/activarse tras un gesto del usuario
+// (politica de autoplay de los navegadores); este listener lo desbloquea
+// con el primer toque. Si el contexto no esta "running" (p.ej. el
+// dispositivo lo suspende en modo silencio), simplemente no suena.
+function shAsegurarAudio() {
+  if (shAudioCtx) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) shAudioCtx = new AC();
+  } catch (e) { shAudioCtx = null; }
+}
+document.addEventListener('pointerdown', function () {
+  shAsegurarAudio();
+  if (shAudioCtx && shAudioCtx.state === 'suspended') {
+    shAudioCtx.resume().catch(function () {});
+  }
+});
+
+// Dos tonos suaves ascendentes, tipo WhatsApp
+function shSonidoNuevoMensaje() {
+  if (!shAudioCtx || shAudioCtx.state !== 'running') return;
+  try {
+    var t0 = shAudioCtx.currentTime;
+    var notas = [[880, 0, 0.09], [1174.66, 0.1, 0.12]];
+    for (var i = 0; i < notas.length; i++) {
+      var osc = shAudioCtx.createOscillator();
+      var gain = shAudioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = notas[i][0];
+      gain.gain.setValueAtTime(0.0001, t0 + notas[i][1]);
+      gain.gain.exponentialRampToValueAtTime(0.06, t0 + notas[i][1] + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + notas[i][1] + notas[i][2]);
+      osc.connect(gain);
+      gain.connect(shAudioCtx.destination);
+      osc.start(t0 + notas[i][1]);
+      osc.stop(t0 + notas[i][1] + notas[i][2] + 0.05);
+    }
+  } catch (e) {}
+}
+
+// Compara los no-leidos actuales contra la carga anterior: si algun lead
+// (que no sea el chat abierto) recibio mensajes nuevos, suena la
+// notificacion. Ambos pollings comparten shPrevUnread, asi que el
+// primero que detecte el cambio "consume" el aviso (sin sonido doble).
+function shChequearNuevosMensajes(leads) {
+  var mapa = {};
+  var haySonido = false;
+  for (var i = 0; i < (leads || []).length; i++) {
+    var l = leads[i];
+    var n = parseInt(l.no_leidos, 10) || 0;
+    mapa[l.id] = n;
+    if (shPrevUnread !== null) {
+      var antes = shPrevUnread[l.id] || 0;
+      if (n > antes && (!shLeadActivo || shLeadActivo.id !== l.id)) haySonido = true;
+    }
+  }
+  if (haySonido) shSonidoNuevoMensaje();
+  shPrevUnread = mapa;
+}
+
 function shToast(txt) {
   var viejo = document.getElementById('shToast');
   if (viejo) viejo.remove();
@@ -8280,6 +8414,7 @@ function shCargarLeads() {
   agendaWorkerFetch('shLeadsListar', q).then(function (d) {
     if (!d || !d.ok) return;
     shLeadsCache = d.leads || [];
+    shChequearNuevosMensajes(shLeadsCache);
     shRefrescarVistaActual();
     shActualizarNavBadge(shLeadsCache);
   }).catch(function () {});
@@ -8291,10 +8426,25 @@ function shRenderFiltros() {
   if (!el) return;
   var defs = [['', 'Todos'], ['sinleer', 'Sin leer'], ['nuevos', 'Nuevos'], ['interesados', 'Interesados']];
   var html = '';
+  if (shFiltroVendedora) {
+    html += '<button class="sh-filtro-vend" onclick="shFiltrarVendedora(\'\',\'\')" title="Quitar filtro de vendedora">👤 ' + shEsc(shFiltroVendedoraNombre.split(' ')[0]) + ' ✕</button>';
+  }
   for (var i = 0; i < defs.length; i++) {
     html += '<button class="sh-filtro' + (shFiltro === defs[i][0] ? ' on' : '') + '" onclick="shFiltrar(\'' + defs[i][0] + '\')">' + defs[i][1] + '</button>';
   }
   el.innerHTML = html;
+}
+
+function shFiltrarVendedora(uid, nombre) {
+  shFiltroVendedora = uid || '';
+  shFiltroVendedoraNombre = nombre || '';
+  shRenderFiltros();
+  shRenderLista();
+}
+
+function shFiltrarVendedoraBtn(btn) {
+  shFiltrarVendedora(btn.getAttribute('data-vuid') || '', btn.getAttribute('data-vnom') || '');
+  shCerrarMenus();
 }
 
 function shFiltrar(f) {
@@ -8317,6 +8467,7 @@ function shAplicarFiltros(lista) {
   var out = [];
   for (var i = 0; i < lista.length; i++) {
     var l = lista[i];
+    if (shFiltroVendedora && l.vendedora_uid !== shFiltroVendedora) continue;
     if (shFiltro === 'sinleer' && !(parseInt(l.no_leidos, 10) > 0)) continue;
     if (shFiltro === 'nuevos' && shEstadoInfo(l.estado).col !== 'nuevo') continue;
     if (shFiltro === 'interesados' && shEstadoInfo(l.estado).col !== 'interesado') continue;
@@ -8347,6 +8498,14 @@ function shRenderLista() {
     var prev = l.ultimo_mensaje_texto || '';
     if (l.ultimo_mensaje_de === 'vendedora') prev = '✓ ' + prev;
     var quien = shPuedeVerTodo() && l.vendedora_nombre ? '<span style="color:#5f7285">' + shEsc(l.vendedora_nombre.split(' ')[0]) + ' · </span>' : '';
+    // Contador de tiempo de primera respuesta: solo para leads aun no
+    // contactados. Verde <5min, amarillo 5-30min, rojo >30min.
+    var espera = '';
+    if (!l.primer_contacto_en && info.col !== 'perdido' && info.col !== 'convertido' && l.primer_mensaje_en) {
+      var minE = Math.floor((Date.now() - new Date(l.primer_mensaje_en).getTime()) / 60000);
+      var colorE = minE < 5 ? '#22c55e' : (minE <= 30 ? '#fbbf24' : '#ef4444');
+      espera = '<div class="sh-ci-espera" style="color:' + colorE + '">⏱ ' + shHaceTexto(l.primer_mensaje_en) + ' sin responder</div>';
+    }
     html +=
       '<div class="sh-chat-item" onclick="shAbrirChat(\'' + shEsc(l.id) + '\')">' +
         '<div class="sh-av-wrap">' +
@@ -8357,10 +8516,11 @@ function shRenderLista() {
           '<div class="sh-ci-mid">' +
             '<div class="sh-ci-nombre">' + shEsc(l.nombre || shTelBonito(l.telefono)) + '</div>' +
             '<div class="sh-ci-prev">' + quien + shEsc(prev) + '</div>' +
+            espera +
           '</div>' +
           '<div class="sh-ci-right">' +
             '<span class="sh-ci-hora' + (noLeidos ? ' sh-hay-nuevo' : '') + '">' + shHoraCorta(l.ultimo_mensaje_en) + '</span>' +
-            (noLeidos ? '<span class="sh-ci-badge">' + noLeidos + '</span>' : '<span style="height:20px"></span>') +
+            (noLeidos ? '<span class="sh-ci-badge" data-lead-badge="' + shEsc(l.id) + '">' + noLeidos + '</span>' : '<span style="height:20px"></span>') +
           '</div>' +
         '</div>' +
       '</div>';
@@ -8389,12 +8549,27 @@ function shAbrirMenu(anchorSel, botones) {
 
 function shMenuFiltros(ev) {
   ev.stopPropagation();
-  var html = '';
-  var defs = [['', 'Todos'], ['sinleer', 'Sin leer'], ['nuevos', 'Nuevos'], ['interesados', 'Interesados']];
-  for (var i = 0; i < defs.length; i++) {
-    html += '<button onclick="shFiltrar(\'' + defs[i][0] + '\');shCerrarMenus()">' + (shFiltro === defs[i][0] ? '✓ ' : '') + defs[i][1] + '</button>';
+  // Admin/jefe: filtro por vendedora (para supervisar el trabajo de cada una).
+  // Vendedoras: el menu de estados de siempre.
+  if (!shEsJefe()) {
+    var html = '';
+    var defs = [['', 'Todos'], ['sinleer', 'Sin leer'], ['nuevos', 'Nuevos'], ['interesados', 'Interesados']];
+    for (var i = 0; i < defs.length; i++) {
+      html += '<button onclick="shFiltrar(\'' + defs[i][0] + '\');shCerrarMenus()">' + (shFiltro === defs[i][0] ? '✓ ' : '') + defs[i][1] + '</button>';
+    }
+    shAbrirMenu('#shListHead', html);
+    return;
   }
-  shAbrirMenu('#shListHead', html);
+  agendaWorkerFetch('shVendedorasListar', {}).then(function (d) {
+    var lista = (d && d.ok ? d.vendedoras : []) || [];
+    var html = '<button onclick="shFiltrarVendedora(\'\',\'\');shCerrarMenus()">' + (shFiltroVendedora ? '' : '✓ ') + 'Todas las vendedoras</button>';
+    for (var i = 0; i < lista.length; i++) {
+      var v = lista[i];
+      html += '<button data-vuid="' + shEsc(v.uid) + '" data-vnom="' + shEsc(v.nombre) + '" onclick="shFiltrarVendedoraBtn(this)">' +
+        (shFiltroVendedora === v.uid ? '✓ ' : '') + '👤 ' + shEsc(v.nombre) + '</button>';
+    }
+    shAbrirMenu('#shListHead', html);
+  }).catch(function () { shToast('No se pudo cargar la lista de vendedoras'); });
 }
 
 function shMenuLista(ev) {
@@ -8423,13 +8598,23 @@ function shAbrirChat(leadId) {
   }
   if (!lead) return;
   shLeadActivo = lead;
+  shMsgsFirmaIds = '';
+  shNuevosAbajo = 0;
+  shBusqChatTxt = '';
+  shBusqChatMatches = [];
+  shBusqChatIdx = 0;
   var app = document.getElementById('shApp');
   if (app) app.classList.add('sh-chat-open');
   shRenderChatPane();
   shCargarMensajes(true);
   if ((parseInt(lead.no_leidos, 10) || 0) > 0) {
     lead.no_leidos = 0;
-    shRenderLista();
+    // El badge del item se desvanece antes de re-renderizar la lista
+    var badges = document.querySelectorAll('[data-lead-badge]');
+    for (var b = 0; b < badges.length; b++) {
+      if (badges[b].getAttribute('data-lead-badge') === lead.id) badges[b].classList.add('sh-fade');
+    }
+    setTimeout(function () { shRenderLista(); }, 300);
     shActualizarNavBadge(shLeadsCache);
     agendaWorkerFetch('shMarcarLeido', {}, { method: 'POST', body: { id: lead.id } }).catch(function () {});
   }
@@ -8460,13 +8645,25 @@ function shRenderChatPane() {
       '</div>' +
       '<div class="sh-ch-info">' +
         '<div class="sh-ch-nombre">' + shEsc(l.nombre || 'Sin nombre') + '</div>' +
-        '<div class="sh-ch-sub"><span style="color:' + info.dot + '">' + shEsc(info.t) + '</span> · ' + shEsc(shTelBonito(l.telefono)) + '</div>' +
+        '<div class="sh-ch-sub" id="shChSub"><span style="color:' + info.dot + '">' + shEsc(info.t) + '</span> · ' + shEsc(shTelBonito(l.telefono)) + '</div>' +
+        '<div class="sh-typing" id="shTyping" style="display:none">escribiendo<i></i><i></i><i></i></div>' +
       '</div>' +
+      '<button class="sh-hicon" title="Buscar en el chat" onclick="shToggleBusqChat()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>' +
       '<button class="sh-hicon" title="Llamar" onclick="shModalTwilio()" style="color:#00a884"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>' +
       '<button class="sh-hicon" title="Registrar llamada WA" onclick="shSheetLlamada()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>' +
       '<button class="sh-hicon" title="Menú" onclick="shMenuChat(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>' +
     '</div>' +
-    '<div class="sh-msgs sh-scroll" id="shMsgs"><div class="sh-vacio">Cargando mensajes…</div></div>' +
+    '<div class="sh-chat-search" id="shChatSearch">' +
+      '<input id="shBusqChatInput" type="text" placeholder="Buscar en la conversación..." autocomplete="off" oninput="shBusqChat(this.value)" onkeydown="if(event.key===\'Enter\')shBusqNav(1)">' +
+      '<span class="sh-busq-n" id="shBusqN"></span>' +
+      '<button onclick="shBusqNav(-1)" title="Anterior">▲</button>' +
+      '<button onclick="shBusqNav(1)" title="Siguiente">▼</button>' +
+      '<button onclick="shToggleBusqChat()" title="Cerrar">✕</button>' +
+    '</div>' +
+    '<div class="sh-msgs-wrap">' +
+      '<div class="sh-msgs sh-scroll" id="shMsgs" onscroll="shMsgsScroll(this)"><div class="sh-vacio">Cargando mensajes…</div></div>' +
+      '<button class="sh-scrolldown" id="shBtnAbajo" onclick="shIrAlFinal()">↓<b id="shBtnAbajoN">1</b></button>' +
+    '</div>' +
     '<div class="sh-composer">' +
       '<button class="sh-cicon" title="Emoji" onclick="shSheetEmojis()"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>' +
       '<button class="sh-cicon" title="Adjuntar" onclick="shToast(\'Adjuntos: próximamente\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' +
@@ -8500,6 +8697,23 @@ function shInputCambio(inp) {
     return;
   }
   shPintarSend(v);
+  shIndicarEscribiendo();
+}
+
+// Muestra "escribiendo..." con puntos animados bajo el nombre del chat
+// mientras la vendedora teclea; vuelve al subtitulo normal tras 2.2s
+// sin actividad.
+function shIndicarEscribiendo() {
+  var t = document.getElementById('shTyping');
+  var s = document.getElementById('shChSub');
+  if (!t) return;
+  t.style.display = 'flex';
+  if (s) s.style.display = 'none';
+  if (shTypingTimer) clearTimeout(shTypingTimer);
+  shTypingTimer = setTimeout(function () {
+    t.style.display = 'none';
+    if (s) s.style.display = '';
+  }, 2200);
 }
 
 function shSendClick() {
@@ -8517,22 +8731,96 @@ function shCargarMensajes(scrollAlFinal) {
   }).catch(function () {});
 }
 
+function shTickGlifo(e) {
+  if (e === 'read' || e === 'delivered') return '✓✓';
+  if (e === 'failed') return '!';
+  return '✓';
+}
+
+function shTickClase(e) {
+  if (e === 'read') return ' leido';
+  if (e === 'failed') return ' fail';
+  return '';
+}
+
 function shTicks(m) {
   if (m.direccion !== 'out') return '';
   var e = m.estado_entrega || '';
-  if (e === 'read') return '<span class="sh-ticks leido">✓✓</span>';
-  if (e === 'delivered') return '<span class="sh-ticks">✓✓</span>';
-  if (e === 'failed') return '<span style="color:#f87171;font-weight:800">!</span>';
-  return '<span class="sh-ticks">✓</span>';
+  return '<span class="sh-ticks' + shTickClase(e) + '" data-tickmid="' + shEsc(m.id) + '">' + shTickGlifo(e) + '</span>';
 }
 
-function shRenderMensajes(mensajes, scrollAlFinal) {
+// true si el texto es exactamente una URL de imagen
+function shEsUrlImagen(txt) {
+  var t = String(txt || '').trim();
+  if (!/^https?:\/\/\S+$/i.test(t)) return false;
+  return /\.(png|jpe?g|gif|webp)(\?\S*)?$/i.test(t);
+}
+
+function shAbrirImagenFull(el) {
+  var url = el.getAttribute('src');
+  var div = document.createElement('div');
+  div.className = 'sh-img-full';
+  div.id = 'shImgFull';
+  div.innerHTML = '<img src="' + shEsc(url) + '"><button class="sh-img-cerrar" onclick="shCerrarImagenFull()">✕</button>';
+  div.onclick = function (ev) { if (ev.target === div) shCerrarImagenFull(); };
+  document.body.appendChild(div);
+}
+
+function shCerrarImagenFull() {
+  var d = document.getElementById('shImgFull');
+  if (d) d.remove();
+}
+
+// Texto de burbuja escapado, con las coincidencias de la busqueda del
+// chat resaltadas en amarillo. Trabaja sobre el texto crudo y escapa
+// cada fragmento por separado para no romper el resaltado con &, <, etc.
+function shTextoBurbuja(raw) {
+  raw = String(raw || '');
+  if (!shBusqChatTxt) return shEsc(raw);
+  var lower = raw.toLowerCase();
+  var out = '';
+  var pos = 0;
+  while (true) {
+    var idx = lower.indexOf(shBusqChatTxt, pos);
+    if (idx === -1) { out += shEsc(raw.slice(pos)); break; }
+    out += shEsc(raw.slice(pos, idx)) + '<mark class="sh-mark">' + shEsc(raw.slice(idx, idx + shBusqChatTxt.length)) + '</mark>';
+    pos = idx + shBusqChatTxt.length;
+  }
+  return out;
+}
+
+function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
   var el = document.getElementById('shMsgs');
   if (!el) return;
+  shMsgsCache = mensajes;
   if (!mensajes.length) {
     el.innerHTML = '<div class="sh-vacio">Aún no hay mensajes en esta conversación</div>';
+    shMsgsFirmaIds = '';
     return;
   }
+
+  var ids = mensajes.map(function (m) { return m.id; }).join('|');
+
+  // Camino rapido: mismos mensajes, solo cambiaron los estados de entrega.
+  // Se actualizan los ticks EN SITIO para que la transicion CSS de 300ms
+  // se vea (gris -> azul) y el scroll no salte.
+  if (!forzar && ids === shMsgsFirmaIds) {
+    var spans = el.querySelectorAll('[data-tickmid]');
+    var mapa = {};
+    for (var s1 = 0; s1 < spans.length; s1++) mapa[spans[s1].getAttribute('data-tickmid')] = spans[s1];
+    for (var t1 = 0; t1 < mensajes.length; t1++) {
+      var mt = mensajes[t1];
+      if (mt.direccion !== 'out') continue;
+      var sp = mapa[mt.id];
+      if (!sp) continue;
+      var e1 = mt.estado_entrega || '';
+      sp.className = 'sh-ticks' + shTickClase(e1);
+      sp.textContent = shTickGlifo(e1);
+    }
+    return;
+  }
+
+  var prevTotal = shMsgsFirmaIds ? shMsgsFirmaIds.split('|').length : 0;
   var html = '';
   var diaPrevio = '';
   for (var i = 0; i < mensajes.length; i++) {
@@ -8543,15 +8831,113 @@ function shRenderMensajes(mensajes, scrollAlFinal) {
     var d = new Date(cuando);
     var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
     var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    var cuerpo = shEsUrlImagen(m.contenido)
+      ? '<img class="sh-img-thumb" src="' + shEsc(String(m.contenido).trim()) + '" loading="lazy" onclick="shAbrirImagenFull(this)">'
+      : shTextoBurbuja(m.contenido);
     html +=
-      '<div class="sh-burbuja ' + (m.direccion === 'out' ? 'out' : 'in') + '">' +
-        shEsc(m.contenido || '') +
+      '<div class="sh-burbuja ' + (m.direccion === 'out' ? 'out' : 'in') + '" data-mid="' + shEsc(m.id) + '">' +
+        cuerpo +
         '<div class="sh-b-meta">' + hh + ':' + mm + ' ' + shTicks(m) + '</div>' +
       '</div>';
   }
   var estabaAbajo = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
   el.innerHTML = html;
-  if (scrollAlFinal || estabaAbajo) el.scrollTop = el.scrollHeight;
+  shMsgsFirmaIds = ids;
+  if (scrollAlFinal || estabaAbajo) {
+    // Scroll instantaneo: el smooth del CSS haria que renders consecutivos
+    // (polling cada 12s) lean posiciones a mitad de animacion
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = el.scrollHeight;
+    el.style.scrollBehavior = '';
+    shNuevosAbajo = 0;
+    shPintarBtnAbajo();
+  } else if (prevTotal > 0 && mensajes.length > prevTotal) {
+    // Llegaron mensajes mientras el usuario leia arriba: no interrumpir,
+    // avisar con el boton flotante
+    shNuevosAbajo += (mensajes.length - prevTotal);
+    shPintarBtnAbajo();
+  }
+}
+
+function shPintarBtnAbajo() {
+  var b = document.getElementById('shBtnAbajo');
+  if (!b) return;
+  var n = document.getElementById('shBtnAbajoN');
+  if (shNuevosAbajo > 0) {
+    if (n) n.textContent = String(shNuevosAbajo);
+    b.classList.add('on');
+  } else {
+    b.classList.remove('on');
+  }
+}
+
+function shIrAlFinal() {
+  var el = document.getElementById('shMsgs');
+  if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  shNuevosAbajo = 0;
+  shPintarBtnAbajo();
+}
+
+function shMsgsScroll(el) {
+  if (shNuevosAbajo > 0 && (el.scrollHeight - el.scrollTop - el.clientHeight) < 60) {
+    shNuevosAbajo = 0;
+    shPintarBtnAbajo();
+  }
+}
+
+// ── Busqueda dentro de la conversacion ───────────────────
+function shToggleBusqChat() {
+  var bar = document.getElementById('shChatSearch');
+  if (!bar) return;
+  var abrir = !bar.classList.contains('on');
+  bar.classList.toggle('on', abrir);
+  if (abrir) {
+    var inp = document.getElementById('shBusqChatInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    shBusqChat('');
+  } else {
+    shBusqChatTxt = '';
+    shBusqChatMatches = [];
+    shBusqChatIdx = 0;
+    shRenderMensajes(shMsgsCache, false, true);
+  }
+}
+
+function shBusqChat(v) {
+  shBusqChatTxt = String(v || '').toLowerCase();
+  shBusqChatMatches = [];
+  if (shBusqChatTxt) {
+    for (var i = 0; i < shMsgsCache.length; i++) {
+      var c = String(shMsgsCache[i].contenido || '').toLowerCase();
+      if (c.indexOf(shBusqChatTxt) !== -1) shBusqChatMatches.push(shMsgsCache[i].id);
+    }
+  }
+  shBusqChatIdx = shBusqChatMatches.length ? shBusqChatMatches.length - 1 : 0; // empezar por la mas reciente
+  shRenderMensajes(shMsgsCache, false, true);
+  shBusqIrAMatch();
+}
+
+function shBusqIrAMatch() {
+  var n = document.getElementById('shBusqN');
+  if (n) n.textContent = shBusqChatMatches.length ? (shBusqChatIdx + 1) + '/' + shBusqChatMatches.length : (shBusqChatTxt ? '0/0' : '');
+  var previas = document.querySelectorAll('.sh-burbuja.sh-match-cur');
+  for (var p = 0; p < previas.length; p++) previas[p].classList.remove('sh-match-cur');
+  if (!shBusqChatMatches.length) return;
+  var id = shBusqChatMatches[shBusqChatIdx];
+  var burbujas = document.querySelectorAll('.sh-burbuja[data-mid]');
+  for (var i = 0; i < burbujas.length; i++) {
+    if (burbujas[i].getAttribute('data-mid') === id) {
+      burbujas[i].classList.add('sh-match-cur');
+      burbujas[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      break;
+    }
+  }
+}
+
+function shBusqNav(delta) {
+  if (!shBusqChatMatches.length) return;
+  shBusqChatIdx = (shBusqChatIdx + delta + shBusqChatMatches.length) % shBusqChatMatches.length;
+  shBusqIrAMatch();
 }
 
 function shEnviarMensaje() {
@@ -8607,39 +8993,93 @@ function shCerrarSheet() {
   if (m) m.remove();
 }
 
-// ── Respuestas rapidas ───────────────────────────────────
-function shSheetRespuestas() {
+// ── Respuestas rapidas (con buscador y favoritas) ────────
+function shRespFavs() {
+  try { return JSON.parse(localStorage.getItem('gm_sh_resp_fav') || '[]'); } catch (e) { return []; }
+}
+
+function shToggleFavResp(ev, i) {
+  ev.stopPropagation();
+  var favs = shRespFavs();
+  var pos = favs.indexOf(i);
+  if (pos === -1) favs.push(i); else favs.splice(pos, 1);
+  localStorage.setItem('gm_sh_resp_fav', JSON.stringify(favs));
+  var b = document.getElementById('shRespBusca');
+  shRespuestasFiltrar(b ? b.value : '');
+}
+
+// Filas de respuestas: favoritas primero, filtradas por palabra clave
+function shRespuestasFilasHtml(filtro) {
   var nombre = CU && CU.nombre ? CU.nombre.split(' ')[0] : '';
-  var html = '<h4>⚡ Respuestas rápidas</h4><div class="sh-sub">Toca una para insertarla — la puedes editar antes de enviar</div>';
-  for (var i = 0; i < SH_RESPUESTAS.length; i++) {
-    var txt = SH_RESPUESTAS[i].split('[nombre]').join(nombre);
-    html += '<button class="sh-lista-op" onclick="shUsarRespuesta(' + i + ')">' + shEsc(txt) + '</button>';
+  var favs = shRespFavs();
+  var f = String(filtro || '').toLowerCase();
+  var orden = [];
+  for (var i = 0; i < SH_RESPUESTAS.length; i++) orden.push(i);
+  orden.sort(function (a, b) {
+    var fa = favs.indexOf(a) !== -1 ? 0 : 1;
+    var fb = favs.indexOf(b) !== -1 ? 0 : 1;
+    if (fa !== fb) return fa - fb;
+    return a - b;
+  });
+  var filas = '';
+  for (var k = 0; k < orden.length; k++) {
+    var idx = orden[k];
+    var txt = SH_RESPUESTAS[idx].texto.split('[nombre]').join(nombre);
+    if (f && txt.toLowerCase().indexOf(f) === -1) continue;
+    var esFav = favs.indexOf(idx) !== -1;
+    filas +=
+      '<div class="sh-resp-row" onclick="shUsarRespuesta(' + idx + ')">' +
+        '<span class="sh-resp-icono">' + SH_RESPUESTAS[idx].icono + '</span>' +
+        '<span class="sh-resp-txt">' + shEsc(txt) + '</span>' +
+        '<button class="sh-resp-fav" title="Marcar favorita" onclick="shToggleFavResp(event,' + idx + ')">' + (esFav ? '⭐' : '☆') + '</button>' +
+      '</div>';
   }
+  if (!filas) filas = '<div class="sh-vacio">Sin respuestas que coincidan</div>';
+  return filas;
+}
+
+function shRespuestasFiltrar(v) {
+  var el = document.getElementById('shRespLista');
+  if (el) el.innerHTML = shRespuestasFilasHtml(v);
+}
+
+function shSheetRespuestas() {
+  var html =
+    '<h4>⚡ Respuestas rápidas</h4>' +
+    '<div class="sh-sub">Toca una para insertarla — la puedes editar antes de enviar. ⭐ marca tus favoritas para verlas primero.</div>' +
+    '<input id="shRespBusca" type="text" placeholder="Buscar respuesta..." autocomplete="off" oninput="shRespuestasFiltrar(this.value)" style="margin-bottom:6px">' +
+    '<div id="shRespLista">' + shRespuestasFilasHtml('') + '</div>';
   shAbrirSheet(html);
 }
 
 function shUsarRespuesta(i) {
   var nombre = CU && CU.nombre ? CU.nombre.split(' ')[0] : '';
-  var txt = SH_RESPUESTAS[i].split('[nombre]').join(nombre);
+  var txt = SH_RESPUESTAS[i].texto.split('[nombre]').join(nombre);
   shCerrarSheet();
   var input = document.getElementById('shInput');
   if (input) { input.value = txt; shPintarSend(txt); input.focus(); }
 }
 
-// ── Emojis ───────────────────────────────────────────────
+// ── Emojis (panel con categorias) ────────────────────────
 function shSheetEmojis() {
-  var html = '<h4>😊 Emojis</h4><div class="sh-emojis">';
-  for (var i = 0; i < SH_EMOJIS.length; i++) {
-    html += '<button onclick="shPonerEmoji(' + i + ')">' + SH_EMOJIS[i] + '</button>';
+  var html = '<h4>😊 Emojis</h4><div class="sh-emoji-panel sh-scroll">';
+  for (var c = 0; c < SH_EMOJI_CATS.length; c++) {
+    var cat = SH_EMOJI_CATS[c];
+    html += '<div class="sh-emoji-cat">' + cat.t + '</div><div class="sh-emojis">';
+    for (var i = 0; i < cat.e.length; i++) {
+      html += '<button onclick="shPonerEmoji(this)">' + cat.e[i] + '</button>';
+    }
+    html += '</div>';
   }
   html += '</div>';
   shAbrirSheet(html);
 }
 
-function shPonerEmoji(i) {
+// El panel queda abierto para poder insertar varios emojis seguidos;
+// se cierra tocando fuera, como en WhatsApp.
+function shPonerEmoji(btn) {
   var input = document.getElementById('shInput');
-  if (input) { input.value += SH_EMOJIS[i]; shPintarSend(input.value); input.focus(); }
-  shCerrarSheet();
+  if (input) { input.value += btn.textContent; shPintarSend(input.value); }
 }
 
 // ── Llamadas por Twilio ──────────────────────────────────
@@ -9056,11 +9496,15 @@ function shRenderDashboard() {
       urgentes.push(l);
     }
     var vk = l.vendedora_nombre || 'Sin asignar';
-    if (!porVend[vk]) porVend[vk] = { asignados: 0, contactados: 0, interesados: 0, conversiones: 0 };
+    if (!porVend[vk]) porVend[vk] = { asignados: 0, contactados: 0, interesados: 0, conversiones: 0, sumaResp: 0, nResp: 0 };
     porVend[vk].asignados++;
     if (l.primer_contacto_en) porVend[vk].contactados++;
     if (colL === 'interesado' || colL === 'visita') porVend[vk].interesados++;
     if (l.estado === 'convertido') porVend[vk].conversiones++;
+    if (l.primer_contacto_en && l.primer_mensaje_en) {
+      var difV = new Date(l.primer_contacto_en).getTime() - new Date(l.primer_mensaje_en).getTime();
+      if (difV >= 0) { porVend[vk].sumaResp += difV; porVend[vk].nResp++; }
+    }
   }
 
   var tasa = leads.length ? Math.round(contactados * 100 / leads.length) : 0;
@@ -9078,7 +9522,7 @@ function shRenderDashboard() {
       '<div class="sh-met"><div class="sh-met-n">' + tResp + '</div><div class="sh-met-l">T. respuesta prom.</div></div>' +
     '</div>';
 
-  html += '<h4>Rendimiento por vendedora</h4><div class="sh-tabla-wrap sh-scroll"><table class="sh-tabla"><tr><th>Vendedora</th><th>Leads</th><th>Contactados</th><th>Interesados</th><th>Conversiones</th></tr>';
+  html += '<h4>Rendimiento por vendedora</h4><div class="sh-tabla-wrap sh-scroll"><table class="sh-tabla"><tr><th>Vendedora</th><th>Leads</th><th>Contactados</th><th>Interesados</th><th>Conversiones</th><th>T. 1ra resp.</th></tr>';
   var maxAsig = 1;
   for (var v1 in porVend) { if (porVend[v1].asignados > maxAsig) maxAsig = porVend[v1].asignados; }
   var hayVend = false;
@@ -9086,15 +9530,21 @@ function shRenderDashboard() {
     hayVend = true;
     var s = porVend[v];
     var pct = function (n, d) { return d ? Math.round(n * 100 / d) : 0; };
+    var tRespV = '—';
+    if (s.nResp) {
+      var mV = Math.round(s.sumaResp / s.nResp / 60000);
+      tRespV = mV < 60 ? mV + 'm' : Math.floor(mV / 60) + 'h ' + (mV % 60) + 'm';
+    }
     html += '<tr>' +
       '<td style="font-weight:700">' + shEsc(v) + '</td>' +
       '<td>' + s.asignados + '<div class="sh-barra"><i style="width:' + pct(s.asignados, maxAsig) + '%"></i></div></td>' +
       '<td>' + s.contactados + '<div class="sh-barra"><i style="width:' + pct(s.contactados, s.asignados) + '%"></i></div></td>' +
       '<td>' + s.interesados + '<div class="sh-barra"><i style="width:' + pct(s.interesados, s.asignados) + '%"></i></div></td>' +
       '<td>' + s.conversiones + '<div class="sh-barra"><i style="width:' + pct(s.conversiones, s.asignados) + '%"></i></div></td>' +
+      '<td>' + tRespV + '</td>' +
     '</tr>';
   }
-  if (!hayVend) html += '<tr><td colspan="5" style="color:#8696a0;text-align:center">Aún no hay leads registrados</td></tr>';
+  if (!hayVend) html += '<tr><td colspan="6" style="color:#8696a0;text-align:center">Aún no hay leads registrados</td></tr>';
   html += '</table></div>';
 
   html += '<h4 style="color:#f87171">⚠️ Sin contacto hace más de 24 h</h4>';
@@ -9186,10 +9636,20 @@ function shActualizarNavBadge(leads) {
     total += parseInt(leads[i].no_leidos, 10) || 0;
   }
   if (total > 0) {
+    var prev = parseInt(badge.getAttribute('data-n'), 10) || 0;
+    var estabaOculto = badge.style.display === 'none';
     badge.textContent = total > 99 ? '99+' : String(total);
+    badge.setAttribute('data-n', String(total));
     badge.style.display = '';
+    // Entrada con bounce (scale 0 -> 1) al aparecer o al subir el numero
+    if (estabaOculto || total > prev) {
+      badge.classList.remove('sh-pop');
+      void badge.offsetWidth; // reinicia la animacion
+      badge.classList.add('sh-pop');
+    }
   } else {
     badge.style.display = 'none';
+    badge.setAttribute('data-n', '0');
   }
 }
 
@@ -9199,11 +9659,14 @@ function shIniciarBadgeGlobal() {
     var q = {};
     if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
     agendaWorkerFetch('shLeadsListar', q).then(function (d) {
-      if (d && d.ok) shActualizarNavBadge(d.leads || []);
+      if (d && d.ok) {
+        shChequearNuevosMensajes(d.leads || []);
+        shActualizarNavBadge(d.leads || []);
+      }
     }).catch(function () {});
   };
   tick();
-  shBadgeTimer = setInterval(tick, 60000);
+  shBadgeTimer = setInterval(tick, 30000);
 }
 
 // ═══════════════════════════════════════════════════════════
