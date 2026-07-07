@@ -137,7 +137,12 @@ body{font-family:'Plus Jakarta Sans','DM Sans',sans-serif;background:var(--bg);c
 /* APP */
 #app{display:none}.layout{display:flex;min-height:100vh}
 /* SIDEBAR */
-.sidebar{width:236px;background:#131313;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;border-right:1px solid #262626}
+.sidebar{width:236px;background:#131313;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;border-right:1px solid #262626;transition:transform .25s ease}
+body.sh-fullscreen .sidebar{transform:translateX(-100%)}
+body.sh-fullscreen .sidebar.open{transform:translateX(0)}
+body.sh-fullscreen .main{margin-left:0;transition:margin-left .25s ease}
+body.sh-fullscreen .mobile-btn{display:flex;align-items:center;justify-content:center}
+body.sh-fullscreen .sidebar-overlay.show{display:block}
 .sidebar-brand{padding:16px;border-bottom:1px solid rgba(255,255,255,0.07)}
 .sidebar-brand img{max-width:130px;height:auto;filter:brightness(1.1)}
 .sidebar-brand-sub{font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px}
@@ -272,6 +277,17 @@ tr:hover td{background:#fafbfc}
 .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+/* Notificación emergente — asignación de tarea / avance de caso con responsable */
+#gmNotifWrap{position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;gap:10px;width:min(94vw,380px);pointer-events:none}
+@keyframes gmNotifIn{0%{opacity:0;transform:translateY(-24px) scale(.92)}60%{opacity:1;transform:translateY(4px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes gmNotifOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-14px) scale(.96)}}
+.gm-notif-card{pointer-events:auto;background:#131313;border:1.5px solid #FFC165;border-radius:14px;padding:14px 16px;box-shadow:0 8px 28px rgba(0,0,0,.35);animation:gmNotifIn .35s cubic-bezier(.2,.9,.3,1.3);display:flex;gap:10px;align-items:flex-start}
+.gm-notif-card.out{animation:gmNotifOut .25s ease forwards}
+.gm-notif-icon{flex-shrink:0;width:34px;height:34px;border-radius:50%;background:#FFC165;color:#131313;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.gm-notif-title{font-size:13px;font-weight:800;color:#FFC165;margin-bottom:2px}
+.gm-notif-msg{font-size:12.5px;color:#f2f2f2;line-height:1.35}
+.gm-notif-close{flex-shrink:0;background:none;border:none;color:#8a8a8a;font-size:16px;cursor:pointer;line-height:1;padding:2px}
+.gm-notif-close:hover{color:white}
 
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#FFC165">
@@ -2649,6 +2665,13 @@ function switchTab(name, el) {
   if(name==='tecnico'){renderVistaTecnico();}
   if(name==='glp'){renderTabGLP();}
   if(name==='misventas'){renderMisVentas();}
+  if(name==='salesHub'){
+    document.body.classList.add('sh-fullscreen');
+  } else {
+    document.body.classList.remove('sh-fullscreen');
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
   if(window.innerWidth<=768) toggleSidebar();
 }
 
@@ -3308,6 +3331,58 @@ function reproducirTonoAlerta() {
   }
 }
 
+// Repite el tono de alerta N veces espaciado, para que una notificación
+// urgente (tarea asignada, caso avanzado con responsable) no pase
+// desapercibida con un solo "ding".
+function reproducirTonoAlertaVeces(veces) {
+  var n = veces || 6;
+  var i = 0;
+  var disparar = function() {
+    reproducirTonoAlerta();
+    i++;
+    if(i < n) setTimeout(disparar, 700);
+  };
+  disparar();
+}
+
+// ── Notificación emergente en pantalla ───────────────────
+// Tarjeta visible y persistente (no un toast que se pisa con el
+// siguiente), para que una tarea asignada o un caso avanzado con
+// responsable realmente se note en pantalla.
+function obtenerNotifWrap() {
+  var wrap = document.getElementById('gmNotifWrap');
+  if(!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'gmNotifWrap';
+    document.body.appendChild(wrap);
+  }
+  return wrap;
+}
+
+function mostrarNotifEmergente(titulo, mensaje, tipo) {
+  var wrap = obtenerNotifWrap();
+  var card = document.createElement('div');
+  card.className = 'gm-notif-card';
+  var icono = tipo === 'tarea' ? '📋' : (tipo === 'incidencia' ? '⚠' : '🔔');
+  card.innerHTML =
+    '<div class="gm-notif-icon">' + icono + '</div>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div class="gm-notif-title"></div>' +
+      '<div class="gm-notif-msg"></div>' +
+    '</div>' +
+    '<button class="gm-notif-close" title="Cerrar">✕</button>';
+  card.querySelector('.gm-notif-title').textContent = titulo;
+  card.querySelector('.gm-notif-msg').textContent = mensaje;
+  var cerrar = function() {
+    if(!card.parentNode) return;
+    card.classList.add('out');
+    setTimeout(function(){ if(card.parentNode) card.parentNode.removeChild(card); }, 250);
+  };
+  card.querySelector('.gm-notif-close').onclick = cerrar;
+  wrap.appendChild(card);
+  setTimeout(cerrar, 9000);
+}
+
 // Crear notificación en la tabla central (llamado desde eventos del sistema)
 function crearNotificacion(destinos, tipo, titulo, mensaje, referenciaId, urgente) {
   if(!GM_CONFIG.workerUrl) return;
@@ -3354,11 +3429,12 @@ function chequearNotificacionesNuevas() {
       var n = d.notificaciones[i];
       if(n.ts > GM_NOTIF_ULTIMO_TS) GM_NOTIF_ULTIMO_TS = n.ts;
       if(n.urgente) hayUrgente = true;
-      // Toast por cada notificación nueva
-      showToast(n.titulo + ': ' + n.mensaje, n.urgente ? 'warning' : 'info');
+      // Tarjeta emergente por cada notificación nueva — se apilan, no se
+      // pisan entre sí como pasaba con el toast (un solo slot compartido).
+      mostrarNotifEmergente(n.titulo, n.mensaje, n.tipo);
     }
     if(hayUrgente) {
-      reproducirTonoAlerta();
+      reproducirTonoAlertaVeces(6);
       actualizarBadgeNotifCentral(true);
     }
   })
@@ -4981,6 +5057,8 @@ function agendaTriggerTareaTecnico(exp, descripcionParte) {
       creadoPor: 'sistema'
     })
   }).catch(function(){});
+  crearNotificacion([uidJefe], 'tarea', 'Parte del trabajo culminada',
+    descripcionParte + ' — ' + (exp.placa||'') + ' listo', exp.id, true);
 }
 
 function marcarCulminado(expId, tipo) {
@@ -8054,6 +8132,10 @@ function agendaGuardarNuevo() {
   .then(function(d){
     if(d.ok) {
       showToast('Recordatorio creado', 'success');
+      if (responsable && responsable !== (CU ? CU.id : '')) {
+        crearNotificacion([responsable], 'tarea', 'Nuevo recordatorio asignado',
+          (CU ? CU.nombre : 'Alguien') + ' te asignó: ' + titulo, null, true);
+      }
       var ov = document.getElementById('agendaModalOv');
       if(ov) document.body.removeChild(ov);
       agendaCargar();
@@ -9882,6 +9964,12 @@ function tareaGuardar(id) {
   accion.then(function (d) {
     if (d.ok) {
       showToast(id ? 'Tarea actualizada' : 'Tarea creada', 'success');
+      // Notifica al responsable asignado (nueva tarea o reasignación) —
+      // sin esto la persona asignada nunca se entera de nada.
+      if (datos.asignadoUid && datos.asignadoUid !== datos.uid) {
+        crearNotificacion([datos.asignadoUid], 'tarea', 'Nueva tarea asignada',
+          (datos.nombre || 'Alguien') + ' te asignó: ' + titulo, id || null, true);
+      }
       var ov = document.getElementById('tareaModalOv');
       if (ov) document.body.removeChild(ov);
       tareasCargar();
@@ -11279,6 +11367,22 @@ function renderEtapa4(cont, exp) {
     row.innerHTML='<span style="font-size:12px">'+(ok?'✓':'○')+'</span><span>'+(ok?'<strong>'+itm.l+'</strong>':itm.l)+'</span>';
     checkList.appendChild(row);
   }
+  // El botón de avanzar también exige elegir Sí/No en "¿Lleva BONO GLP?"
+  // (y el informe si la respuesta es Sí). Ese paso vive fuera de esta lista,
+  // asi que sin esta fila el usuario no ve por que el boton sigue bloqueado
+  // aunque los 8 items de arriba esten en verde.
+  var bonoElegido=(e4.llevaBono===true||e4.llevaBono===false);
+  var rowBono=document.createElement('div');
+  rowBono.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:'+(bonoElegido?'#15803d':'#9ca3af');
+  rowBono.innerHTML='<span style="font-size:12px">'+(bonoElegido?'✓':'○')+'</span><span>'+(bonoElegido?'<strong>¿Lleva BONO GLP? elegido</strong>':'¿Lleva BONO GLP? (arriba, Sí/No)')+'</span>';
+  checkList.appendChild(rowBono);
+  if(e4.llevaBono===true){
+    var okInforme=!!(e4.informeBono&&e4.informeBono.completado);
+    var rowInforme=document.createElement('div');
+    rowInforme.style.cssText='display:flex;align-items:center;gap:6px;font-size:11px;color:'+(okInforme?'#15803d':'#9ca3af');
+    rowInforme.innerHTML='<span style="font-size:12px">'+(okInforme?'✓':'○')+'</span><span>'+(okInforme?'<strong>Informe BONO GLP</strong>':'Informe BONO GLP')+'</span>';
+    checkList.appendChild(rowInforme);
+  }
   prog4.appendChild(checkList);
 
   // Botón guardar datos técnicos
@@ -11298,6 +11402,17 @@ function renderEtapa4(cont, exp) {
     av4.textContent='Avanzar a Etapa 5 →';
     av4.onclick=(function(eid){return function(){avanzarEtapaNum(eid,5);};})(exp.id);
     prog4.appendChild(av4);
+    if(done4<tot4){
+      var faltaTxt=!bonoElegido
+        ? 'Falta elegir Sí/No en "¿Lleva BONO GLP?" (arriba, columna 2)'
+        : (e4.llevaBono===true&&!(e4.informeBono&&e4.informeBono.completado))
+          ? 'Falta subir el Informe BONO GLP (arriba, columna 2)'
+          : 'Faltan '+(tot4-done4)+' items por completar';
+      var avHint=document.createElement('div');
+      avHint.style.cssText='font-size:11px;color:#dc2626;margin-top:8px;text-align:center';
+      avHint.textContent=faltaTxt;
+      prog4.appendChild(avHint);
+    }
   }
   col3.appendChild(prog4);
 
@@ -13049,6 +13164,8 @@ function agendaTriggerEtapa5(exp) {
       creadoPor: 'sistema'
     })
   }).catch(function(){});
+  crearNotificacion([uidVendedora], 'etapa5', 'Expediente en Etapa 5',
+    (exp.placa||'Un expediente') + ' está listo para armado de documentos', exp.id, true);
 }
 
 // ==================
