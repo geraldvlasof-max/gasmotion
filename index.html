@@ -1144,10 +1144,11 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-filtros{display:flex;gap:7px;padding:2px 12px 10px;overflow-x:auto;scrollbar-width:none}
             .sh-filtros::-webkit-scrollbar{display:none}
             .sh-filtro{border:none;background:#202c33;color:#8696a0;font-size:12px;font-weight:700;border-radius:15px;padding:5px 13px;cursor:pointer;white-space:nowrap}
-            .sh-filtro.on{background:#00a884;color:#0b141a}
+            .sh-filtro.on{background:#0a332c;color:#00a884}
             .sh-chats{flex:1;overflow-y:auto}
             .sh-chat-item{display:flex;align-items:center;gap:13px;padding:0 0 0 13px;cursor:pointer}
             .sh-chat-item:hover,.sh-chat-item:active{background:#202c33}
+            .sh-chat-item.sh-sel{background:#2a3942}
             .sh-av-wrap{position:relative;min-width:49px}
             .sh-avatar{width:49px;height:49px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px}
             .sh-dot{position:absolute;bottom:0;right:0;width:13px;height:13px;border-radius:50%;border:2.5px solid #111b21}
@@ -1172,21 +1173,42 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-ch-info{flex:1;min-width:0}
             .sh-ch-nombre{color:#e9edef;font-size:15.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
             .sh-ch-sub{color:#8696a0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-            .sh-msgs{flex:1;overflow-y:auto;padding:16px 14px 10px;display:flex;flex-direction:column;gap:3px;scroll-behavior:smooth;background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cpath d='M26 6l7 7-7 7-7-7zM26 32l7 7-7 7-7-7z' fill='none' stroke='%23ffffff' stroke-opacity='.03'/%3E%3C/svg%3E")}
-            .sh-burbuja{max-width:75%;padding:7px 9px 6px 11px;font-size:14px;line-height:1.4;color:#e9edef;word-wrap:break-word;margin-bottom:2px}
-            .sh-burbuja.in{align-self:flex-start;background:#202c33;border-radius:18px 18px 18px 4px}
-            .sh-burbuja.out{align-self:flex-end;background:#005c4b;border-radius:18px 18px 4px 18px}
+            .sh-msgs{flex:1;overflow-y:auto;padding:16px 14px 10px;display:flex;flex-direction:column;gap:2px;scroll-behavior:smooth;background:#0b141a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cpath d='M26 6l7 7-7 7-7-7zM26 32l7 7-7 7-7-7z' fill='none' stroke='%23ffffff' stroke-opacity='.03'/%3E%3C/svg%3E")}
+            .sh-burbuja{position:relative;max-width:75%;padding:6px 8px 7px 9px;font-size:14.2px;line-height:1.45;color:#e9edef;word-wrap:break-word;border-radius:7.5px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+            .sh-burbuja.in{align-self:flex-start;background:#202c33}
+            .sh-burbuja.out{align-self:flex-end;background:#005c4b}
+            .sh-burbuja.sh-colita{margin-top:8px}
+            .sh-burbuja.in.sh-colita{border-top-left-radius:0}
+            .sh-burbuja.out.sh-colita{border-top-right-radius:0}
+            .sh-burbuja.in.sh-colita::before{content:"";position:absolute;top:0;left:-8px;border-right:8px solid #202c33;border-bottom:13px solid transparent}
+            .sh-burbuja.out.sh-colita::before{content:"";position:absolute;top:0;right:-8px;border-left:8px solid #005c4b;border-bottom:13px solid transparent}
+            .sh-b-txt{white-space:pre-wrap}
+            .sh-burbuja a{color:#53bdeb;text-decoration:underline;word-break:break-all}
+            .sh-quote{background:rgba(11,20,26,.35);border-left:4px solid #00a884;border-radius:6px;padding:6px 9px;margin:0 0 4px;font-size:12.8px;color:#a7b4bb;white-space:pre-wrap;max-height:72px;overflow:hidden}
+            .sh-burbuja.out .sh-quote{background:rgba(11,20,26,.25);border-left-color:#53bdeb}
+            .sh-b-menu{position:absolute;top:1px;right:2px;display:none;background:none;border:none;color:#aebac1;font-size:14px;cursor:pointer;padding:2px 5px;line-height:1;z-index:2}
+            .sh-burbuja:hover .sh-b-menu{display:block}
+            .sh-ctx{position:fixed;background:#233138;border-radius:10px;box-shadow:0 10px 26px rgba(0,0,0,.5);padding:6px 0;z-index:2600;min-width:160px}
+            .sh-ctx button{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:none;border:none;color:#e9edef;font-size:13.5px;padding:10px 16px;cursor:pointer}
+            .sh-ctx button:hover{background:#202c33}
             .sh-b-meta{display:flex;justify-content:flex-end;align-items:center;gap:4px;font-size:11px;color:#8696a0;margin-top:3px}
-            .sh-burbuja.out .sh-b-meta{color:#99b9b2}
+            .sh-burbuja.out .sh-b-meta{color:rgba(233,237,239,.6)}
             .sh-ticks{letter-spacing:-2.5px;font-weight:600}
             .sh-ticks.leido{color:#53bdeb}
-            .sh-dia{align-self:center;background:#1f2c33;color:#8696a0;font-size:11.5px;font-weight:600;border-radius:8px;padding:5px 12px;margin:10px 0 6px}
+            .sh-dia{align-self:center;background:#182229;color:#8696a0;font-size:11.5px;font-weight:600;border-radius:7.5px;padding:5px 12px;margin:10px 0 6px;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+            .sh-noleidos{align-self:center;background:#182229;color:#8696a0;font-size:11px;font-weight:700;border-radius:7.5px;padding:5px 14px;margin:10px 0;text-transform:uppercase;letter-spacing:.4px}
+            /* barra de responder citando */
+            .sh-reply-bar{display:flex;align-items:center;gap:10px;background:#202c33;padding:8px 12px 0}
+            .sh-reply-card{flex:1;background:#1a252c;border-left:4px solid #00a884;border-radius:8px;padding:7px 10px;min-width:0}
+            .sh-reply-quien{color:#00a884;font-size:12px;font-weight:700}
+            .sh-reply-txt{color:#8696a0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-reply-x{background:none;border:none;color:#8696a0;font-size:17px;cursor:pointer;padding:4px}
             /* barra de escritura */
             .sh-composer{display:flex;align-items:center;gap:4px;padding:8px 10px;background:#202c33}
             .sh-cicon{background:none;border:none;color:#8696a0;cursor:pointer;padding:8px 6px;display:flex;border-radius:50%;font-size:17px;line-height:1}
             .sh-cicon:hover{color:#e9edef}
             .sh-input-wrap{flex:1;display:flex;align-items:center;background:#2a3942;border-radius:24px;padding:2px 8px 2px 14px;min-width:0}
-            .sh-input{flex:1;background:none;border:none;outline:none;color:#e9edef;font-size:14.5px;padding:9px 0;min-width:0}
+            .sh-input{flex:1;background:none;border:none;outline:none;color:#e9edef;font-size:14.5px;padding:9px 0;min-width:0;resize:none;max-height:110px;line-height:1.45;font-family:inherit;overflow-y:auto}
             .sh-input::placeholder{color:#8696a0}
             .sh-send{width:44px;height:44px;min-width:44px;border:none;border-radius:50%;background:#00a884;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
             .sh-send.sh-mic{background:transparent;color:#8696a0}
@@ -8189,6 +8211,10 @@ var shVista = 'bandeja';
 var shTimer = null;
 var shBadgeTimer = null;
 var shEnviando = false;
+var shRespondiendoA = null;      // {id, texto, direccion} del mensaje citado
+var shDivisorPendiente = 0;      // no_leidos al abrir el chat
+var shDivisorAntesDeId = '';     // id del mensaje donde va "Mensajes no leidos"
+var shMsgTouchTimer = null;      // long-press movil para el menu de mensaje
 var shDragId = null;
 var shColaOrden = [];
 var shColaHorarioOptimo = false;
@@ -8610,6 +8636,9 @@ function shRenderLista() {
     var noLeidos = parseInt(l.no_leidos, 10) || 0;
     var info = shEstadoInfo(l.estado);
     var prev = l.ultimo_mensaje_texto || '';
+    var pq = shSepararCita(prev);
+    if (pq.cita) prev = pq.resto || prev;
+    prev = prev.split('\n').join(' ');
     if (l.ultimo_mensaje_de === 'vendedora') prev = '✓ ' + prev;
     var quien = shPuedeVerTodo() && l.vendedora_nombre ? '<span style="color:#5f7285">' + shEsc(l.vendedora_nombre.split(' ')[0]) + ' · </span>' : '';
     // Contador de tiempo de primera respuesta: solo para leads aun no
@@ -8621,7 +8650,7 @@ function shRenderLista() {
       espera = '<div class="sh-ci-espera" style="color:' + colorE + '">⏱ ' + shHaceTexto(l.primer_mensaje_en) + ' sin responder</div>';
     }
     html +=
-      '<div class="sh-chat-item" onclick="shAbrirChat(\'' + shEsc(l.id) + '\')">' +
+      '<div class="sh-chat-item' + (shLeadActivo && shLeadActivo.id === l.id ? ' sh-sel' : '') + '" onclick="shAbrirChat(\'' + shEsc(l.id) + '\')">' +
         '<div class="sh-av-wrap">' +
           '<div class="sh-avatar" style="background:' + shAvatarColor(l.nombre || l.telefono) + '">' + shEsc(shInicial(l)) + '</div>' +
           '<span class="sh-dot" style="background:' + info.dot + '" title="' + shEsc(info.t) + '"></span>' +
@@ -8717,10 +8746,14 @@ function shAbrirChat(leadId) {
   shBusqChatTxt = '';
   shBusqChatMatches = [];
   shBusqChatIdx = 0;
+  shRespondiendoA = null;
+  shDivisorPendiente = parseInt(lead.no_leidos, 10) || 0;
+  shDivisorAntesDeId = '';
   var app = document.getElementById('shApp');
   if (app) app.classList.add('sh-chat-open');
   shRenderChatPane();
   shCargarMensajes(true);
+  shRenderLista();
   if ((parseInt(lead.no_leidos, 10) || 0) > 0) {
     lead.no_leidos = 0;
     // El badge del item se desvanece antes de re-renderizar la lista
@@ -8778,12 +8811,13 @@ function shRenderChatPane() {
       '<div class="sh-msgs sh-scroll" id="shMsgs" onscroll="shMsgsScroll(this)"><div class="sh-vacio">Cargando mensajes…</div></div>' +
       '<button class="sh-scrolldown" id="shBtnAbajo" onclick="shIrAlFinal()">↓<b id="shBtnAbajoN">1</b></button>' +
     '</div>' +
+    '<div id="shReplyBar"></div>' +
     '<div class="sh-composer">' +
       '<button class="sh-cicon" title="Emoji" onclick="shSheetEmojis()"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>' +
       '<button class="sh-cicon" title="Adjuntar" onclick="shToast(\'Adjuntos: próximamente\')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>' +
       '<button class="sh-cicon" title="Respuestas rápidas" onclick="shSheetRespuestas()" style="font-weight:800;font-size:16px;color:#00a884;padding:8px 8px">/</button>' +
       '<div class="sh-input-wrap">' +
-        '<input class="sh-input" id="shInput" type="text" placeholder="Escribe un mensaje" autocomplete="off" oninput="shInputCambio(this)" onkeydown="if(event.key===\'Enter\')shEnviarMensaje()">' +
+        '<textarea class="sh-input" id="shInput" rows="1" placeholder="Escribe un mensaje" autocomplete="off" oninput="shInputCambio(this)" onkeydown="shInputKeydown(event)"></textarea>' +
       '</div>' +
       '<button class="sh-send sh-mic" id="shSend" onclick="shSendClick()" title="Enviar"></button>' +
     '</div>';
@@ -8810,8 +8844,18 @@ function shInputCambio(inp) {
     shSheetRespuestas();
     return;
   }
+  inp.style.height = 'auto';
+  inp.style.height = Math.min(inp.scrollHeight, 110) + 'px';
   shPintarSend(v);
   shIndicarEscribiendo();
+}
+
+// Enter envia, Shift+Enter hace salto de linea (igual que WhatsApp Web)
+function shInputKeydown(ev) {
+  if (ev.key === 'Enter' && !ev.shiftKey) {
+    ev.preventDefault();
+    shEnviarMensaje();
+  }
 }
 
 // Muestra "escribiendo..." con puntos animados bajo el nombre del chat
@@ -8888,7 +8932,7 @@ function shCerrarImagenFull() {
 // Texto de burbuja escapado, con las coincidencias de la busqueda del
 // chat resaltadas en amarillo. Trabaja sobre el texto crudo y escapa
 // cada fragmento por separado para no romper el resaltado con &, <, etc.
-function shTextoBurbuja(raw) {
+function shMarcarBusqueda(raw) {
   raw = String(raw || '');
   if (!shBusqChatTxt) return shEsc(raw);
   var lower = raw.toLowerCase();
@@ -8901,6 +8945,138 @@ function shTextoBurbuja(raw) {
     pos = idx + shBusqChatTxt.length;
   }
   return out;
+}
+
+// Texto de burbuja: escapa, resalta busqueda y convierte URLs en links
+function shTextoBurbuja(raw) {
+  raw = String(raw || '');
+  var partes = raw.split(/(https?:\/\/[^\s<>"]+)/g);
+  var out = '';
+  for (var i = 0; i < partes.length; i++) {
+    if (i % 2 === 1) out += '<a href="' + shEsc(partes[i]) + '" target="_blank" rel="noopener">' + shEsc(partes[i]) + '</a>';
+    else out += shMarcarBusqueda(partes[i]);
+  }
+  return out;
+}
+
+// Separa las lineas iniciales "> " (cita de una respuesta) del resto
+function shSepararCita(raw) {
+  var lineas = String(raw || '').split('\n');
+  var cita = [];
+  var i = 0;
+  while (i < lineas.length && lineas[i].indexOf('> ') === 0) { cita.push(lineas[i].slice(2)); i++; }
+  if (!cita.length || i >= lineas.length) return { cita: '', resto: raw };
+  if (lineas[i] === '') i++;
+  return { cita: cita.join('\n'), resto: lineas.slice(i).join('\n') };
+}
+
+// Cuerpo completo de una burbuja: imagen, o cita + texto con links
+function shCuerpoBurbuja(contenido) {
+  if (shEsUrlImagen(contenido)) {
+    return '<img class="sh-img-thumb" src="' + shEsc(String(contenido).trim()) + '" loading="lazy" onclick="shAbrirImagenFull(this)">';
+  }
+  var q = shSepararCita(contenido);
+  var out = '';
+  if (q.cita) out += '<div class="sh-quote">' + shTextoBurbuja(q.cita) + '</div>';
+  out += '<div class="sh-b-txt">' + shTextoBurbuja(q.resto) + '</div>';
+  return out;
+}
+
+// ── Menu contextual del mensaje (hover en desktop, long-press en movil) ──
+function shMenuMensaje(ev, mid) {
+  ev.stopPropagation();
+  shAbrirCtxMensaje(ev.clientX, ev.clientY, mid);
+}
+
+function shMsgTouchIni(ev, mid) {
+  shMsgTouchFin();
+  var t = ev.touches && ev.touches[0];
+  var x = t ? t.clientX : 60, y = t ? t.clientY : 200;
+  shMsgTouchTimer = setTimeout(function () { shAbrirCtxMensaje(x, y, mid); }, 450);
+}
+
+function shMsgTouchFin() {
+  if (shMsgTouchTimer) { clearTimeout(shMsgTouchTimer); shMsgTouchTimer = null; }
+}
+
+function shAbrirCtxMensaje(x, y, mid) {
+  shCerrarCtx();
+  var div = document.createElement('div');
+  div.className = 'sh-ctx';
+  div.id = 'shCtx';
+  div.innerHTML =
+    '<button onclick="shResponderMensaje(\'' + shEsc(mid) + '\')">↩ Responder</button>' +
+    '<button onclick="shCopiarMensaje(\'' + shEsc(mid) + '\')">⧉ Copiar</button>';
+  document.body.appendChild(div);
+  div.style.left = Math.max(8, Math.min(x, window.innerWidth - 176)) + 'px';
+  div.style.top = Math.max(8, Math.min(y, window.innerHeight - 110)) + 'px';
+  setTimeout(function () { document.addEventListener('click', shCerrarCtx, { once: true }); }, 0);
+}
+
+function shCerrarCtx() {
+  var d = document.getElementById('shCtx');
+  if (d) d.remove();
+}
+
+function shBuscarMsg(mid) {
+  for (var i = 0; i < shMsgsCache.length; i++) {
+    if (shMsgsCache[i].id === mid) return shMsgsCache[i];
+  }
+  return null;
+}
+
+function shResponderMensaje(mid) {
+  shCerrarCtx();
+  var m = shBuscarMsg(mid);
+  if (!m) return;
+  var q = shSepararCita(m.contenido);
+  shRespondiendoA = { id: m.id, texto: (q.resto || m.contenido || ''), direccion: m.direccion };
+  shPintarReplyBar();
+  var inp = document.getElementById('shInput');
+  if (inp) inp.focus();
+}
+
+function shCancelarRespuesta() {
+  shRespondiendoA = null;
+  shPintarReplyBar();
+}
+
+function shPintarReplyBar() {
+  var bar = document.getElementById('shReplyBar');
+  if (!bar) return;
+  if (!shRespondiendoA) { bar.innerHTML = ''; return; }
+  var quien = shRespondiendoA.direccion === 'out' ? 'Tú' : ((shLeadActivo && shLeadActivo.nombre) || 'Cliente');
+  var snip = String(shRespondiendoA.texto).split('\n').join(' ');
+  if (snip.length > 90) snip = snip.slice(0, 90) + '…';
+  bar.innerHTML =
+    '<div class="sh-reply-bar">' +
+      '<div class="sh-reply-card"><div class="sh-reply-quien">' + shEsc(quien) + '</div><div class="sh-reply-txt">' + shEsc(snip) + '</div></div>' +
+      '<button class="sh-reply-x" onclick="shCancelarRespuesta()" title="Cancelar">✕</button>' +
+    '</div>';
+}
+
+function shCopiarMensaje(mid) {
+  shCerrarCtx();
+  var m = shBuscarMsg(mid);
+  if (!m) return;
+  var texto = String(m.contenido || '');
+  var listo = function () { shToast('Mensaje copiado'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(listo).catch(function () { shCopiarFallback(texto); listo(); });
+  } else {
+    shCopiarFallback(texto);
+    listo();
+  }
+}
+
+function shCopiarFallback(texto) {
+  var ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.cssText = 'position:fixed;left:-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  ta.remove();
 }
 
 function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
@@ -8935,22 +9111,34 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
   }
 
   var prevTotal = shMsgsFirmaIds ? shMsgsFirmaIds.split('|').length : 0;
+  // Divisor "mensajes no leidos": se fija al mensaje correcto la primera vez
+  if (shDivisorPendiente > 0 && !shDivisorAntesDeId) {
+    var idxNL = Math.max(0, mensajes.length - shDivisorPendiente);
+    shDivisorAntesDeId = mensajes[idxNL].id;
+  }
   var html = '';
   var diaPrevio = '';
+  var dirPrevia = '';
   for (var i = 0; i < mensajes.length; i++) {
     var m = mensajes[i];
     var cuando = m.timestamp_wa || m.creado_en;
     var dia = shDiaEtiqueta(cuando);
-    if (dia !== diaPrevio) { html += '<div class="sh-dia">' + shEsc(dia) + '</div>'; diaPrevio = dia; }
+    if (dia !== diaPrevio) { html += '<div class="sh-dia">' + shEsc(dia) + '</div>'; diaPrevio = dia; dirPrevia = ''; }
+    if (shDivisorAntesDeId && m.id === shDivisorAntesDeId && shDivisorPendiente > 0) {
+      html += '<div class="sh-noleidos">' + shDivisorPendiente + (shDivisorPendiente === 1 ? ' mensaje no leído' : ' mensajes no leídos') + '</div>';
+      dirPrevia = '';
+    }
     var d = new Date(cuando);
     var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
     var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-    var cuerpo = shEsUrlImagen(m.contenido)
-      ? '<img class="sh-img-thumb" src="' + shEsc(String(m.contenido).trim()) + '" loading="lazy" onclick="shAbrirImagenFull(this)">'
-      : shTextoBurbuja(m.contenido);
+    var dir = m.direccion === 'out' ? 'out' : 'in';
+    // Primera burbuja de un grupo consecutivo: lleva colita y mas margen
+    var cola = dir !== dirPrevia ? ' sh-colita' : '';
+    dirPrevia = dir;
     html +=
-      '<div class="sh-burbuja ' + (m.direccion === 'out' ? 'out' : 'in') + '" data-mid="' + shEsc(m.id) + '">' +
-        cuerpo +
+      '<div class="sh-burbuja ' + dir + cola + '" data-mid="' + shEsc(m.id) + '" ontouchstart="shMsgTouchIni(event,\'' + shEsc(m.id) + '\')" ontouchend="shMsgTouchFin()" ontouchmove="shMsgTouchFin()">' +
+        '<button class="sh-b-menu" onclick="shMenuMensaje(event,\'' + shEsc(m.id) + '\')" title="Opciones">⌄</button>' +
+        shCuerpoBurbuja(m.contenido) +
         '<div class="sh-b-meta">' + hh + ':' + mm + ' ' + shTicks(m) + '</div>' +
       '</div>';
   }
@@ -9061,20 +9249,32 @@ function shEnviarMensaje() {
   if (!texto) return;
   shEnviando = true;
 
+  // Al responder citando, la cita viaja como lineas "> " dentro del texto
+  // (el cliente la ve como cita textual y nuestra UI la pinta como bloque)
+  if (shRespondiendoA) {
+    var cita = String(shRespondiendoA.texto || '').slice(0, 140);
+    texto = '> ' + cita.split('\n').join('\n> ') + '\n' + texto;
+    shRespondiendoA = null;
+    shPintarReplyBar();
+  }
+
   var el = document.getElementById('shMsgs');
   if (el) {
     var d = new Date();
     var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
     var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-    el.innerHTML += '<div class="sh-burbuja out" id="shPendiente">' + shEsc(texto) + '<div class="sh-b-meta">' + hh + ':' + mm + ' 🕓</div></div>';
+    el.innerHTML += '<div class="sh-burbuja out sh-colita" id="shPendiente">' + shCuerpoBurbuja(texto) + '<div class="sh-b-meta">' + hh + ':' + mm + ' 🕓</div></div>';
     el.scrollTop = el.scrollHeight;
   }
+  // Enviar borra el divisor de no leidos (igual que WhatsApp)
+  shDivisorPendiente = 0;
+  shDivisorAntesDeId = '';
 
   agendaWorkerFetch('shResponder', {}, { method: 'POST', body: { leadId: shLeadActivo.id, texto: texto, uid: CU ? CU.id : '' } })
     .then(function (d2) {
       shEnviando = false;
       if (d2 && d2.ok) {
-        if (input) { input.value = ''; shPintarSend(''); }
+        if (input) { input.value = ''; input.style.height = 'auto'; shPintarSend(''); }
         shCargarMensajes(true);
         shCargarLeads();
       } else {
