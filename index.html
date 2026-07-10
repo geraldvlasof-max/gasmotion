@@ -304,6 +304,8 @@ tr:hover td{background:#fafbfc}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0}.mobile-btn{display:block}.sidebar-overlay.show{display:block}.content{padding:16px}}
 .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:10px}
+.gm-lbl{display:block;font-size:11px;font-weight:700;color:#374151;margin:10px 0 4px}
+.gm-inp{width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 11px;font-size:13px;box-sizing:border-box;background:white}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 /* Notificación emergente — asignación de tarea / avance de caso con responsable */
@@ -717,6 +719,8 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
         <button class="nav-item" onclick="switchTab('tareasEquipo',this)" id="navTareasEquipo"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Tareas del Equipo</button>
         <button class="nav-item" onclick="switchTab('agendaServicios',this)" id="navAgendaServicios"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 15"/></svg></span> Agendamiento de Servicios</button>
         <button class="nav-item" onclick="switchTab('salesHub',this)" id="navSalesHub" style="display:none;position:relative"><span class="nav-icon" style="background:#0d1f3c;border-radius:7px;padding:3px;display:inline-flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00c853" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></span> Sales Hub<span id="shNavBadge" style="display:none;position:absolute;top:7px;right:10px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;border-radius:10px;min-width:17px;height:17px;line-height:17px;text-align:center;padding:0 4px">0</span></button>
+        <button class="nav-item" onclick="switchTab('inventario',this)" id="navInventario" style="display:none"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span> Inventario</button>
+        <button class="nav-item" onclick="switchTab('facturacion',this)" id="navFacturacion" style="display:none"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6M9 17h4"/></svg></span> Facturación</button>
         <button class="nav-item" onclick="switchTab('videoteca',this)" id="navVideoteca"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></span> Videoteca</button>
         <button class="nav-item" onclick="switchTab('asistencia',this)" id="navAsistencia"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Asistencia</button>
         <button class="nav-item" onclick="switchTab('creditos',this)" id="navCreditos"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span> Creditos</button>
@@ -1278,6 +1282,26 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-ci-espera{font-size:11px;font-weight:700;margin-top:3px}
             /* chip verde del filtro por vendedora activo */
             .sh-filtro-vend{background:#00a884;color:#0b141a;font-size:12px;font-weight:800;border:none;border-radius:15px;padding:5px 13px;cursor:pointer;white-space:nowrap}
+            /* ── calendario de conversiones ── */
+            .sh-calendario{width:100%;background:#0b141a;overflow-y:auto;padding:14px}
+            .sh-cal-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+            .sh-cal-titulo{color:#e9edef;font-size:17px;font-weight:800;text-transform:capitalize;min-width:170px}
+            .sh-cal-nav{background:#202c33;border:none;color:#e9edef;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px}
+            .sh-cal-nav:hover{background:#2a3942}
+            .sh-cal-hoy{background:#202c33;border:none;color:#00a884;font-size:12px;font-weight:700;border-radius:15px;padding:7px 14px;cursor:pointer}
+            .sh-cal-add{margin-left:auto;background:#00a884;border:none;color:#062e25;font-size:12.5px;font-weight:800;border-radius:18px;padding:9px 16px;cursor:pointer}
+            .sh-cal-sem{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:5px}
+            .sh-cal-sem div{color:#8696a0;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;text-align:center;padding:4px 0}
+            .sh-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+            .sh-cal-dia{background:#111b21;border:1px solid #1f2c33;border-radius:10px;min-height:86px;padding:6px;cursor:pointer;transition:border-color .12s;overflow:hidden;display:flex;flex-direction:column;gap:3px}
+            .sh-cal-dia:hover{border-color:#00a884}
+            .sh-cal-dia.fuera{opacity:.35}
+            .sh-cal-n{color:#8696a0;font-size:11.5px;font-weight:700;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%}
+            .sh-cal-dia.hoy .sh-cal-n{background:#00a884;color:#062e25;font-weight:800}
+            .sh-cal-ev{background:#0a332c;color:#00d9a6;font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid #00a884}
+            .sh-cal-ev.hecho{background:#1f2c33;color:#8696a0;border-left-color:#8696a0;text-decoration:line-through}
+            .sh-cal-mas{color:#8696a0;font-size:10px;font-weight:700}
+            @media(max-width:600px){.sh-cal-dia{min-height:56px;padding:4px}.sh-cal-ev{font-size:0;padding:0;height:6px;border-left:none;background:#00a884}.sh-cal-ev.hecho{background:#8696a0}}
             /* cola predictiva de llamadas */
             .sh-cola{width:100%;background:#0b141a;overflow-y:auto;padding-bottom:14px}
             .sh-cola-lista{display:flex;flex-direction:column;padding:8px 14px 0}
@@ -1322,6 +1346,16 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-urg-item:last-child{border-bottom:none}
           </style>
           <div id="salesHubContent"></div>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div class="tab-content" id="tab-inventario">
+          <div id="inventarioContent" style="padding:4px 0"></div>
+        </div>
+
+        <!-- FACTURACION -->
+        <div class="tab-content" id="tab-facturacion">
+          <div id="facturacionContent" style="padding:4px 0"></div>
         </div>
 
         <!-- VIDEOTECA -->
@@ -2690,7 +2724,9 @@ var TAB_TITLES={
 ,tecnico:['Mis Tareas','Tareas asignadas']
 ,tareasEquipo:['Tareas del Equipo','Panel interno de tareas y responsables']
 ,agendaServicios:['Agendamiento de Servicios','Reserva de horarios por especialista']
-,salesHub:['Sales Hub','Leads de WhatsApp y seguimiento de llamadas']};
+,salesHub:['Sales Hub','Leads de WhatsApp y seguimiento de llamadas']
+,inventario:['Inventario','Productos, stock y movimientos']
+,facturacion:['Facturación','Boletas y facturas internas del negocio']};
 
 function switchTab(name, el) {
   document.querySelectorAll('.tab-content').forEach(function(e){e.classList.remove('active');});
@@ -2719,6 +2755,8 @@ function switchTab(name, el) {
   if(name==='tecnico'){renderVistaTecnico();}
   if(name==='glp'){renderTabGLP();}
   if(name==='misventas'){renderMisVentas();}
+  if(name==='inventario'){renderInventario();}
+  if(name==='facturacion'){renderFacturacion();}
   if(name==='salesHub'){
     document.body.classList.add('sh-fullscreen');
   } else {
@@ -8215,6 +8253,9 @@ var shRespondiendoA = null;      // {id, texto, direccion} del mensaje citado
 var shDivisorPendiente = 0;      // no_leidos al abrir el chat
 var shDivisorAntesDeId = '';     // id del mensaje donde va "Mensajes no leidos"
 var shMsgTouchTimer = null;      // long-press movil para el menu de mensaje
+var shCalMes = null;             // primer dia del mes visible en el calendario
+var shCalEventos = [];           // conversiones agendadas (servicios con recurso shcal|)
+var gmCalRecordTimer = null;     // chequeo periodico de recordatorios
 var shDragId = null;
 var shColaOrden = [];
 var shColaHorarioOptimo = false;
@@ -8469,6 +8510,7 @@ function renderSalesHub() {
     '<button class="sh-viewtab" data-v="bandeja" onclick="shCambiarVista(\'bandeja\')">💬 Bandeja</button>' +
     '<button class="sh-viewtab" data-v="cola" onclick="shCambiarVista(\'cola\')">📞 Cola</button>' +
     '<button class="sh-viewtab" data-v="pipeline" onclick="shCambiarVista(\'pipeline\')">📊 Pipeline</button>' +
+    '<button class="sh-viewtab" data-v="calendario" onclick="shCambiarVista(\'calendario\')">📅 Agenda</button>' +
     (shEsJefe() ? '<button class="sh-viewtab" data-v="dashboard" onclick="shCambiarVista(\'dashboard\')">📈 Dashboard</button>' : '');
 
   cont.innerHTML =
@@ -8487,6 +8529,7 @@ function renderSalesHub() {
     shCargarLeads();
     if (shVista === 'bandeja' && shLeadActivo) shCargarMensajes(false);
     if (shVista === 'cola') shCargarCola();
+    if (shVista === 'calendario') shCalCargar();
   }, 12000);
 }
 
@@ -8531,6 +8574,9 @@ function shRenderVista() {
   } else if (shVista === 'cola') {
     cont.innerHTML = '<div class="sh-app"><div class="sh-cola sh-scroll" id="shCola"><div class="sh-vacio">Cargando cola…</div></div></div>';
     shCargarCola();
+  } else if (shVista === 'calendario') {
+    cont.innerHTML = '<div class="sh-app"><div class="sh-calendario sh-scroll" id="shCal"></div></div>';
+    shCalCargar();
   } else if (shVista === 'pipeline') {
     cont.innerHTML = '<div class="sh-app"><div class="sh-pipe sh-scroll" id="shPipe"></div></div>';
     shRenderPipeline();
@@ -8542,6 +8588,7 @@ function shRenderVista() {
 
 function shRefrescarVistaActual() {
   if (shVista === 'bandeja') shRenderLista();
+  else if (shVista === 'calendario') shCalRender();
   else if (shVista === 'cola') shCargarCola();
   else if (shVista === 'pipeline') shRenderPipeline();
   else shRenderDashboard();
@@ -8729,6 +8776,7 @@ function shMenuChat(ev) {
     '<button onclick="shCerrarMenus();shSheetEstado()">🔄 Cambiar estado</button>' +
     '<button onclick="shCerrarMenus();shSheetReasignar()">👤 Reasignar vendedora</button>' +
     '<button onclick="shCerrarMenus();shSheetHistorialLlamadas()">🎙️ Historial de llamadas</button>' +
+    '<button onclick="shCerrarMenus();shCalSheetNuevo(null, shLeadActivo)">📅 Agendar conversión</button>' +
     '<button onclick="shCerrarMenus();shMarcarPerdido()" style="color:#f87171">❌ Marcar como perdido</button>';
   shAbrirMenu('#shChatHead', html);
 }
@@ -9981,6 +10029,748 @@ function shIniciarBadgeGlobal() {
   };
   tick();
   shBadgeTimer = setInterval(tick, 30000);
+}
+
+
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO INVENTARIO — productos con stock trazable por movimientos
+// (Worker gasmotion-worker: acciones inv*)
+// ═══════════════════════════════════════════════════════════
+var invProductos = [];
+var invBusca = '';
+
+function fmtSoles(n) {
+  var v = parseFloat(n) || 0;
+  return 'S/ ' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function gmModalAbrir(htmlInterior, maxW) {
+  gmModalCerrar();
+  var ov = document.createElement('div');
+  ov.id = 'gmModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2200;display:flex;align-items:center;justify-content:center;padding:14px';
+  ov.innerHTML = '<div style="background:white;border-radius:16px;padding:22px;width:100%;max-width:' + (maxW || 460) + 'px;max-height:88vh;overflow-y:auto" onclick="event.stopPropagation()">' + htmlInterior + '</div>';
+  ov.onclick = function (ev) { if (ev.target === ov) gmModalCerrar(); };
+  document.body.appendChild(ov);
+}
+
+function gmModalCerrar() {
+  var ov = document.getElementById('gmModalOv');
+  if (ov) ov.remove();
+}
+
+function renderInventario() {
+  var cont = document.getElementById('inventarioContent');
+  if (!cont) return;
+  if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
+  cont.innerHTML = '<div class="empty-state">Cargando inventario…</div>';
+  agendaWorkerFetch('invProductosListar', {}).then(function (d) {
+    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return; }
+    invProductos = d.productos || [];
+    invPintar();
+  }).catch(function () { cont.innerHTML = '<div class="empty-state">Sin conexión con el servidor de inventario</div>'; });
+}
+
+function invPintar() {
+  var cont = document.getElementById('inventarioContent');
+  if (!cont) return;
+  var lista = invProductos;
+  if (invBusca) {
+    var b = invBusca.toLowerCase();
+    lista = lista.filter(function (p) {
+      return (p.nombre || '').toLowerCase().indexOf(b) !== -1 ||
+        (p.codigo || '').toLowerCase().indexOf(b) !== -1 ||
+        (p.categoria || '').toLowerCase().indexOf(b) !== -1;
+    });
+  }
+  var valorTotal = 0, bajos = 0;
+  for (var i = 0; i < invProductos.length; i++) {
+    valorTotal += (invProductos[i].stock || 0) * (invProductos[i].precio || 0);
+    if ((invProductos[i].stock || 0) <= (invProductos[i].stock_min || 0)) bajos++;
+  }
+
+  var filas = '';
+  for (var j = 0; j < lista.length; j++) {
+    var p = lista[j];
+    var bajo = (p.stock || 0) <= (p.stock_min || 0);
+    filas +=
+      '<tr>' +
+        '<td style="font-family:monospace;font-size:12px">' + shEsc(p.codigo || '—') + '</td>' +
+        '<td><b>' + shEsc(p.nombre) + '</b>' + (p.notas ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(p.notas) + '</div>' : '') + '</td>' +
+        '<td>' + shEsc(p.categoria || '—') + '</td>' +
+        '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</span>' +
+          (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') + '</td>' +
+        '<td>' + fmtSoles(p.precio) + '</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button class="btn btn-sm btn-teal" style="padding:5px 9px" title="Registrar entrada" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'entrada\')">⬇ Entrada</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Registrar salida" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'salida\')">⬆ Salida</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Editar" onclick="invSheetProducto(\'' + shEsc(p.id) + '\')">✎</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Historial de movimientos" onclick="invVerHistorial(\'' + shEsc(p.id) + '\')">🕓</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px;color:#dc2626" title="Eliminar" onclick="invEliminar(\'' + shEsc(p.id) + '\',\'' + shEsc(p.nombre) + '\')">🗑</button>' +
+        '</td>' +
+      '</tr>';
+  }
+
+  cont.innerHTML =
+    '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#131313">' + invProductos.length + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Productos activos</div></div>' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + fmtSoles(valorTotal) + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Valor del stock</div></div>' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:' + (bajos ? '#dc2626' : '#131313') + '">' + bajos + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Bajo stock mínimo</div></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">' +
+        '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
+        '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
+      '</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>' +
+      '<tbody>' + (filas || '<tr><td colspan="6" style="text-align:center;color:#8a8a8a;padding:26px">' + (invBusca ? 'Sin resultados' : 'Aún no hay productos. Crea el primero con “+ Producto”.') + '</td></tr>') + '</tbody></table></div>' +
+    '</div>';
+}
+
+function invBuscarProd(id) {
+  for (var i = 0; i < invProductos.length; i++) if (invProductos[i].id === id) return invProductos[i];
+  return null;
+}
+
+function invSheetProducto(id) {
+  var p = id ? invBuscarProd(id) : null;
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">' + (p ? 'Editar producto' : 'Nuevo producto') + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Código</label><input id="invCod" class="gm-inp" value="' + shEsc(p ? p.codigo : '') + '" placeholder="KIT-5G"></div>' +
+      '<div><label class="gm-lbl">Categoría</label><input id="invCat" class="gm-inp" value="' + shEsc(p ? p.categoria : '') + '" placeholder="Kits, Cilindros..."></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Nombre *</label><input id="invNom" class="gm-inp" value="' + shEsc(p ? p.nombre : '') + '" placeholder="Kit GLP 5ta generación">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Precio (S/, con IGV)</label><input id="invPre" class="gm-inp" type="number" step="0.01" min="0" value="' + (p ? p.precio : '') + '"></div>' +
+      '<div><label class="gm-lbl">Unidad</label><input id="invUni" class="gm-inp" value="' + shEsc(p ? p.unidad : 'und') + '"></div>' +
+      '<div><label class="gm-lbl">Stock mínimo</label><input id="invMin" class="gm-inp" type="number" step="1" min="0" value="' + (p ? p.stock_min : 1) + '"></div>' +
+    '</div>' +
+    (p ? '' : '<label class="gm-lbl">Stock inicial</label><input id="invIni" class="gm-inp" type="number" step="1" min="0" value="0">') +
+    '<label class="gm-lbl">Notas</label><input id="invNot" class="gm-inp" value="' + shEsc(p ? p.notas : '') + '">' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarProducto(\'' + (p ? shEsc(p.id) : '') + '\')">' + (p ? 'Guardar cambios' : 'Crear producto') + '</button>'
+  );
+}
+
+function invGuardarProducto(id) {
+  var nombre = document.getElementById('invNom').value.trim();
+  if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
+  var body = {
+    nombre: nombre,
+    codigo: document.getElementById('invCod').value.trim(),
+    categoria: document.getElementById('invCat').value.trim(),
+    unidad: document.getElementById('invUni').value.trim() || 'und',
+    precio: parseFloat(document.getElementById('invPre').value) || 0,
+    stockMin: parseFloat(document.getElementById('invMin').value) || 0,
+    notas: document.getElementById('invNot').value.trim(),
+    uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
+  };
+  if (id) body.id = id;
+  else body.stockInicial = parseFloat((document.getElementById('invIni') || {}).value) || 0;
+  agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: body }).then(function (d) {
+    if (d && d.ok) { gmModalCerrar(); showToast(id ? 'Producto actualizado' : 'Producto creado', 'success'); renderInventario(); }
+    else showToast('Error: ' + (d && d.error ? d.error : 'no se pudo guardar'), 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invSheetMov(id, tipo) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  var esEntrada = tipo === 'entrada';
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">' + (esEntrada ? '⬇ Entrada de stock' : '⬆ Salida de stock') + '</div>' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + ' — stock actual: <b>' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</b></div>' +
+    '<label class="gm-lbl">Cantidad</label><input id="invMovCant" class="gm-inp" type="number" step="1" min="1" value="1">' +
+    '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : 'Instalación / merma') + '">' +
+    '<button class="btn ' + (esEntrada ? 'btn-teal' : 'btn-navy') + '" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarMov(\'' + shEsc(id) + '\',\'' + tipo + '\')">Registrar ' + tipo + '</button>'
+  );
+}
+
+function invGuardarMov(id, tipo) {
+  var cant = parseFloat(document.getElementById('invMovCant').value) || 0;
+  if (cant <= 0) { showToast('Cantidad inválida', 'error'); return; }
+  agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
+    productoId: id, tipo: tipo, cantidad: cant,
+    motivo: document.getElementById('invMovMot').value.trim(),
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) { gmModalCerrar(); showToast('Movimiento registrado — stock: ' + d.stock, 'success'); renderInventario(); }
+    else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invVerHistorial(id) {
+  var q = id ? { productoId: id } : {};
+  agendaWorkerFetch('invMovimientosListar', q).then(function (d) {
+    if (!d || !d.ok) { showToast('No se pudo cargar el historial', 'error'); return; }
+    var movs = d.movimientos || [];
+    var p = id ? invBuscarProd(id) : null;
+    var filas = '';
+    for (var i = 0; i < movs.length; i++) {
+      var m = movs[i];
+      var prod = invBuscarProd(m.producto_id);
+      var col = m.tipo === 'entrada' ? '#065f46' : (m.tipo === 'salida' ? '#dc2626' : '#92400e');
+      var signo = m.tipo === 'entrada' ? '+' : (m.tipo === 'salida' ? '−' : '±');
+      filas += '<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eee;font-size:12.5px">' +
+        '<b style="color:' + col + ';min-width:52px">' + signo + Math.abs(m.cantidad) + '</b>' +
+        '<div style="flex:1;min-width:0">' + (!id && prod ? '<b>' + shEsc(prod.nombre) + '</b> · ' : '') + shEsc(m.tipo) +
+          (m.motivo ? ' — ' + shEsc(m.motivo) : '') + (m.referencia ? ' <span style="color:#008184;font-family:monospace">[' + shEsc(m.referencia) + ']</span>' : '') +
+          '<div style="color:#8a8a8a;font-size:11px">' + new Date(m.creado_en).toLocaleString('es-PE') + (m.nombre ? ' · ' + shEsc(m.nombre) : '') + '</div></div>' +
+        '</div>';
+    }
+    gmModalAbrir(
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">🕓 Movimientos' + (p ? ' — ' + shEsc(p.nombre) : ' recientes') + '</div>' +
+      (filas || '<div style="color:#8a8a8a;text-align:center;padding:20px">Sin movimientos aún</div>') +
+      '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:14px" onclick="gmModalCerrar()">Cerrar</button>', 560);
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invEliminar(id, nombre) {
+  if (!confirm('¿Eliminar "' + nombre + '" del inventario?\nSu historial de movimientos se conserva.')) return;
+  agendaWorkerFetch('invProductoEliminar', {}, { method: 'POST', body: { id: id } }).then(function (d) {
+    if (d && d.ok) { showToast('Producto eliminado', 'success'); renderInventario(); }
+    else showToast('No se pudo eliminar', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ═══════════════════════════════════════════════════════════
+// MÓDULO FACTURACIÓN INTERNA — boletas y facturas con IGV 18%
+// (registro interno del negocio; NO facturación electrónica SUNAT)
+// ═══════════════════════════════════════════════════════════
+var factLista = [];
+var factFiltroEstado = '';
+var factBusca = '';
+var factItemsTmp = [];
+
+function factNumero(c) {
+  return c.serie + '-' + String(c.numero).padStart(6, '0');
+}
+
+function renderFacturacion() {
+  var cont = document.getElementById('facturacionContent');
+  if (!cont) return;
+  if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
+  cont.innerHTML = '<div class="empty-state">Cargando comprobantes…</div>';
+  // el inventario alimenta el selector de items del comprobante
+  agendaWorkerFetch('invProductosListar', {}).then(function (dp) {
+    if (dp && dp.ok) invProductos = dp.productos || [];
+    return agendaWorkerFetch('factListar', {});
+  }).then(function (d) {
+    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return; }
+    factLista = d.comprobantes || [];
+    factPintar();
+  }).catch(function () { cont.innerHTML = '<div class="empty-state">Sin conexión con el servidor de facturación</div>'; });
+}
+
+function factPintar() {
+  var cont = document.getElementById('facturacionContent');
+  if (!cont) return;
+  var mesAct = new Date().toISOString().slice(0, 7);
+  var totalMes = 0, nMes = 0, pendientes = 0;
+  for (var i = 0; i < factLista.length; i++) {
+    var c0 = factLista[i];
+    if (c0.estado !== 'anulado' && String(c0.creado_en).slice(0, 7) === mesAct) { totalMes += c0.total; nMes++; }
+    if (c0.estado === 'pendiente') pendientes++;
+  }
+
+  var lista = factLista;
+  if (factFiltroEstado) lista = lista.filter(function (c) { return c.estado === factFiltroEstado; });
+  if (factBusca) {
+    var b = factBusca.toLowerCase();
+    lista = lista.filter(function (c) {
+      return (c.cliente_nombre || '').toLowerCase().indexOf(b) !== -1 ||
+        (c.cliente_doc || '').indexOf(b) !== -1 ||
+        factNumero(c).toLowerCase().indexOf(b) !== -1;
+    });
+  }
+
+  var filas = '';
+  for (var j = 0; j < lista.length; j++) {
+    var c = lista[j];
+    var estCol = c.estado === 'pagado' ? ['#d1fae5', '#065f46'] : (c.estado === 'anulado' ? ['#fee2e2', '#dc2626'] : ['#fef3c7', '#92400e']);
+    filas +=
+      '<tr' + (c.estado === 'anulado' ? ' style="opacity:.55"' : '') + '>' +
+        '<td style="font-family:monospace;font-weight:700">' + factNumero(c) + '</td>' +
+        '<td>' + (c.tipo === 'factura' ? 'Factura' : 'Boleta') + '</td>' +
+        '<td><b>' + shEsc(c.cliente_nombre) + '</b>' + (c.cliente_doc ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(c.cliente_doc) + '</div>' : '') + '</td>' +
+        '<td style="font-size:12px">' + new Date(c.creado_en).toLocaleDateString('es-PE') + '</td>' +
+        '<td><b>' + fmtSoles(c.total) + '</b></td>' +
+        '<td><span style="background:' + estCol[0] + ';color:' + estCol[1] + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:11.5px;text-transform:capitalize">' + c.estado + '</span></td>' +
+        '<td style="white-space:nowrap">' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 9px" onclick="factVer(\'' + shEsc(c.id) + '\')">👁 Ver</button> ' +
+          (c.estado === 'pendiente' ? '<button class="btn btn-sm btn-teal" style="padding:5px 9px" onclick="factCambiarEstado(\'' + shEsc(c.id) + '\',\'pagado\')">✔ Pagado</button> ' : '') +
+          (c.estado !== 'anulado' ? '<button class="btn btn-sm btn-outline" style="padding:5px 9px;color:#dc2626" onclick="factCambiarEstado(\'' + shEsc(c.id) + '\',\'anulado\')">✕ Anular</button>' : '') +
+        '</td>' +
+      '</tr>';
+  }
+
+  cont.innerHTML =
+    '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#131313">' + nMes + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Comprobantes este mes</div></div>' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + fmtSoles(totalMes) + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Vendido este mes</div></div>' +
+      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:' + (pendientes ? '#92400e' : '#131313') + '">' + pendientes + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Pagos pendientes</div></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
+        '<input type="text" placeholder="Buscar por cliente, documento o número..." value="' + shEsc(factBusca) + '" oninput="factBusca=this.value;factPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<select onchange="factFiltroEstado=this.value;factPintar()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;background:white">' +
+          '<option value="">Todos</option><option value="pendiente"' + (factFiltroEstado === 'pendiente' ? ' selected' : '') + '>Pendientes</option>' +
+          '<option value="pagado"' + (factFiltroEstado === 'pagado' ? ' selected' : '') + '>Pagados</option><option value="anulado"' + (factFiltroEstado === 'anulado' ? ' selected' : '') + '>Anulados</option>' +
+        '</select>' +
+        '<button class="btn btn-teal" onclick="factSheetNuevo()">+ Nuevo comprobante</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin-bottom:12px">Registro interno del negocio — no reemplaza la facturación electrónica SUNAT.</div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Número</th><th>Tipo</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>' +
+      '<tbody>' + (filas || '<tr><td colspan="7" style="text-align:center;color:#8a8a8a;padding:26px">Aún no hay comprobantes</td></tr>') + '</tbody></table></div>' +
+    '</div>';
+}
+
+function factSheetNuevo() {
+  factItemsTmp = [{ productoId: '', descripcion: '', cantidad: 1, precioUnit: 0 }];
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">Nuevo comprobante</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Tipo</label><select id="factTipo" class="gm-inp" onchange="factPintarItems()"><option value="boleta">Boleta (B001)</option><option value="factura">Factura (F001)</option></select></div>' +
+      '<div><label class="gm-lbl">Método de pago</label><select id="factPago" class="gm-inp"><option value="efectivo">Efectivo</option><option value="yape">Yape / Plin</option><option value="transferencia">Transferencia</option><option value="tarjeta">Tarjeta</option><option value="credito">Crédito</option></select></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Cliente *</label><input id="factCliNom" class="gm-inp" placeholder="Nombre o razón social">' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">DNI / RUC</label><input id="factCliDoc" class="gm-inp" placeholder="La factura exige RUC"></div>' +
+      '<div><label class="gm-lbl">Dirección</label><input id="factCliDir" class="gm-inp"></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Items</label><div id="factItems"></div>' +
+    '<button class="btn btn-outline btn-sm" style="margin-top:6px" onclick="factItemsTmp.push({productoId:\'\',descripcion:\'\',cantidad:1,precioUnit:0});factPintarItems()">+ Agregar item</button>' +
+    '<div id="factTotales" style="margin-top:12px;border-top:2px solid #eee;padding-top:10px"></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px">' +
+      '<div><label class="gm-lbl">Estado</label><select id="factEstado" class="gm-inp"><option value="pagado">Pagado</option><option value="pendiente">Pendiente de pago</option></select></div>' +
+      '<div><label class="gm-lbl">Notas</label><input id="factNotas" class="gm-inp"></div>' +
+    '</div>' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="factGuardar()">Emitir comprobante</button>', 620);
+  factPintarItems();
+}
+
+function factPintarItems() {
+  var el = document.getElementById('factItems');
+  if (!el) return;
+  var opciones = '<option value="">— libre —</option>';
+  for (var i = 0; i < invProductos.length; i++) {
+    opciones += '<option value="' + shEsc(invProductos[i].id) + '">' + shEsc(invProductos[i].nombre) + ' (stock ' + invProductos[i].stock + ')</option>';
+  }
+  var html = '';
+  for (var j = 0; j < factItemsTmp.length; j++) {
+    var it = factItemsTmp[j];
+    html +=
+      '<div style="display:grid;grid-template-columns:130px 1fr 64px 90px 28px;gap:6px;margin-bottom:6px;align-items:center">' +
+        '<select class="gm-inp" style="margin:0;font-size:12px" onchange="factItemProducto(' + j + ',this.value)">' + opciones.replace('value="' + shEsc(it.productoId) + '"', 'value="' + shEsc(it.productoId) + '" selected') + '</select>' +
+        '<input class="gm-inp" style="margin:0" placeholder="Descripción" value="' + shEsc(it.descripcion) + '" oninput="factItemsTmp[' + j + '].descripcion=this.value;factPintarTotales()">' +
+        '<input class="gm-inp" style="margin:0" type="number" min="1" step="1" value="' + it.cantidad + '" oninput="factItemsTmp[' + j + '].cantidad=parseFloat(this.value)||0;factPintarTotales()">' +
+        '<input class="gm-inp" style="margin:0" type="number" min="0" step="0.01" value="' + it.precioUnit + '" oninput="factItemsTmp[' + j + '].precioUnit=parseFloat(this.value)||0;factPintarTotales()">' +
+        '<button style="background:none;border:none;color:#dc2626;font-size:15px;cursor:pointer" onclick="factItemsTmp.splice(' + j + ',1);factPintarItems()">✕</button>' +
+      '</div>';
+  }
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:130px 1fr 64px 90px 28px;gap:6px;font-size:10px;color:#8a8a8a;font-weight:700;text-transform:uppercase;margin-bottom:4px"><div>Producto</div><div>Descripción</div><div>Cant.</div><div>P. unit</div><div></div></div>' + html;
+  factPintarTotales();
+}
+
+function factItemProducto(idx, prodId) {
+  factItemsTmp[idx].productoId = prodId;
+  var p = invBuscarProd(prodId);
+  if (p) {
+    factItemsTmp[idx].descripcion = p.nombre;
+    factItemsTmp[idx].precioUnit = p.precio;
+  }
+  factPintarItems();
+}
+
+function factPintarTotales() {
+  var el = document.getElementById('factTotales');
+  if (!el) return;
+  var total = 0;
+  for (var i = 0; i < factItemsTmp.length; i++) {
+    total += (factItemsTmp[i].cantidad || 0) * (factItemsTmp[i].precioUnit || 0);
+  }
+  var subtotal = total / 1.18;
+  var igv = total - subtotal;
+  el.innerHTML =
+    '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#8a8a8a"><span>Subtotal</span><span>' + fmtSoles(subtotal) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:#8a8a8a"><span>IGV (18%)</span><span>' + fmtSoles(igv) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:16px;font-weight:900;color:#131313;margin-top:4px"><span>TOTAL</span><span>' + fmtSoles(total) + '</span></div>';
+}
+
+function factGuardar() {
+  var nombre = document.getElementById('factCliNom').value.trim();
+  if (!nombre) { showToast('Falta el nombre del cliente', 'error'); return; }
+  var items = factItemsTmp.filter(function (it) { return String(it.descripcion || '').trim() && (it.cantidad || 0) > 0; });
+  if (!items.length) { showToast('Agrega al menos un item con descripción y cantidad', 'error'); return; }
+  agendaWorkerFetch('factCrear', {}, { method: 'POST', body: {
+    tipo: document.getElementById('factTipo').value,
+    clienteNombre: nombre,
+    clienteDoc: document.getElementById('factCliDoc').value.trim(),
+    clienteDir: document.getElementById('factCliDir').value.trim(),
+    metodoPago: document.getElementById('factPago').value,
+    estado: document.getElementById('factEstado').value,
+    notas: document.getElementById('factNotas').value.trim(),
+    items: items,
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      gmModalCerrar();
+      showToast('Comprobante ' + d.referencia + ' emitido', 'success');
+      renderFacturacion();
+      factVer(d.id);
+    } else showToast(d && d.error ? d.error : 'No se pudo emitir', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function factCambiarEstado(id, estado) {
+  if (estado === 'anulado' && !confirm('¿Anular este comprobante?\nEl stock vendido regresa al inventario.')) return;
+  agendaWorkerFetch('factActualizarEstado', {}, { method: 'POST', body: { id: id, estado: estado, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : '' } })
+    .then(function (d) {
+      if (d && d.ok) { showToast(estado === 'pagado' ? 'Marcado como pagado' : 'Comprobante anulado', 'success'); renderFacturacion(); }
+      else showToast(d && d.error ? d.error : 'No se pudo actualizar', 'error');
+    }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function factVer(id) {
+  agendaWorkerFetch('factObtener', { id: id }).then(function (d) {
+    if (!d || !d.ok) { showToast('No se pudo abrir', 'error'); return; }
+    var c = d.comprobante;
+    var filas = '';
+    for (var i = 0; i < d.items.length; i++) {
+      var it = d.items[i];
+      filas += '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">' + shEsc(it.descripcion) + '</td>' +
+        '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">' + it.cantidad + '</td>' +
+        '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">' + fmtSoles(it.precio_unit) + '</td>' +
+        '<td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right"><b>' + fmtSoles(it.total) + '</b></td></tr>';
+    }
+    var doc =
+      '<div id="factImprimible">' +
+        '<div style="text-align:center;margin-bottom:14px">' +
+          '<div style="font-size:19px;font-weight:900;letter-spacing:.03em">CARRIGAS PERÚ E.I.R.L.</div>' +
+          '<div style="font-size:12px;color:#555">Conversiones vehiculares GLP / GNV</div>' +
+          '<div style="border:2px solid #131313;border-radius:8px;display:inline-block;padding:8px 22px;margin-top:10px">' +
+            '<div style="font-size:13px;font-weight:800">' + (c.tipo === 'factura' ? 'FACTURA' : 'BOLETA DE VENTA') + ' — REGISTRO INTERNO</div>' +
+            '<div style="font-size:16px;font-weight:900;font-family:monospace">' + factNumero(c) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="font-size:13px;margin-bottom:12px">' +
+          '<b>Cliente:</b> ' + shEsc(c.cliente_nombre) +
+          (c.cliente_doc ? ' &nbsp;·&nbsp; <b>' + (c.tipo === 'factura' ? 'RUC' : 'DNI') + ':</b> ' + shEsc(c.cliente_doc) : '') +
+          (c.cliente_dir ? '<br><b>Dirección:</b> ' + shEsc(c.cliente_dir) : '') +
+          '<br><b>Fecha:</b> ' + new Date(c.creado_en).toLocaleString('es-PE') +
+          (c.metodo_pago ? ' &nbsp;·&nbsp; <b>Pago:</b> ' + shEsc(c.metodo_pago) : '') +
+          ' &nbsp;·&nbsp; <b>Estado:</b> <span style="text-transform:capitalize">' + c.estado + '</span>' +
+        '</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f5f5f0">' +
+          '<th style="padding:7px 8px;text-align:left">Descripción</th><th style="padding:7px 8px">Cant.</th><th style="padding:7px 8px;text-align:right">P. unit</th><th style="padding:7px 8px;text-align:right">Total</th></tr></thead>' +
+          '<tbody>' + filas + '</tbody></table>' +
+        '<div style="margin-top:12px;text-align:right;font-size:13px">' +
+          '<div>Subtotal: ' + fmtSoles(c.subtotal) + '</div>' +
+          '<div>IGV (18%): ' + fmtSoles(c.igv) + '</div>' +
+          '<div style="font-size:17px;font-weight:900;margin-top:4px">TOTAL: ' + fmtSoles(c.total) + '</div>' +
+        '</div>' +
+        (c.notas ? '<div style="font-size:12px;color:#555;margin-top:10px"><b>Notas:</b> ' + shEsc(c.notas) + '</div>' : '') +
+        '<div style="font-size:10px;color:#999;margin-top:14px;text-align:center">Documento interno de control — no válido como comprobante fiscal SUNAT</div>' +
+      '</div>';
+    gmModalAbrir(doc +
+      '<div style="display:flex;gap:10px;margin-top:16px">' +
+        '<button class="btn btn-teal" style="flex:1;justify-content:center" onclick="factImprimir()">🖨 Imprimir</button>' +
+        '<button class="btn btn-outline" style="flex:1;justify-content:center" onclick="gmModalCerrar()">Cerrar</button>' +
+      '</div>', 640);
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function factImprimir() {
+  var contenido = document.getElementById('factImprimible');
+  if (!contenido) return;
+  var w = window.open('', '_blank');
+  if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
+  w.document.write('<html><head><title>Comprobante</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:26px;color:#131313}table{width:100%;border-collapse:collapse}</style></head><body>' + contenido.innerHTML + '</body></html>');
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALENDARIO DE CONVERSIONES (Sales Hub → 📅 Agenda)
+// Reutiliza la tabla `servicios` ya desplegada: cada conversión es un
+// servicio con recurso "shcal|lead:<id>|v:<uid>|vn:<nombre>|rec:<min>|not:<0/1>",
+// así no colisiona con el Agendamiento de Servicios del taller ni
+// necesita tablas nuevas. El recordatorio dispara la notificación
+// emergente + sonido X minutos antes.
+// ═══════════════════════════════════════════════════════════
+
+function shCalMeta(recurso) {
+  var out = { esCal: false, leadId: '', vUid: '', vNombre: '', rec: 0, notificado: false };
+  var r = String(recurso || '');
+  if (r.indexOf('shcal|') !== 0) return out;
+  out.esCal = true;
+  var partes = r.split('|');
+  for (var i = 1; i < partes.length; i++) {
+    var p = partes[i];
+    if (p.indexOf('lead:') === 0) out.leadId = p.slice(5);
+    else if (p.indexOf('v:') === 0) out.vUid = p.slice(2);
+    else if (p.indexOf('vn:') === 0) out.vNombre = p.slice(3);
+    else if (p.indexOf('rec:') === 0) out.rec = parseInt(p.slice(4), 10) || 0;
+    else if (p.indexOf('not:') === 0) out.notificado = p.slice(4) === '1';
+  }
+  return out;
+}
+
+function shCalRecurso(meta) {
+  return 'shcal|lead:' + (meta.leadId || '') + '|v:' + (meta.vUid || '') +
+    '|vn:' + (meta.vNombre || '').split('|').join(' ') + '|rec:' + (meta.rec || 0) +
+    '|not:' + (meta.notificado ? '1' : '0');
+}
+
+function shCalFechaStr(d) {
+  var m = d.getMonth() + 1, dia = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (dia < 10 ? '0' : '') + dia;
+}
+
+function shCalCargar() {
+  agendaWorkerFetch('serviciosListar', {}).then(function (d) {
+    if (!d || !d.ok) return;
+    shCalEventos = (d.servicios || []).filter(function (s) { return shCalMeta(s.recurso).esCal; });
+    shCalRender();
+  }).catch(function () {});
+}
+
+function shCalRender() {
+  var el = document.getElementById('shCal');
+  if (!el) return;
+  if (!shCalMes) { var h = new Date(); shCalMes = new Date(h.getFullYear(), h.getMonth(), 1); }
+
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+  var hoyStr = shCalFechaStr(new Date());
+
+  var porDia = {};
+  for (var i = 0; i < shCalEventos.length; i++) {
+    var ev = shCalEventos[i];
+    if (ev.estado === 'Cancelado') continue;
+    if (!porDia[ev.fecha]) porDia[ev.fecha] = [];
+    porDia[ev.fecha].push(ev);
+  }
+  for (var f in porDia) porDia[f].sort(function (a, b) { return a.hora_inicio < b.hora_inicio ? -1 : 1; });
+
+  var html =
+    '<div class="sh-cal-head">' +
+      '<button class="sh-cal-nav" onclick="shCalMover(-1)">‹</button>' +
+      '<div class="sh-cal-titulo">' + MESES[shCalMes.getMonth()] + ' ' + shCalMes.getFullYear() + '</div>' +
+      '<button class="sh-cal-nav" onclick="shCalMover(1)">›</button>' +
+      '<button class="sh-cal-hoy" onclick="shCalMes=null;shCalRender()">Hoy</button>' +
+      '<button class="sh-cal-add" onclick="shCalSheetNuevo()">+ Agendar conversión</button>' +
+    '</div>' +
+    '<div class="sh-cal-sem"><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div></div>' +
+    '<div class="sh-cal-grid">';
+
+  // Lunes como primer dia de la semana
+  var primero = new Date(shCalMes);
+  var offset = (primero.getDay() + 6) % 7;
+  var cursor = new Date(primero);
+  cursor.setDate(cursor.getDate() - offset);
+
+  for (var c = 0; c < 42; c++) {
+    var fstr = shCalFechaStr(cursor);
+    var fuera = cursor.getMonth() !== shCalMes.getMonth();
+    var evs = porDia[fstr] || [];
+    var chips = '';
+    for (var e2 = 0; e2 < Math.min(evs.length, 3); e2++) {
+      var meta2 = shCalMeta(evs[e2].recurso);
+      chips += '<div class="sh-cal-ev' + (evs[e2].estado === 'Realizado' ? ' hecho' : '') + '" onclick="event.stopPropagation();shCalSheetEvento(\'' + shEsc(evs[e2].id) + '\')">' +
+        shEsc(evs[e2].hora_inicio) + ' ' + shEsc((evs[e2].cliente || '').split('·')[0].trim()) + '</div>';
+    }
+    if (evs.length > 3) chips += '<div class="sh-cal-mas">+' + (evs.length - 3) + ' más</div>';
+    html += '<div class="sh-cal-dia' + (fuera ? ' fuera' : '') + (fstr === hoyStr ? ' hoy' : '') + '" onclick="shCalSheetNuevo(\'' + fstr + '\')">' +
+      '<div class="sh-cal-n">' + cursor.getDate() + '</div>' + chips + '</div>';
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function shCalMover(delta) {
+  if (!shCalMes) { var h = new Date(); shCalMes = new Date(h.getFullYear(), h.getMonth(), 1); }
+  shCalMes = new Date(shCalMes.getFullYear(), shCalMes.getMonth() + delta, 1);
+  shCalRender();
+}
+
+// Sheet para agendar: desde el boton (+), desde un dia del grid, o desde
+// el menu ⋮ del chat (leadPre = lead activo con todo precargado)
+function shCalSheetNuevo(fechaPre, leadPre) {
+  var opciones = '';
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    var l = shLeadsCache[i];
+    var sel = leadPre && leadPre.id === l.id ? ' selected' : '';
+    opciones += '<option value="' + shEsc(l.id) + '"' + sel + '>' + shEsc((l.nombre || shTelBonito(l.telefono)) + ' · ' + shTelBonito(l.telefono)) + '</option>';
+  }
+  var hoy = fechaPre || shCalFechaStr(new Date());
+  shAbrirSheet(
+    '<h4>📅 Agendar conversión</h4>' +
+    '<div class="sh-sub">La cita aparece en el calendario y avisa antes de la hora</div>' +
+    '<label>Cliente (lead)</label>' +
+    '<select id="shCalLead" style="width:100%;border:none;border-radius:10px;background:#2a3942;color:#e9edef;font-size:14px;padding:11px 13px;outline:none">' + (opciones || '<option value="">— sin leads —</option>') + '</select>' +
+    '<div style="display:flex;gap:10px"><div style="flex:1"><label>Fecha</label><input id="shCalFecha" type="date" value="' + hoy + '"></div>' +
+    '<div style="flex:1"><label>Hora</label><input id="shCalHora" type="time" value="09:00"></div></div>' +
+    '<label>Avisarme antes</label>' +
+    '<select id="shCalRec" style="width:100%;border:none;border-radius:10px;background:#2a3942;color:#e9edef;font-size:14px;padding:11px 13px;outline:none">' +
+      '<option value="0">Sin aviso</option><option value="5">5 minutos antes</option><option value="10">10 minutos antes</option>' +
+      '<option value="15" selected>15 minutos antes</option><option value="30">30 minutos antes</option><option value="60">1 hora antes</option>' +
+    '</select>' +
+    '<label>Notas</label><input id="shCalNotas" type="text" placeholder="Ej: Toyota Yaris, kit 5ta gen" autocomplete="off">' +
+    '<button class="sh-sheet-btn" onclick="shCalGuardarNuevo()">Agendar</button>'
+  );
+}
+
+function shCalGuardarNuevo() {
+  var leadSel = document.getElementById('shCalLead');
+  var leadId = leadSel ? leadSel.value : '';
+  var lead = null;
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    if (shLeadsCache[i].id === leadId) { lead = shLeadsCache[i]; break; }
+  }
+  if (!lead) { shToast('Elige un cliente'); return; }
+  var fecha = document.getElementById('shCalFecha').value;
+  var hora = document.getElementById('shCalHora').value;
+  if (!fecha || !hora) { shToast('Completa fecha y hora'); return; }
+  var rec = parseInt(document.getElementById('shCalRec').value, 10) || 0;
+  var notas = document.getElementById('shCalNotas').value.trim();
+
+  var recurso = shCalRecurso({
+    leadId: lead.id, vUid: lead.vendedora_uid || '',
+    vNombre: lead.vendedora_nombre || '', rec: rec, notificado: false
+  });
+  agendaWorkerFetch('serviciosCrear', {}, { method: 'POST', body: {
+    cliente: (lead.nombre || shTelBonito(lead.telefono)) + ' · ' + shTelBonito(lead.telefono),
+    tipoServicio: 'Conversión GLP/GNV', fecha: fecha, horaInicio: hora,
+    duracionMin: 120, recurso: recurso, notas: notas,
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      shCerrarSheet();
+      shToast('Conversión agendada para el ' + fecha + ' ' + hora);
+      shCalCargar();
+    } else {
+      shToast(d && d.error === 'colision' ? 'Ese horario ya está ocupado' : 'No se pudo agendar: ' + (d && d.error ? d.error : 'error'));
+    }
+  }).catch(function () { shToast('Error de conexión'); });
+}
+
+function shCalBuscarEv(id) {
+  for (var i = 0; i < shCalEventos.length; i++) {
+    if (shCalEventos[i].id === id) return shCalEventos[i];
+  }
+  return null;
+}
+
+function shCalSheetEvento(id) {
+  var ev = shCalBuscarEv(id);
+  if (!ev) return;
+  var meta = shCalMeta(ev.recurso);
+  var recTxt = meta.rec ? (meta.rec >= 60 ? '1 hora antes' : meta.rec + ' min antes') : 'Sin aviso';
+  shAbrirSheet(
+    '<h4>📅 ' + shEsc(ev.cliente) + '</h4>' +
+    '<div class="sh-sub">' + shEsc(ev.tipo_servicio) + (meta.vNombre ? ' · Vendedora: ' + shEsc(meta.vNombre) : '') + '</div>' +
+    '<div style="display:flex;gap:10px"><div style="flex:1"><label>Fecha</label><input id="shCalEvFecha" type="date" value="' + shEsc(ev.fecha) + '"></div>' +
+    '<div style="flex:1"><label>Hora</label><input id="shCalEvHora" type="time" value="' + shEsc(ev.hora_inicio) + '"></div></div>' +
+    '<div style="color:#8696a0;font-size:12.5px;margin-top:12px">🔔 ' + recTxt +
+      (ev.notas ? ' &nbsp;·&nbsp; 📝 ' + shEsc(ev.notas) : '') +
+      ' &nbsp;·&nbsp; Estado: <b style="color:' + (ev.estado === 'Realizado' ? '#00a884' : '#e9edef') + '">' + shEsc(ev.estado) + '</b></div>' +
+    '<button class="sh-sheet-btn" onclick="shCalReprogramar(\'' + shEsc(id) + '\')">Guardar cambios</button>' +
+    (ev.estado !== 'Realizado'
+      ? '<button class="sh-sheet-btn" style="background:#0a332c;color:#00a884;margin-top:10px" onclick="shCalMarcarRealizado(\'' + shEsc(id) + '\')">✔ Marcar convertido</button>'
+      : '') +
+    '<button class="sh-sheet-btn" style="background:#3a2026;color:#f87171;margin-top:10px" onclick="shCalEliminar(\'' + shEsc(id) + '\')">🗑 Eliminar cita</button>'
+  );
+}
+
+function shCalReprogramar(id) {
+  var fecha = document.getElementById('shCalEvFecha').value;
+  var hora = document.getElementById('shCalEvHora').value;
+  if (!fecha || !hora) { shToast('Completa fecha y hora'); return; }
+  var ev = shCalBuscarEv(id);
+  var meta = ev ? shCalMeta(ev.recurso) : null;
+  var cambios = { fecha: fecha, horaInicio: hora };
+  // reprogramar re-arma el aviso
+  if (meta) { meta.notificado = false; cambios.recurso = shCalRecurso(meta); }
+  agendaWorkerFetch('serviciosActualizar', {}, { method: 'POST', body: { id: id, cambios: cambios } })
+    .then(function (d) {
+      if (d && d.ok) { shCerrarSheet(); shToast('Cita actualizada'); shCalCargar(); }
+      else shToast(d && d.error === 'colision' ? 'Ese horario ya está ocupado' : 'No se pudo actualizar');
+    }).catch(function () { shToast('Error de conexión'); });
+}
+
+function shCalMarcarRealizado(id) {
+  var ev = shCalBuscarEv(id);
+  var meta = ev ? shCalMeta(ev.recurso) : null;
+  agendaWorkerFetch('serviciosActualizar', {}, { method: 'POST', body: { id: id, cambios: { estado: 'Realizado' } } })
+    .then(function (d) {
+      if (!d || !d.ok) { shToast('No se pudo marcar'); return; }
+      shCerrarSheet();
+      shToast('✔ Conversión realizada');
+      shCalCargar();
+      // El lead pasa a "convertido" en la bandeja/pipeline
+      if (meta && meta.leadId) {
+        agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: meta.leadId, estado: 'convertido' } })
+          .then(function () { shCargarLeads(); }).catch(function () {});
+      }
+    }).catch(function () { shToast('Error de conexión'); });
+}
+
+function shCalEliminar(id) {
+  if (!confirm('¿Eliminar esta cita del calendario?')) return;
+  agendaWorkerFetch('serviciosEliminar', {}, { method: 'POST', body: { id: id } })
+    .then(function (d) {
+      if (d && d.ok) { shCerrarSheet(); shToast('Cita eliminada'); shCalCargar(); }
+      else shToast('No se pudo eliminar');
+    }).catch(function () { shToast('Error de conexión'); });
+}
+
+// ── Recordatorios: revisa cada minuto las citas de HOY y avisa X min antes
+// con tarjeta emergente + sonido, una sola vez por cita (marca not:1) ──
+function gmCalIniciarRecordatorios() {
+  if (gmCalRecordTimer) clearInterval(gmCalRecordTimer);
+  gmCalChequearRecordatorios();
+  gmCalRecordTimer = setInterval(gmCalChequearRecordatorios, 60000);
+}
+
+function gmCalChequearRecordatorios() {
+  if (!CU) return;
+  var hoy = shCalFechaStr(new Date());
+  agendaWorkerFetch('serviciosListar', { fecha: hoy }).then(function (d) {
+    if (!d || !d.ok) return;
+    var lista = d.servicios || [];
+    for (var i = 0; i < lista.length; i++) {
+      var ev = lista[i];
+      if (ev.estado !== 'Confirmado') continue;
+      var meta = shCalMeta(ev.recurso);
+      if (!meta.esCal || !meta.rec || meta.notificado) continue;
+      var inicio = new Date(ev.fecha + 'T' + ev.hora_inicio + ':00').getTime();
+      var faltanMin = (inicio - Date.now()) / 60000;
+      if (faltanMin > meta.rec || faltanMin < -1) continue;
+
+      // Marcar como notificado ANTES de avisar, para que otro dispositivo
+      // que consulte en paralelo no duplique el aviso
+      meta.notificado = true;
+      agendaWorkerFetch('serviciosActualizar', {}, { method: 'POST', body: { id: ev.id, cambios: { recurso: shCalRecurso(meta) } } }).catch(function () {});
+
+      var minTxt = Math.max(1, Math.round(faltanMin));
+      var titulo = '📅 Conversión en ' + minTxt + ' min';
+      var msg = ev.cliente + ' — hoy a las ' + ev.hora_inicio + (ev.notas ? ' · ' + ev.notas : '');
+      // Aviso local (para quien tiene la app abierta e interes en la cita)
+      var esMia = meta.vUid && CU && CU.id === meta.vUid;
+      var esJefe = CU && (CU.role === 'admin' || CU.role === 'jefe' || CU.role === 'supervisor');
+      if (esMia || esJefe || !meta.vUid) {
+        mostrarNotifEmergente(titulo, msg, 'tarea');
+        reproducirTonoAlertaVeces(6);
+      }
+      // Aviso central: llega a la vendedora aunque no tenga esta pantalla abierta
+      if (meta.vUid) crearNotificacion([meta.vUid], 'tarea', titulo, msg, ev.id, true);
+    }
+  }).catch(function () {});
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -14814,6 +15604,12 @@ function mostrarApp(){
   var puedeVerSH = CU && (CU.role==='admin'||CU.role==='jefe'||CU.role==='supervisor'||CU.role==='vendedor');
   if(navSH) navSH.style.display=puedeVerSH?'':'none';
   if(puedeVerSH) shIniciarBadgeGlobal();
+  var puedeVerInvFact = CU && (CU.role==='admin'||CU.role==='jefe'||CU.role==='supervisor');
+  var navInv=document.getElementById('navInventario');
+  if(navInv) navInv.style.display=puedeVerInvFact?'':'none';
+  var navFact=document.getElementById('navFacturacion');
+  if(navFact) navFact.style.display=puedeVerInvFact?'':'none';
+  if(agendaWorkerListo()) gmCalIniciarRecordatorios();
 
   document.getElementById('topbarSede').textContent=CU.sede||'';
   if(isTec){
