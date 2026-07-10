@@ -3534,6 +3534,26 @@ function iniciarPollingNotificaciones() {
   GM_NOTIF_POLLING = setInterval(chequearNotificacionesNuevas, 15000);
 }
 
+// El ts puede venir como numero (ms) o como texto ISO segun quien creo la
+// notificacion — se normaliza a ms para que el cursor SIEMPRE avance.
+function gmNotifTs(n) {
+  if(typeof n.ts === 'number') return n.ts;
+  var p = Date.parse(n.ts);
+  return isNaN(p) ? 0 : p;
+}
+
+function gmNotifYaMostradas() {
+  try { return JSON.parse(localStorage.getItem('gm_notif_mostradas') || '[]'); } catch(e) { return []; }
+}
+
+function gmNotifRecordarMostrada(id) {
+  var v = gmNotifYaMostradas();
+  if(v.indexOf(id) !== -1) return;
+  v.push(id);
+  if(v.length > 300) v = v.slice(-300);
+  try { localStorage.setItem('gm_notif_mostradas', JSON.stringify(v)); } catch(e) {}
+}
+
 function chequearNotificacionesNuevas() {
   if(!CU || !GM_CONFIG.workerUrl) return;
   fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=notifListar&uid=' + CU.id + '&desde=' + GM_NOTIF_ULTIMO_TS, {cache:'no-store'})
@@ -3542,9 +3562,20 @@ function chequearNotificacionesNuevas() {
     if(!d.ok || !d.notificaciones || !d.notificaciones.length) return;
 
     var hayUrgente = false;
+    var mostradas = gmNotifYaMostradas();
     for(var i=0; i<d.notificaciones.length; i++) {
       var n = d.notificaciones[i];
-      if(n.ts > GM_NOTIF_ULTIMO_TS) GM_NOTIF_ULTIMO_TS = n.ts;
+      var ts = gmNotifTs(n);
+      if(ts > GM_NOTIF_ULTIMO_TS) GM_NOTIF_ULTIMO_TS = ts;
+      // Candado 1: cada notificacion se muestra UNA sola vez por dispositivo,
+      // aunque el servidor la re-entregue (id o huella de contenido+ts)
+      var nid = n.id ? String(n.id) : (String(ts) + '|' + String(n.titulo || ''));
+      if(mostradas.indexOf(nid) !== -1) continue;
+      gmNotifRecordarMostrada(nid);
+      mostradas.push(nid);
+      // Candado 2: nada con mas de 24h de antiguedad revive como tarjeta
+      // (limpia notificaciones de prueba viejas que quedaron en la base)
+      if(ts && (Date.now() - ts) > 24*3600000) continue;
       if(n.urgente) hayUrgente = true;
       // Tarjeta emergente por cada notificación nueva — se apilan, no se
       // pisan entre sí como pasaba con el toast (un solo slot compartido).
