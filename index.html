@@ -1369,6 +1369,156 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-urgente{background:#111b21;border:1px solid #7f1d1d;border-radius:14px;overflow:hidden}
             .sh-urg-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #1f2c33;color:#e9edef;font-size:13px;flex-wrap:wrap}
             .sh-urg-item:last-child{border-bottom:none}
+
+            /* ══ MODO CLARO (WhatsApp Web light) — activo salvo 🌙 ══ */
+            body:not(.dark-mode) .sh-viewtabs{background:#ffffff;border-bottom-color:#e9edef}
+            body:not(.dark-mode) .sh-viewtab{color:#667781}
+            body:not(.dark-mode) .sh-viewtab.on{color:#008069;border-bottom-color:#008069}
+            body:not(.dark-mode) .sh-app{background:#ffffff}
+            body:not(.dark-mode) .sh-scroll:hover{scrollbar-color:#00000033 transparent}
+            body:not(.dark-mode) .sh-scroll:hover::-webkit-scrollbar-thumb{background:#00000022}
+            /* panel lista */
+            body:not(.dark-mode) .sh-pane-list{background:#ffffff}
+            body:not(.dark-mode) .sh-pane-list{border-right-color:#e9edef!important}
+            body:not(.dark-mode) .sh-list-head h3{color:#111b21}
+            body:not(.dark-mode) .sh-hicon{color:#54656f}
+            body:not(.dark-mode) .sh-hicon:hover{background:#f0f2f5}
+            body:not(.dark-mode) .sh-buscar{background:#f0f2f5}
+            body:not(.dark-mode) .sh-buscar input{color:#111b21}
+            body:not(.dark-mode) .sh-buscar input::placeholder{color:#667781}
+            body:not(.dark-mode) .sh-filtro{background:#f0f2f5;color:#54656f}
+            body:not(.dark-mode) .sh-filtro.on{background:#e7fce3;color:#008069}
+            body:not(.dark-mode) .sh-chat-item:hover,body:not(.dark-mode) .sh-chat-item:active{background:#f5f6f6}
+            body:not(.dark-mode) .sh-chat-item.sh-sel{background:#f0f2f5}
+            body:not(.dark-mode) .sh-dot{border-color:#ffffff!important}
+            body:not(.dark-mode) .sh-ci-body{border-bottom-color:#f0f2f5}
+            body:not(.dark-mode) .sh-ci-nombre{color:#111b21}
+            body:not(.dark-mode) .sh-ci-prev{color:#667781}
+            body:not(.dark-mode) .sh-ci-hora{color:#667781}
+            body:not(.dark-mode) .sh-ci-hora.sh-hay-nuevo{color:#008069}
+            body:not(.dark-mode) .sh-ci-badge{background:#25d366;color:#ffffff}
+            body:not(.dark-mode) .sh-vacio{color:#667781}
+            body:not(.dark-mode) .sh-menu{background:#ffffff;box-shadow:0 10px 26px rgba(11,20,26,.22)}
+            body:not(.dark-mode) .sh-menu button{color:#3b4a54}
+            body:not(.dark-mode) .sh-menu button:hover{background:#f5f6f6}
+            /* chat */
+            body:not(.dark-mode) .sh-chat-head{background:#f0f2f5}
+            body:not(.dark-mode) .sh-back{color:#54656f}
+            body:not(.dark-mode) .sh-ch-nombre{color:#111b21}
+            body:not(.dark-mode) .sh-ch-sub{color:#667781}
+            body:not(.dark-mode) .sh-msgs{background:#efeae2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52' viewBox='0 0 52 52'%3E%3Cpath d='M26 6l7 7-7 7-7-7zM26 32l7 7-7 7-7-7z' fill='none' stroke='%23000000' stroke-opacity='.04'/%3E%3C/svg%3E")}
+            body:not(.dark-mode) .sh-burbuja{color:#111b21;box-shadow:0 1px .5px rgba(11,20,26,.13)}
+            body:not(.dark-mode) .sh-burbuja.in{background:#ffffff}
+            body:not(.dark-mode) .sh-burbuja.out{background:#d9fdd3}
+            body:not(.dark-mode) .sh-burbuja.in.sh-colita::before{border-right-color:#ffffff}
+            body:not(.dark-mode) .sh-burbuja.out.sh-colita::before{border-left-color:#d9fdd3}
+            body:not(.dark-mode) .sh-b-meta{color:#667781}
+            body:not(.dark-mode) .sh-burbuja.out .sh-b-meta{color:rgba(17,27,33,.45)}
+            body:not(.dark-mode) .sh-burbuja a{color:#027eb5}
+            body:not(.dark-mode) .sh-quote{background:rgba(11,20,26,.06);color:#54656f;border-left-color:#00a884}
+            body:not(.dark-mode) .sh-burbuja.out .sh-quote{background:rgba(11,20,26,.05);border-left-color:#06cf9c}
+            body:not(.dark-mode) .sh-b-menu{color:#8696a0}
+            body:not(.dark-mode) .sh-ctx{background:#ffffff;box-shadow:0 10px 26px rgba(11,20,26,.25)}
+            body:not(.dark-mode) .sh-ctx button{color:#3b4a54}
+            body:not(.dark-mode) .sh-ctx button:hover{background:#f5f6f6}
+            body:not(.dark-mode) .sh-dia{background:#ffffff;color:#54656f}
+            body:not(.dark-mode) .sh-noleidos{background:#ffffff;color:#54656f}
+            body:not(.dark-mode) .sh-ticks{color:inherit}
+            body:not(.dark-mode) .sh-ticks.leido{color:#53bdeb}
+            /* busqueda del chat + barra responder + composer */
+            body:not(.dark-mode) .sh-chat-search{background:#f0f2f5}
+            body:not(.dark-mode) .sh-chat-search input{background:#ffffff;color:#111b21}
+            body:not(.dark-mode) .sh-chat-search button{color:#54656f}
+            body:not(.dark-mode) .sh-busq-n{color:#667781}
+            body:not(.dark-mode) .sh-reply-bar{background:#f0f2f5}
+            body:not(.dark-mode) .sh-reply-card{background:#ffffff;border-left-color:#00a884}
+            body:not(.dark-mode) .sh-reply-quien{color:#008069}
+            body:not(.dark-mode) .sh-reply-txt{color:#667781}
+            body:not(.dark-mode) .sh-reply-x{color:#54656f}
+            body:not(.dark-mode) .sh-composer{background:#f0f2f5}
+            body:not(.dark-mode) .sh-cicon{color:#54656f}
+            body:not(.dark-mode) .sh-cicon:hover{color:#111b21}
+            body:not(.dark-mode) .sh-input-wrap{background:#ffffff}
+            body:not(.dark-mode) .sh-input{color:#111b21}
+            body:not(.dark-mode) .sh-input::placeholder{color:#667781}
+            body:not(.dark-mode) .sh-send.sh-mic{color:#54656f}
+            body:not(.dark-mode) .sh-scrolldown{background:#ffffff;color:#54656f;box-shadow:0 4px 14px rgba(11,20,26,.25)}
+            /* notas internas: post-it claro */
+            body:not(.dark-mode) .sh-burbuja.nota{background:#fff8e1;border-color:#f0d48a;border-left-color:#f0b429;color:#5c4d1d}
+            body:not(.dark-mode) .sh-nota-autor{color:#a97b0f}
+            body:not(.dark-mode) .sh-burbuja.nota .sh-b-meta{color:#a99b6a}
+            body:not(.dark-mode) .sh-cicon.sh-nota-on{color:#a97b0f;background:rgba(240,180,41,.15)}
+            body:not(.dark-mode) .sh-input-wrap.sh-nota-modo{background:#fff8e1;box-shadow:inset 0 0 0 1.5px #f0d48a}
+            /* sheets, chips, emojis, respuestas, toast, visor */
+            body:not(.dark-mode) .sh-sheet{background:#ffffff;color:#111b21}
+            body:not(.dark-mode) .sh-sheet .sh-sub{color:#667781}
+            body:not(.dark-mode) .sh-sheet label{color:#667781}
+            body:not(.dark-mode) .sh-sheet input,body:not(.dark-mode) .sh-sheet textarea,body:not(.dark-mode) .sh-sheet select{background:#f0f2f5!important;color:#111b21!important}
+            body:not(.dark-mode) .sh-chip{border-color:#e9edef;background:#f0f2f5;color:#3b4a54}
+            body:not(.dark-mode) .sh-chip.on{background:#00a884;border-color:#00a884;color:#ffffff}
+            body:not(.dark-mode) .sh-sheet-btn{background:#00a884;color:#ffffff}
+            body:not(.dark-mode) .sh-lista-op{color:#3b4a54;border-bottom-color:#f0f2f5}
+            body:not(.dark-mode) .sh-lista-op:hover{background:#f5f6f6}
+            body:not(.dark-mode) .sh-emojis button:hover{background:#f0f2f5}
+            body:not(.dark-mode) .sh-emoji-panel{background:#f0f2f5}
+            body:not(.dark-mode) .sh-emoji-cat{color:#667781}
+            body:not(.dark-mode) .sh-resp-row{border-bottom-color:#f0f2f5}
+            body:not(.dark-mode) .sh-resp-row:hover{background:#f5f6f6}
+            body:not(.dark-mode) .sh-resp-txt{color:#3b4a54}
+            body:not(.dark-mode) .sh-toast{background:#ffffff;color:#111b21;box-shadow:0 8px 22px rgba(11,20,26,.28)}
+            body:not(.dark-mode) .sh-img-cerrar{background:#ffffff;color:#111b21}
+            /* cola, pipeline, dashboard, calendario, flujos */
+            body:not(.dark-mode) .sh-cola{background:#f0f2f5}
+            body:not(.dark-mode) .sh-cola-item{border-bottom-color:#e9edef}
+            body:not(.dark-mode) .sh-cola-btn{background:#ffffff}
+            body:not(.dark-mode) .sh-cola-motivo{color:#667781}
+            body:not(.dark-mode) .sh-pipe{background:#f0f2f5}
+            body:not(.dark-mode) .sh-col{background:#e9edef}
+            body:not(.dark-mode) .sh-col-h{color:#111b21}
+            body:not(.dark-mode) .sh-col-n{color:#667781;background:#ffffff}
+            body:not(.dark-mode) .sh-card{background:#ffffff}
+            body:not(.dark-mode) .sh-card:hover{border-color:#d1d7db}
+            body:not(.dark-mode) .sh-card-n{color:#111b21}
+            body:not(.dark-mode) .sh-card-t{color:#667781}
+            body:not(.dark-mode) .sh-card-f{color:#667781}
+            body:not(.dark-mode) .sh-card-v{background:#f0f2f5}
+            body:not(.dark-mode) .sh-dash{background:#f0f2f5}
+            body:not(.dark-mode) .sh-met{background:#ffffff;border-color:#e9edef}
+            body:not(.dark-mode) .sh-met-n{color:#111b21}
+            body:not(.dark-mode) .sh-met-l{color:#667781}
+            body:not(.dark-mode) .sh-dash h4{color:#111b21}
+            body:not(.dark-mode) .sh-tabla-wrap{border-color:#e9edef;background:#ffffff}
+            body:not(.dark-mode) .sh-tabla th{color:#667781;border-bottom-color:#e9edef}
+            body:not(.dark-mode) .sh-tabla td{color:#111b21;border-bottom-color:#f0f2f5}
+            body:not(.dark-mode) .sh-barra{background:#e9edef}
+            body:not(.dark-mode) .sh-urgente{background:#ffffff;border-color:#fecaca}
+            body:not(.dark-mode) .sh-urg-item{color:#111b21;border-bottom-color:#f0f2f5}
+            body:not(.dark-mode) .sh-calendario{background:#f0f2f5}
+            body:not(.dark-mode) .sh-cal-titulo{color:#111b21}
+            body:not(.dark-mode) .sh-cal-nav{background:#ffffff;color:#54656f}
+            body:not(.dark-mode) .sh-cal-nav:hover{background:#e9edef}
+            body:not(.dark-mode) .sh-cal-hoy{background:#ffffff;color:#008069}
+            body:not(.dark-mode) .sh-cal-sem div{color:#667781}
+            body:not(.dark-mode) .sh-cal-dia{background:#ffffff;border-color:#e9edef}
+            body:not(.dark-mode) .sh-cal-n{color:#667781}
+            body:not(.dark-mode) .sh-cal-ev{background:#e7fce3;color:#008069;border-left-color:#00a884}
+            body:not(.dark-mode) .sh-cal-ev.hecho{background:#f0f2f5;color:#8696a0;border-left-color:#8696a0}
+            body:not(.dark-mode) .sh-cal-mas{color:#667781}
+            body:not(.dark-mode) .sh-wf{background:#f0f2f5}
+            body:not(.dark-mode) .sh-wf-head h3{color:#111b21}
+            body:not(.dark-mode) .sh-wf-card{background:#ffffff;border-color:#e9edef}
+            body:not(.dark-mode) .sh-wf-nombre{color:#111b21}
+            body:not(.dark-mode) .sh-wf-desc{color:#667781}
+            body:not(.dark-mode) .sh-wf-btn{background:#f0f2f5;color:#3b4a54}
+            body:not(.dark-mode) .sh-wf-btn:hover{background:#e9edef}
+            body:not(.dark-mode) .sh-switch{background:#d1d7db}
+            body:not(.dark-mode) .sh-switch::after{background:#ffffff}
+            body:not(.dark-mode) .sh-switch.on{background:#00a884}
+            body:not(.dark-mode) .sh-wf-paso{background:#f0f2f5}
+            body:not(.dark-mode) .sh-wf-paso textarea,body:not(.dark-mode) .sh-wf-paso input,body:not(.dark-mode) .sh-wf-paso select{background:#ffffff!important;color:#111b21!important}
+            body:not(.dark-mode) .sh-wf-paso span{color:#54656f!important}
+            body:not(.dark-mode) .sh-typing{color:#008069}
+            body:not(.dark-mode) .sh-typing i{background:#008069}
           </style>
           <div id="salesHubContent"></div>
         </div>
