@@ -10302,6 +10302,66 @@ function shIniciarBadgeGlobal() {
 // ═══════════════════════════════════════════════════════════
 var invProductos = [];
 var invBusca = '';
+var invMovsCache = [];
+var invScanModo = 'buscar';
+var invConteoTmp = {};
+
+// Las 3 sedes de Carrigas + el almacen que recibe el stock historico
+var GM_INV_SEDES = ['Santa Anita', 'Chorrillos', 'SMP', 'Almacén general'];
+
+function gmSedeDefecto() {
+  return (CU && GM_INV_SEDES.indexOf(CU.sede) !== -1) ? CU.sede : 'Almacén general';
+}
+
+function gmSedesOptions(sel) {
+  var out = '';
+  for (var i = 0; i < GM_INV_SEDES.length; i++) {
+    out += '<option value="' + GM_INV_SEDES[i] + '"' + (GM_INV_SEDES[i] === sel ? ' selected' : '') + '>' + GM_INV_SEDES[i] + '</option>';
+  }
+  return out;
+}
+
+// ── Code 39: generador propio de codigos de barras en SVG ──
+// Cada caracter son 9 elementos (5 barras + 4 espacios); w=ancho n=angosto.
+// Es el formato que toda pistola lectora lee de fabrica, sin configurar nada.
+var GM_C39 = {
+  '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn',
+  '4': 'nnnwwnnnw', '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw',
+  '8': 'wnnwnnwnn', '9': 'nnwwnnwnn', 'A': 'wnnnnwnnw', 'B': 'nnwnnwnnw',
+  'C': 'wnwnnwnnn', 'D': 'nnnnwwnnw', 'E': 'wnnnwwnnn', 'F': 'nnwnwwnnn',
+  'G': 'nnnnnwwnw', 'H': 'wnnnnwwnn', 'I': 'nnwnnwwnn', 'J': 'nnnnwwwnn',
+  'K': 'wnnnnnnww', 'L': 'nnwnnnnww', 'M': 'wnwnnnnwn', 'N': 'nnnnwnnww',
+  'O': 'wnnnwnnwn', 'P': 'nnwnwnnwn', 'Q': 'nnnnnnwww', 'R': 'wnnnnnwwn',
+  'S': 'nnwnnnwwn', 'T': 'nnnnwnwwn', 'U': 'wwnnnnnnw', 'V': 'nwwnnnnnw',
+  'W': 'wwwnnnnnn', 'X': 'nwnnwnnnw', 'Y': 'wwnnwnnnn', 'Z': 'nwwnwnnnn',
+  '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn', '*': 'nwnnwnwnn'
+};
+
+function gmCodigoBarrasSVG(texto, altoMm) {
+  var limpio = String(texto || '').toUpperCase().replace(/[^A-Z0-9\-\. ]/g, '');
+  if (!limpio) return '';
+  var full = '*' + limpio + '*';
+  var unidad = 1, ancho = 0;
+  for (var c = 0; c < full.length; c++) {
+    var pat = GM_C39[full[c]];
+    if (!pat) return '';
+    for (var e = 0; e < 9; e++) ancho += (pat[e] === 'w' ? 3 : 1) * unidad;
+    ancho += unidad; // espacio entre caracteres
+  }
+  var alto = altoMm || 30;
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + ancho + ' ' + alto + '" preserveAspectRatio="none" style="width:100%;height:100%">';
+  var x = 0;
+  for (var c2 = 0; c2 < full.length; c2++) {
+    var pat2 = GM_C39[full[c2]];
+    for (var e2 = 0; e2 < 9; e2++) {
+      var w = (pat2[e2] === 'w' ? 3 : 1) * unidad;
+      if (e2 % 2 === 0) svg += '<rect x="' + x + '" y="0" width="' + w + '" height="' + alto + '" fill="#000"/>';
+      x += w;
+    }
+    x += unidad;
+  }
+  return svg + '</svg>';
+}
 
 function fmtSoles(n) {
   var v = parseFloat(n) || 0;
@@ -10363,12 +10423,15 @@ function invPintar() {
         '<td><b>' + shEsc(p.nombre) + '</b>' + (p.notas ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(p.notas) + '</div>' : '') + '</td>' +
         '<td>' + shEsc(p.categoria || '—') + '</td>' +
         '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</span>' +
-          (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') + '</td>' +
+          (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') +
+          invDesgloseSedes(p) + '</td>' +
         '<td>' + fmtSoles(p.precio) + '</td>' +
         '<td style="white-space:nowrap">' +
           '<button class="btn btn-sm btn-teal" style="padding:5px 9px" title="Registrar entrada" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'entrada\')">⬇ Entrada</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Registrar salida" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'salida\')">⬆ Salida</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Editar" onclick="invSheetProducto(\'' + shEsc(p.id) + '\')">✎</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Transferir entre sedes" onclick="invSheetTransfer(\'' + shEsc(p.id) + '\')">↔</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Imprimir etiquetas de código de barras" onclick="invSheetEtiquetas(\'' + shEsc(p.id) + '\')">🏷</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Historial de movimientos" onclick="invVerHistorial(\'' + shEsc(p.id) + '\')">🕓</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px;color:#dc2626" title="Eliminar" onclick="invEliminar(\'' + shEsc(p.id) + '\',\'' + shEsc(p.nombre) + '\')">🗑</button>' +
         '</td>' +
@@ -10385,6 +10448,7 @@ function invPintar() {
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">' +
         '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
+        '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
         '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
       '</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>' +
@@ -10397,12 +10461,12 @@ function invBuscarProd(id) {
   return null;
 }
 
-function invSheetProducto(id) {
+function invSheetProducto(id, codigoPre) {
   var p = id ? invBuscarProd(id) : null;
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">' + (p ? 'Editar producto' : 'Nuevo producto') + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">Código</label><input id="invCod" class="gm-inp" value="' + shEsc(p ? p.codigo : '') + '" placeholder="KIT-5G"></div>' +
+      '<div><label class="gm-lbl">Código (= código de barras)</label><input id="invCod" class="gm-inp" value="' + shEsc(p ? p.codigo : (codigoPre || '')) + '" placeholder="KIT-5G" style="text-transform:uppercase"></div>' +
       '<div><label class="gm-lbl">Categoría</label><input id="invCat" class="gm-inp" value="' + shEsc(p ? p.categoria : '') + '" placeholder="Kits, Cilindros..."></div>' +
     '</div>' +
     '<label class="gm-lbl">Nombre *</label><input id="invNom" class="gm-inp" value="' + shEsc(p ? p.nombre : '') + '" placeholder="Kit GLP 5ta generación">' +
@@ -10411,7 +10475,9 @@ function invSheetProducto(id) {
       '<div><label class="gm-lbl">Unidad</label><input id="invUni" class="gm-inp" value="' + shEsc(p ? p.unidad : 'und') + '"></div>' +
       '<div><label class="gm-lbl">Stock mínimo</label><input id="invMin" class="gm-inp" type="number" step="1" min="0" value="' + (p ? p.stock_min : 1) + '"></div>' +
     '</div>' +
-    (p ? '' : '<label class="gm-lbl">Stock inicial</label><input id="invIni" class="gm-inp" type="number" step="1" min="0" value="0">') +
+    (p ? '' : '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="gm-lbl">Stock inicial</label><input id="invIni" class="gm-inp" type="number" step="1" min="0" value="0"></div>' +
+      '<div><label class="gm-lbl">En la sede</label><select id="invIniSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div></div>') +
+    '<div style="font-size:10.5px;color:#8a8a8a;margin-top:4px">El código admite letras, números, guion y punto — es lo que imprime la etiqueta y lee la pistola.</div>' +
     '<label class="gm-lbl">Notas</label><input id="invNot" class="gm-inp" value="' + shEsc(p ? p.notas : '') + '">' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarProducto(\'' + (p ? shEsc(p.id) : '') + '\')">' + (p ? 'Guardar cambios' : 'Crear producto') + '</button>'
   );
@@ -10431,11 +10497,24 @@ function invGuardarProducto(id) {
     uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
   };
   if (id) body.id = id;
-  else body.stockInicial = parseFloat((document.getElementById('invIni') || {}).value) || 0;
+  else {
+    body.stockInicial = parseFloat((document.getElementById('invIni') || {}).value) || 0;
+    var selSede = document.getElementById('invIniSede');
+    body.sede = selSede ? selSede.value : gmSedeDefecto();
+  }
   agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: body }).then(function (d) {
     if (d && d.ok) { gmModalCerrar(); showToast(id ? 'Producto actualizado' : 'Producto creado', 'success'); renderInventario(); }
     else showToast('Error: ' + (d && d.error ? d.error : 'no se pudo guardar'), 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invDesgloseSedes(p) {
+  var sedes = p.sedes || {};
+  var partes = [];
+  for (var s in sedes) {
+    if (sedes[s]) partes.push(shEsc(s.replace('Almacén general', 'Almacén')) + ' <b>' + sedes[s] + '</b>');
+  }
+  return partes.length ? '<div style="font-size:10.5px;color:#667781;margin-top:3px">' + partes.join(' · ') + '</div>' : '';
 }
 
 function invSheetMov(id, tipo) {
@@ -10444,9 +10523,17 @@ function invSheetMov(id, tipo) {
   var esEntrada = tipo === 'entrada';
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">' + (esEntrada ? '⬇ Entrada de stock' : '⬆ Salida de stock') + '</div>' +
-    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + ' — stock actual: <b>' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</b></div>' +
-    '<label class="gm-lbl">Cantidad</label><input id="invMovCant" class="gm-inp" type="number" step="1" min="1" value="1">' +
-    '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : 'Instalación / merma') + '">' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + ' — stock total: <b>' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</b></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Sede</label><select id="invMovSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<div><label class="gm-lbl">Cantidad</label><input id="invMovCant" class="gm-inp" type="number" step="1" min="1" value="1"></div>' +
+    '</div>' +
+    (esEntrada ? '' :
+      '<label class="gm-lbl">Placa del vehículo que recibe el equipo *</label>' +
+      '<input id="invMovPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10">' +
+      '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#6b7280;margin-top:8px;cursor:pointer">' +
+        '<input type="checkbox" id="invMovSinPlaca" style="width:15px;height:15px"> Salida sin vehículo (merma, uso interno, devolución)</label>') +
+    '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : 'Instalación') + '">' +
     '<button class="btn ' + (esEntrada ? 'btn-teal' : 'btn-navy') + '" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarMov(\'' + shEsc(id) + '\',\'' + tipo + '\')">Registrar ' + tipo + '</button>'
   );
 }
@@ -10454,40 +10541,284 @@ function invSheetMov(id, tipo) {
 function invGuardarMov(id, tipo) {
   var cant = parseFloat(document.getElementById('invMovCant').value) || 0;
   if (cant <= 0) { showToast('Cantidad inválida', 'error'); return; }
+  var sede = document.getElementById('invMovSede').value;
+  var placa = '';
+  if (tipo === 'salida') {
+    var sinPlaca = document.getElementById('invMovSinPlaca').checked;
+    placa = document.getElementById('invMovPlaca').value.trim().toUpperCase();
+    if (!sinPlaca && !placa) {
+      showToast('Toda salida debe destinarse a la placa del vehículo (o marca "sin vehículo")', 'error');
+      return;
+    }
+    if (sinPlaca) placa = '';
+  }
   agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
-    productoId: id, tipo: tipo, cantidad: cant,
+    productoId: id, tipo: tipo, cantidad: cant, sede: sede, placa: placa,
     motivo: document.getElementById('invMovMot').value.trim(),
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
-    if (d && d.ok) { gmModalCerrar(); showToast('Movimiento registrado — stock: ' + d.stock, 'success'); renderInventario(); }
+    if (d && d.ok) { gmModalCerrar(); showToast('Registrado — ' + sede + ': ' + d.stock + (placa ? ' · 🚗 ' + placa : ''), 'success'); renderInventario(); }
     else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invSheetTransfer(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">↔ Transferir entre sedes</div>' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + invDesgloseSedes(p) + '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Desde</label><select id="invTrfOri" class="gm-inp">' + gmSedesOptions('Almacén general') + '</select></div>' +
+      '<div><label class="gm-lbl">Hacia</label><select id="invTrfDes" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Cantidad</label><input id="invTrfCant" class="gm-inp" type="number" step="1" min="1" value="1">' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarTransfer(\'' + shEsc(id) + '\')">Transferir</button>'
+  );
+}
+
+function invGuardarTransfer(id) {
+  var origen = document.getElementById('invTrfOri').value;
+  var destino = document.getElementById('invTrfDes').value;
+  var cant = parseFloat(document.getElementById('invTrfCant').value) || 0;
+  if (origen === destino) { showToast('Elige sedes distintas', 'error'); return; }
+  if (cant <= 0) { showToast('Cantidad inválida', 'error'); return; }
+  agendaWorkerFetch('invTransferencia', {}, { method: 'POST', body: {
+    productoId: id, cantidad: cant, sedeOrigen: origen, sedeDestino: destino,
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) { gmModalCerrar(); showToast('Transferido ' + origen + ' → ' + destino, 'success'); renderInventario(); }
+    else showToast(d && d.error ? d.error : 'No se pudo transferir', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ── Etiquetas de codigo de barras (para la impresora termica) ──
+function invSheetEtiquetas(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  if (!p.codigo) { showToast('Este producto no tiene código — edítalo y ponle uno', 'error'); return; }
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:10px">🏷 Etiquetas — ' + shEsc(p.nombre) + '</div>' +
+    '<div style="border:1.5px solid #D9D9D9;border-radius:10px;padding:10px;width:200px;margin:0 auto;text-align:center">' +
+      '<div style="font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + shEsc(p.nombre) + '</div>' +
+      '<div style="height:44px;margin:4px 0">' + gmCodigoBarrasSVG(p.codigo, 30) + '</div>' +
+      '<div style="font-size:11px;font-family:monospace;font-weight:700;letter-spacing:.1em">' + shEsc(p.codigo) + '</div>' +
+    '</div>' +
+    '<label class="gm-lbl">¿Cuántas etiquetas imprimir?</label><input id="invEtqN" class="gm-inp" type="number" min="1" max="500" value="10">' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">Formato 40×25mm (etiqueta térmica estándar). En la impresora elige el tamaño de papel de tu rollo.</div>' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invImprimirEtiquetas(\'' + shEsc(id) + '\')">🖨 Imprimir</button>'
+  );
+}
+
+function invImprimirEtiquetas(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  var n = Math.min(parseInt(document.getElementById('invEtqN').value, 10) || 1, 500);
+  var etiqueta =
+    '<div class="lbl">' +
+      '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
+      '<div class="lbl-b">' + gmCodigoBarrasSVG(p.codigo, 30) + '</div>' +
+      '<div class="lbl-c">' + shEsc(p.codigo) + '</div>' +
+    '</div>';
+  var cuerpo = '';
+  for (var i = 0; i < n; i++) cuerpo += etiqueta;
+  var w = window.open('', '_blank');
+  if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
+  w.document.write('<html><head><title>Etiquetas ' + shEsc(p.codigo) + '</title><style>' +
+    '@page{size:40mm 25mm;margin:0}body{margin:0;padding:0}' +
+    '.lbl{width:40mm;height:25mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}' +
+    '.lbl-n{font-size:7pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.lbl-b{height:11mm;margin:.8mm 0}.lbl-b svg{width:100%;height:100%}' +
+    '.lbl-c{font-size:8pt;font-family:monospace;font-weight:700;letter-spacing:.08em}' +
+    '</style></head><body>' + cuerpo + '</body></html>');
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+// ── Modo escaneo: pensado para la pistola lectora (teclea el codigo + Enter) ──
+function invModoEscaneo() {
+  invScanModo = 'buscar';
+  invConteoTmp = {};
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:10px">📷 Modo escaneo</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="invScanModos">' +
+      '<button class="btn btn-sm btn-teal" data-m="buscar" onclick="invScanSetModo(\'buscar\')">🔍 Buscar</button>' +
+      '<button class="btn btn-sm btn-outline" data-m="entrada" onclick="invScanSetModo(\'entrada\')">⬇ Entrada</button>' +
+      '<button class="btn btn-sm btn-outline" data-m="salida" onclick="invScanSetModo(\'salida\')">⬆ Salida</button>' +
+      '<button class="btn btn-sm btn-outline" data-m="conteo" onclick="invScanSetModo(\'conteo\')">📋 Conteo</button>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Sede</label><select id="invScanSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<div id="invScanPlacaWrap" style="display:none"><label class="gm-lbl">Placa destino *</label><input id="invScanPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10"></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Dispara la pistola aquí (o escribe el código y Enter)</label>' +
+    '<input id="invScanInput" class="gm-inp" autocomplete="off" placeholder="Esperando escaneo…" style="font-size:17px;padding:13px;font-family:monospace;border-color:#008184;border-width:2px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();invScanProcesar();}" onblur="invScanRefoco()">' +
+    '<div id="invScanLog" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>' +
+    '<div id="invScanConteoBtns"></div>', 560);
+  setTimeout(function () { var i = document.getElementById('invScanInput'); if (i) i.focus(); }, 150);
+}
+
+function invScanRefoco() {
+  setTimeout(function () {
+    var i = document.getElementById('invScanInput');
+    var activo = document.activeElement;
+    // no robar el foco si el usuario esta escribiendo la placa o cambiando sede
+    if (i && activo && activo.id !== 'invScanPlaca' && activo.tagName !== 'SELECT' && activo.tagName !== 'INPUT') i.focus();
+  }, 120);
+}
+
+function invScanSetModo(m) {
+  invScanModo = m;
+  var botones = document.querySelectorAll('#invScanModos button');
+  for (var i = 0; i < botones.length; i++) {
+    botones[i].className = 'btn btn-sm ' + (botones[i].getAttribute('data-m') === m ? 'btn-teal' : 'btn-outline');
+  }
+  var pw = document.getElementById('invScanPlacaWrap');
+  if (pw) pw.style.display = m === 'salida' ? '' : 'none';
+  invScanPintarConteo();
+  var inp = document.getElementById('invScanInput');
+  if (inp) inp.focus();
+}
+
+function invScanLogAdd(htmlFila, error) {
+  var log = document.getElementById('invScanLog');
+  if (!log) return;
+  var div = document.createElement('div');
+  div.style.cssText = 'padding:7px 10px;border-radius:8px;margin-bottom:5px;font-size:12.5px;background:' + (error ? '#fee2e2' : '#f0fdf4') + ';color:' + (error ? '#991b1b' : '#14532d');
+  div.innerHTML = htmlFila;
+  log.insertBefore(div, log.firstChild);
+}
+
+function invScanProcesar() {
+  var inp = document.getElementById('invScanInput');
+  if (!inp) return;
+  var codigo = inp.value.trim().toUpperCase();
+  inp.value = '';
+  if (!codigo) return;
+  var p = null;
+  for (var i = 0; i < invProductos.length; i++) {
+    if ((invProductos[i].codigo || '').toUpperCase() === codigo) { p = invProductos[i]; break; }
+  }
+  if (!p) {
+    invScanLogAdd('❓ Código <b>' + shEsc(codigo) + '</b> no registrado', true);
+    if (confirm('El código "' + codigo + '" no existe.\n¿Crear el producto ahora?')) {
+      gmModalCerrar();
+      invSheetProducto('', codigo);
+    }
+    return;
+  }
+  var sede = document.getElementById('invScanSede').value;
+
+  if (invScanModo === 'buscar') {
+    var enSede = (p.sedes || {})[sede] || 0;
+    invScanLogAdd('🔍 <b>' + shEsc(p.nombre) + '</b> — ' + fmtSoles(p.precio) + ' · total <b>' + p.stock + '</b> · ' + shEsc(sede) + ': <b>' + enSede + '</b>');
+    if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+    return;
+  }
+
+  if (invScanModo === 'conteo') {
+    invConteoTmp[p.id] = (invConteoTmp[p.id] || 0) + 1;
+    invScanLogAdd('📋 <b>' + shEsc(p.nombre) + '</b> — contados: <b>' + invConteoTmp[p.id] + '</b> (sistema en ' + shEsc(sede) + ': ' + ((p.sedes || {})[sede] || 0) + ')');
+    if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+    invScanPintarConteo();
+    return;
+  }
+
+  var placa = '';
+  if (invScanModo === 'salida') {
+    placa = (document.getElementById('invScanPlaca').value || '').trim().toUpperCase();
+    if (!placa) {
+      invScanLogAdd('⚠ Escribe primero la <b>placa destino</b> para registrar salidas', true);
+      document.getElementById('invScanPlaca').focus();
+      return;
+    }
+  }
+  agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
+    productoId: p.id, tipo: invScanModo, cantidad: 1, sede: sede, placa: placa,
+    motivo: invScanModo === 'salida' ? 'Instalación (escaneo)' : 'Ingreso (escaneo)',
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      p.sedes = p.sedes || {};
+      p.sedes[sede] = d.stock;
+      p.stock = d.total;
+      invScanLogAdd((invScanModo === 'entrada' ? '⬇ +1 ' : '⬆ −1 ') + '<b>' + shEsc(p.nombre) + '</b> · ' + shEsc(sede) + ': <b>' + d.stock + '</b>' + (placa ? ' · 🚗 ' + shEsc(placa) : ''));
+      if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+    } else {
+      invScanLogAdd('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo registrar'), true);
+    }
+  }).catch(function () { invScanLogAdd('⚠ Error de conexión', true); });
+}
+
+function invScanPintarConteo() {
+  var cont = document.getElementById('invScanConteoBtns');
+  if (!cont) return;
+  var ids = Object.keys(invConteoTmp);
+  if (invScanModo !== 'conteo' || !ids.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML =
+    '<div style="font-size:11px;color:#8a8a8a;margin:8px 0 6px">El ajuste fija el stock de la sede elegida EXACTAMENTE en lo contado (solo los productos escaneados).</div>' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center" onclick="invScanAplicarConteo()">✔ Aplicar conteo (' + ids.length + ' productos)</button>';
+}
+
+function invScanAplicarConteo() {
+  var sede = document.getElementById('invScanSede').value;
+  var ids = Object.keys(invConteoTmp);
+  var pendientes = ids.length;
+  if (!pendientes) return;
+  ids.forEach(function (pid) {
+    agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
+      productoId: pid, tipo: 'ajuste', cantidad: invConteoTmp[pid], sede: sede,
+      motivo: 'Conteo físico (escaneo)', uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+    }}).then(function (d) {
+      pendientes--;
+      var p = invBuscarProd(pid);
+      if (d && d.ok && p) { invScanLogAdd('✔ Ajustado <b>' + shEsc(p.nombre) + '</b> → ' + d.stock + ' en ' + shEsc(sede)); }
+      else invScanLogAdd('⚠ ' + shEsc(d && d.error ? d.error : 'Error ajustando'), true);
+      if (pendientes === 0) { invConteoTmp = {}; invScanPintarConteo(); renderInventario(); }
+    }).catch(function () { pendientes--; });
+  });
 }
 
 function invVerHistorial(id) {
   var q = id ? { productoId: id } : {};
   agendaWorkerFetch('invMovimientosListar', q).then(function (d) {
     if (!d || !d.ok) { showToast('No se pudo cargar el historial', 'error'); return; }
-    var movs = d.movimientos || [];
+    invMovsCache = d.movimientos || [];
     var p = id ? invBuscarProd(id) : null;
-    var filas = '';
-    for (var i = 0; i < movs.length; i++) {
-      var m = movs[i];
-      var prod = invBuscarProd(m.producto_id);
-      var col = m.tipo === 'entrada' ? '#065f46' : (m.tipo === 'salida' ? '#dc2626' : '#92400e');
-      var signo = m.tipo === 'entrada' ? '+' : (m.tipo === 'salida' ? '−' : '±');
-      filas += '<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eee;font-size:12.5px">' +
-        '<b style="color:' + col + ';min-width:52px">' + signo + Math.abs(m.cantidad) + '</b>' +
-        '<div style="flex:1;min-width:0">' + (!id && prod ? '<b>' + shEsc(prod.nombre) + '</b> · ' : '') + shEsc(m.tipo) +
-          (m.motivo ? ' — ' + shEsc(m.motivo) : '') + (m.referencia ? ' <span style="color:#008184;font-family:monospace">[' + shEsc(m.referencia) + ']</span>' : '') +
-          '<div style="color:#8a8a8a;font-size:11px">' + new Date(m.creado_en).toLocaleString('es-PE') + (m.nombre ? ' · ' + shEsc(m.nombre) : '') + '</div></div>' +
-        '</div>';
-    }
     gmModalAbrir(
-      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">🕓 Movimientos' + (p ? ' — ' + shEsc(p.nombre) : ' recientes') + '</div>' +
-      (filas || '<div style="color:#8a8a8a;text-align:center;padding:20px">Sin movimientos aún</div>') +
-      '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:14px" onclick="gmModalCerrar()">Cerrar</button>', 560);
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:10px">🕓 Movimientos' + (p ? ' — ' + shEsc(p.nombre) : ' recientes') + '</div>' +
+      '<input class="gm-inp" placeholder="🚗 Filtrar por placa (ej: BET646)..." oninput="invPintarHistorial(\'' + (id ? shEsc(id) : '') + '\', this.value)" style="margin-bottom:10px">' +
+      '<div id="invHistLista"></div>' +
+      '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:14px" onclick="gmModalCerrar()">Cerrar</button>', 580);
+    invPintarHistorial(id || '', '');
   }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invPintarHistorial(id, filtroPlaca) {
+  var cont = document.getElementById('invHistLista');
+  if (!cont) return;
+  var fp = String(filtroPlaca || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  var filas = '';
+  for (var i = 0; i < invMovsCache.length; i++) {
+    var m = invMovsCache[i];
+    if (fp && String(m.placa || '').replace(/[^A-Z0-9]/g, '').indexOf(fp) === -1) continue;
+    var prod = invBuscarProd(m.producto_id);
+    var col = m.tipo === 'entrada' ? '#065f46' : (m.tipo === 'salida' ? '#dc2626' : '#92400e');
+    var signo = m.tipo === 'entrada' ? '+' : (m.tipo === 'salida' ? '−' : '±');
+    filas += '<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #eee;font-size:12.5px">' +
+      '<b style="color:' + col + ';min-width:44px">' + signo + Math.abs(m.cantidad) + '</b>' +
+      '<div style="flex:1;min-width:0">' + (!id && prod ? '<b>' + shEsc(prod.nombre) + '</b> · ' : '') + shEsc(m.tipo) +
+        (m.motivo ? ' — ' + shEsc(m.motivo) : '') +
+        (m.referencia ? ' <span style="color:#008184;font-family:monospace">[' + shEsc(m.referencia) + ']</span>' : '') +
+        '<div style="color:#8a8a8a;font-size:11px;margin-top:2px">' +
+          (m.sede ? '🏢 ' + shEsc(m.sede) + ' · ' : '') +
+          (m.placa ? '<b style="color:#131313">🚗 ' + shEsc(m.placa) + '</b> · ' : '') +
+          new Date(m.creado_en).toLocaleString('es-PE') + (m.nombre ? ' · ' + shEsc(m.nombre) : '') +
+        '</div></div>' +
+      '</div>';
+  }
+  cont.innerHTML = filas || '<div style="color:#8a8a8a;text-align:center;padding:20px">' + (fp ? 'Nada instalado en esa placa (en los últimos movimientos)' : 'Sin movimientos aún') + '</div>';
 }
 
 function invEliminar(id, nombre) {
@@ -10603,6 +10934,10 @@ function factSheetNuevo() {
       '<div><label class="gm-lbl">DNI / RUC</label><input id="factCliDoc" class="gm-inp" placeholder="La factura exige RUC"></div>' +
       '<div><label class="gm-lbl">Dirección</label><input id="factCliDir" class="gm-inp"></div>' +
     '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Sede que despacha</label><select id="factSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<div><label class="gm-lbl">Placa del vehículo</label><input id="factPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10"></div>' +
+    '</div>' +
     '<label class="gm-lbl">Items</label><div id="factItems"></div>' +
     '<button class="btn btn-outline btn-sm" style="margin-top:6px" onclick="factItemsTmp.push({productoId:\'\',descripcion:\'\',cantidad:1,precioUnit:0});factPintarItems()">+ Agregar item</button>' +
     '<div id="factTotales" style="margin-top:12px;border-top:2px solid #eee;padding-top:10px"></div>' +
@@ -10676,6 +11011,8 @@ function factGuardar() {
     metodoPago: document.getElementById('factPago').value,
     estado: document.getElementById('factEstado').value,
     notas: document.getElementById('factNotas').value.trim(),
+    sede: document.getElementById('factSede').value,
+    placa: document.getElementById('factPlaca').value.trim().toUpperCase(),
     items: items,
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
@@ -10723,6 +11060,7 @@ function factVer(id) {
           '<b>Cliente:</b> ' + shEsc(c.cliente_nombre) +
           (c.cliente_doc ? ' &nbsp;·&nbsp; <b>' + (c.tipo === 'factura' ? 'RUC' : 'DNI') + ':</b> ' + shEsc(c.cliente_doc) : '') +
           (c.cliente_dir ? '<br><b>Dirección:</b> ' + shEsc(c.cliente_dir) : '') +
+          (c.placa ? ' &nbsp;·&nbsp; <b>Placa:</b> ' + shEsc(c.placa) : '') +
           '<br><b>Fecha:</b> ' + new Date(c.creado_en).toLocaleString('es-PE') +
           (c.metodo_pago ? ' &nbsp;·&nbsp; <b>Pago:</b> ' + shEsc(c.metodo_pago) : '') +
           ' &nbsp;·&nbsp; <b>Estado:</b> <span style="text-transform:capitalize">' + c.estado + '</span>' +
