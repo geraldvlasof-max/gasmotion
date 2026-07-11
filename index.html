@@ -10803,7 +10803,12 @@ function invSheetEtiquetas(id) {
       '<div style="font-size:11px;font-family:monospace;font-weight:700;letter-spacing:.1em">' + shEsc(p.codigo) + '</div>' +
     '</div>' +
     '<label class="gm-lbl">¿Cuántas etiquetas imprimir?</label><input id="invEtqN" class="gm-inp" type="number" min="1" max="500" value="10">' +
-    '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">Formato 40×25mm (etiqueta térmica estándar). En la impresora elige el tamaño de papel de tu rollo.</div>' +
+    '<label class="gm-lbl">¿En qué impresora?</label>' +
+    '<select id="invEtqFmt" class="gm-inp">' +
+      '<option value="rollo">Impresora de etiquetas — rollo térmico 40×25mm</option>' +
+      '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja, 4×10)</option>' +
+    '</select>' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">💡 ¿Aún no llega la impresora térmica? Elige <b>hoja A4</b>: imprime en papel adhesivo A4 (se vende en librerías) con cualquier impresora, y recorta por las líneas punteadas. También puedes guardar como PDF.</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invImprimirEtiquetas(\'' + shEsc(id) + '\')">🖨 Imprimir</button>'
   );
 }
@@ -10812,6 +10817,8 @@ function invImprimirEtiquetas(id) {
   var p = invBuscarProd(id);
   if (!p) return;
   var n = Math.min(parseInt(document.getElementById('invEtqN').value, 10) || 1, 500);
+  var fmtSel = document.getElementById('invEtqFmt');
+  var esA4 = fmtSel && fmtSel.value === 'a4';
   var etiqueta =
     '<div class="lbl">' +
       '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
@@ -10820,11 +10827,16 @@ function invImprimirEtiquetas(id) {
     '</div>';
   var cuerpo = '';
   for (var i = 0; i < n; i++) cuerpo += etiqueta;
+  // Rollo: una etiqueta por pagina de 40x25mm (la impresora termica corta sola).
+  // A4: rejilla de 4x10 con lineas punteadas para recortar (impresora normal).
+  var estilos = esA4
+    ? ('@page{size:A4;margin:10mm 7mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start}' +
+       '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}')
+    : ('@page{size:40mm 25mm;margin:0}body{margin:0;padding:0}' +
+       '.lbl{width:40mm;height:25mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}');
   var w = window.open('', '_blank');
   if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
-  w.document.write('<html><head><title>Etiquetas ' + shEsc(p.codigo) + '</title><style>' +
-    '@page{size:40mm 25mm;margin:0}body{margin:0;padding:0}' +
-    '.lbl{width:40mm;height:25mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}' +
+  w.document.write('<html><head><title>Etiquetas ' + shEsc(p.codigo) + '</title><style>' + estilos +
     '.lbl-n{font-size:7pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{height:11mm;margin:.8mm 0}.lbl-b svg{width:100%;height:100%}' +
     '.lbl-c{font-size:8pt;font-family:monospace;font-weight:700;letter-spacing:.08em}' +
@@ -10852,6 +10864,7 @@ function invModoEscaneo() {
     '</div>' +
     '<label class="gm-lbl">Dispara la pistola aquí (o escribe el código y Enter)</label>' +
     '<input id="invScanInput" class="gm-inp" autocomplete="off" placeholder="Esperando escaneo…" style="font-size:17px;padding:13px;font-family:monospace;border-color:#008184;border-width:2px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();invScanProcesar();}" onblur="invScanRefoco()">' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:5px">💡 ¿Aún no llega la pistola? Escribe el código tal como sale en la etiqueta y presiona Enter — la pistola hace exactamente eso, solo que más rápido. Cuando llegue, se conecta y funciona sin configurar nada.</div>' +
     '<div id="invScanLog" style="max-height:220px;overflow-y:auto;margin-top:10px"></div>' +
     '<div id="invScanConteoBtns"></div>', 560);
   setTimeout(function () { var i = document.getElementById('invScanInput'); if (i) i.focus(); }, 150);
