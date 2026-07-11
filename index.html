@@ -10306,12 +10306,19 @@ var invMovsCache = [];
 var invScanModo = 'buscar';
 var invConteoTmp = {};
 
-// Las 3 sedes de Carrigas + el almacen que recibe el stock historico
+// Las 3 sedes de Carrigas + el almacen que recibe el stock historico.
+// Santa Anita es el ALMACEN PRINCIPAL: desde ahi se despacha a las demas sedes.
 var GM_INV_SEDES = ['Santa Anita', 'Chorrillos', 'SMP', 'Almacén general'];
+var GM_INV_SEDE_PRINCIPAL = 'Santa Anita';
+var invDspPendientes = [];
+var invDspCache = [];
 
 function gmSedeDefecto() {
   return (CU && GM_INV_SEDES.indexOf(CU.sede) !== -1) ? CU.sede : 'Almacén general';
 }
+
+function invSedeUsuario() { return CU ? CU.sede : ''; }
+function invEsAdminSedes() { return !!(CU && (CU.role === 'admin' || CU.sede === 'Todas')); }
 
 function gmSedesOptions(sel) {
   var out = '';
@@ -10389,10 +10396,24 @@ function renderInventario() {
   if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
   cont.innerHTML = '<div class="empty-state">Cargando inventario…</div>';
   agendaWorkerFetch('invProductosListar', {}).then(function (d) {
-    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return; }
+    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return null; }
     invProductos = d.productos || [];
+    return agendaWorkerFetch('invDespachosListar', { estado: 'en_transito' });
+  }).then(function (dd) {
+    if (dd === null) return;
+    invDspPendientes = (dd && dd.ok) ? (dd.despachos || []) : [];
     invPintar();
   }).catch(function () { cont.innerHTML = '<div class="empty-state">Sin conexión con el servidor de inventario</div>'; });
+}
+
+// Despachos en transito que ME tocan confirmar (los que vienen a mi sede)
+function invDspPendientesMios() {
+  if (invEsAdminSedes()) return invDspPendientes.length;
+  var n = 0;
+  for (var i = 0; i < invDspPendientes.length; i++) {
+    if (invDspPendientes[i].sede_destino === invSedeUsuario()) n++;
+  }
+  return n;
 }
 
 function invPintar() {
@@ -10449,6 +10470,7 @@ function invPintar() {
         '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
+        '<button class="btn btn-outline" onclick="invSheetDespachos()">🚚 Despachos' + (invDspPendientesMios() ? ' <span style="background:#dc2626;color:#ffffff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:4px">' + invDspPendientesMios() + '</span>' : '') + '</button>' +
         '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
       '</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>' +
@@ -10589,6 +10611,182 @@ function invGuardarTransfer(id) {
   }}).then(function (d) {
     if (d && d.ok) { gmModalCerrar(); showToast('Transferido ' + origen + ' → ' + destino, 'success'); renderInventario(); }
     else showToast(d && d.error ? d.error : 'No se pudo transferir', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ── Despachos: Santa Anita (almacen principal) envia, la sede destino ──
+// ── confirma la recepcion; recien ahi el stock entra a su sede.       ──
+
+function invSheetDespachos() {
+  gmModalAbrir('<div style="color:#8a8a8a;text-align:center;padding:20px">Cargando despachos…</div>', 640);
+  agendaWorkerFetch('invDespachosListar', {}).then(function (d) {
+    if (!d || !d.ok) { showToast('No se pudieron cargar los despachos', 'error'); return; }
+    invDspCache = d.despachos || [];
+    invDspPintar();
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invDspItemsTexto(dsp) {
+  var items = dsp.items || [];
+  var partes = [];
+  for (var i = 0; i < items.length; i++) {
+    var prod = invBuscarProd(items[i].producto_id);
+    partes.push((prod ? shEsc(prod.nombre) : 'Producto') + ' × <b>' + items[i].cantidad + '</b>');
+  }
+  return partes.join(' &nbsp;·&nbsp; ');
+}
+
+function invDspPintar() {
+  var puedeCrear = invEsAdminSedes() || invSedeUsuario() === GM_INV_SEDE_PRINCIPAL;
+  var filas = '';
+  for (var i = 0; i < invDspCache.length; i++) {
+    var d = invDspCache[i];
+    var chip;
+    if (d.estado === 'en_transito') chip = '<span style="background:#fef3c7;color:#92400e;font-weight:800;border-radius:12px;padding:3px 10px;font-size:11px">🚚 En tránsito</span>';
+    else if (d.estado === 'recibido') chip = '<span style="background:#d1fae5;color:#065f46;font-weight:800;border-radius:12px;padding:3px 10px;font-size:11px">✔ Recibido</span>';
+    else chip = '<span style="background:#f3f4f6;color:#6b7280;font-weight:800;border-radius:12px;padding:3px 10px;font-size:11px">✖ Anulado</span>';
+    var botones = '';
+    if (d.estado === 'en_transito') {
+      if (invEsAdminSedes() || invSedeUsuario() === d.sede_destino) {
+        botones += '<button class="btn btn-sm btn-teal" onclick="invDspRecibir(\'' + shEsc(d.id) + '\')">✔ Confirmar recepción</button> ';
+      }
+      if (invEsAdminSedes() || invSedeUsuario() === d.sede_origen) {
+        botones += '<button class="btn btn-sm btn-outline" style="color:#dc2626" onclick="invDspAnular(\'' + shEsc(d.id) + '\')">Anular</button>';
+      }
+    }
+    filas +=
+      '<div style="border:1.5px solid #eee;border-radius:12px;padding:12px;margin-bottom:10px">' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+          '<b style="font-family:monospace;color:#008184">' + shEsc(d.referencia) + '</b>' + chip +
+          '<span style="font-size:12.5px;font-weight:700">' + shEsc(d.sede_origen) + ' → ' + shEsc(d.sede_destino) + '</span>' +
+        '</div>' +
+        '<div style="font-size:12.5px;margin-top:6px">' + invDspItemsTexto(d) + '</div>' +
+        (d.notas ? '<div style="font-size:11.5px;color:#8a8a8a;margin-top:3px">📝 ' + shEsc(d.notas) + '</div>' : '') +
+        '<div style="font-size:11px;color:#8a8a8a;margin-top:5px">Enviado: ' + new Date(d.creado_en).toLocaleString('es-PE') + (d.creado_por_nombre ? ' · ' + shEsc(d.creado_por_nombre) : '') +
+          (d.estado === 'recibido' && d.recibido_en ? ' &nbsp;|&nbsp; Recibido: ' + new Date(d.recibido_en).toLocaleString('es-PE') + (d.recibido_por_nombre ? ' · ' + shEsc(d.recibido_por_nombre) : '') : '') + '</div>' +
+        (botones ? '<div style="margin-top:9px">' + botones + '</div>' : '') +
+      '</div>';
+  }
+  gmModalAbrir(
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><div style="font-size:16px;font-weight:800;color:#131313;flex:1">🚚 Despachos entre sedes</div>' +
+      (puedeCrear ? '<button class="btn btn-sm btn-teal" onclick="invSheetNuevoDespacho()">+ Nuevo despacho</button>' : '') + '</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">⭐ ' + GM_INV_SEDE_PRINCIPAL + ' es el almacén principal: envía y la sede destino confirma la recepción.</div>' +
+    (filas || '<div style="color:#8a8a8a;text-align:center;padding:20px">Aún no hay despachos</div>') +
+    '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:6px" onclick="gmModalCerrar()">Cerrar</button>', 640);
+}
+
+function invDspOpcionesProductos() {
+  var out = '<option value="">— Elegir producto —</option>';
+  for (var i = 0; i < invProductos.length; i++) {
+    var p = invProductos[i];
+    var enOrigen = (p.sedes && p.sedes[GM_INV_SEDE_PRINCIPAL]) || 0;
+    out += '<option value="' + shEsc(p.id) + '">' + shEsc(p.nombre) + ' (' + enOrigen + ' en ' + GM_INV_SEDE_PRINCIPAL + ')</option>';
+  }
+  return out;
+}
+
+function invDspFilaItemHTML() {
+  return '<div class="inv-dsp-item" style="display:grid;grid-template-columns:1fr 82px;gap:8px;margin-bottom:8px">' +
+    '<select class="gm-inp inv-dsp-prod" style="margin-top:0">' + invDspOpcionesProductos() + '</select>' +
+    '<input class="gm-inp inv-dsp-cant" type="number" step="1" min="1" value="1" style="margin-top:0">' +
+  '</div>';
+}
+
+function invSheetNuevoDespacho() {
+  var destinos = [];
+  for (var i = 0; i < GM_INV_SEDES.length; i++) {
+    if (GM_INV_SEDES[i] !== GM_INV_SEDE_PRINCIPAL) destinos.push(GM_INV_SEDES[i]);
+  }
+  var opciones = '';
+  for (var k = 0; k < destinos.length; k++) opciones += '<option value="' + destinos[k] + '">' + destinos[k] + '</option>';
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🚚 Nuevo despacho</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">El stock sale de ' + GM_INV_SEDE_PRINCIPAL + ' y queda “en tránsito” hasta que la sede destino confirme.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">Desde</label><div style="border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:700;background:#f4f6f6">⭐ ' + GM_INV_SEDE_PRINCIPAL + '</div></div>' +
+      '<div><label class="gm-lbl">Hacia</label><select id="invDspDestino" class="gm-inp">' + opciones + '</select></div>' +
+    '</div>' +
+    '<label class="gm-lbl">Productos</label>' +
+    '<div id="invDspItems">' + invDspFilaItemHTML() + '</div>' +
+    '<button class="btn btn-sm btn-outline" onclick="invDspAgregarItem()">+ Agregar producto</button>' +
+    '<label class="gm-lbl">Notas (opcional)</label><input id="invDspNotas" class="gm-inp" placeholder="N° de guía, transportista...">' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invDspGuardar()">🚚 Enviar despacho</button>'
+  );
+}
+
+function invDspAgregarItem() {
+  var cont = document.getElementById('invDspItems');
+  if (!cont) return;
+  var div = document.createElement('div');
+  div.innerHTML = invDspFilaItemHTML();
+  cont.appendChild(div.firstChild);
+}
+
+function invDspGuardar() {
+  var destino = document.getElementById('invDspDestino').value;
+  var filas = document.querySelectorAll('#invDspItems .inv-dsp-item');
+  var items = [];
+  for (var i = 0; i < filas.length; i++) {
+    var pid = filas[i].querySelector('.inv-dsp-prod').value;
+    var cant = parseFloat(filas[i].querySelector('.inv-dsp-cant').value) || 0;
+    if (pid && cant > 0) items.push({ productoId: pid, cantidad: cant });
+  }
+  if (!items.length) { showToast('Agrega al menos un producto con cantidad', 'error'); return; }
+  agendaWorkerFetch('invDespachoCrear', {}, { method: 'POST', body: {
+    sedeOrigen: GM_INV_SEDE_PRINCIPAL, sedeDestino: destino, items: items,
+    notas: document.getElementById('invDspNotas').value.trim(),
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      gmModalCerrar();
+      showToast('Despacho ' + d.referencia + ' en camino a ' + destino, 'success');
+      crearNotificacion(uidsPorSede(destino), 'despacho', '🚚 Despacho en camino a ' + destino,
+        d.referencia + ' salió de ' + GM_INV_SEDE_PRINCIPAL + '. Al llegar, confirma la recepción en Inventario → Despachos.', d.referencia, true);
+      renderInventario();
+    } else showToast(d && d.error ? d.error : 'No se pudo crear el despacho', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// uids de todos los usuarios de una sede (para avisarles que les llega mercaderia)
+function uidsPorSede(sede) {
+  var users = getUsers();
+  var out = [];
+  for (var uid in users) {
+    if (users[uid].sede === sede && (!CU || uid !== CU.id)) out.push(uid);
+  }
+  return out;
+}
+
+function invDspRecibir(id) {
+  var d = null;
+  for (var i = 0; i < invDspCache.length; i++) if (invDspCache[i].id === id) d = invDspCache[i];
+  if (!d) return;
+  if (!confirm('¿Confirmas que ' + d.sede_destino + ' recibió el despacho ' + d.referencia + '? El stock entrará a esa sede.')) return;
+  agendaWorkerFetch('invDespachoRecibir', {}, { method: 'POST', body: {
+    id: id, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (r) {
+    if (r && r.ok) {
+      showToast('Recepción confirmada — el stock ya está en ' + d.sede_destino, 'success');
+      if (d.creado_por_uid) {
+        crearNotificacion([d.creado_por_uid], 'despacho', '✔ Despacho recibido en ' + d.sede_destino,
+          d.referencia + ' fue confirmado por ' + (CU ? CU.nombre : 'la sede') + '.', d.referencia, false);
+      }
+      renderInventario();
+      invSheetDespachos();
+    } else showToast(r && r.error ? r.error : 'No se pudo confirmar', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invDspAnular(id) {
+  var d = null;
+  for (var i = 0; i < invDspCache.length; i++) if (invDspCache[i].id === id) d = invDspCache[i];
+  if (!d) return;
+  if (!confirm('¿Anular el despacho ' + d.referencia + '? El stock regresará a ' + d.sede_origen + '.')) return;
+  agendaWorkerFetch('invDespachoAnular', {}, { method: 'POST', body: {
+    id: id, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (r) {
+    if (r && r.ok) { showToast('Despacho anulado — stock repuesto en ' + d.sede_origen, 'success'); renderInventario(); invSheetDespachos(); }
+    else showToast(r && r.error ? r.error : 'No se pudo anular', 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
 }
 
