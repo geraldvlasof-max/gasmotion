@@ -10312,6 +10312,7 @@ var GM_INV_SEDES = ['Santa Anita', 'Chorrillos', 'SMP', 'Almacén general'];
 var GM_INV_SEDE_PRINCIPAL = 'Santa Anita';
 var invDspPendientes = [];
 var invDspCache = [];
+var invSedeFiltro = '';
 
 function gmSedeDefecto() {
   return (CU && GM_INV_SEDES.indexOf(CU.sede) !== -1) ? CU.sede : 'Almacén general';
@@ -10416,6 +10417,47 @@ function invDspPendientesMios() {
   return n;
 }
 
+// Resumen de unidades, valor y productos con stock POR SEDE (para las tarjetas)
+function invResumenSedes() {
+  var r = {};
+  for (var i = 0; i < invProductos.length; i++) {
+    var p = invProductos[i];
+    var sedes = p.sedes || {};
+    for (var s in sedes) {
+      if (!sedes[s]) continue;
+      if (!r[s]) r[s] = { und: 0, valor: 0, prods: 0 };
+      r[s].und += sedes[s];
+      r[s].valor += sedes[s] * (p.precio || 0);
+      r[s].prods++;
+    }
+  }
+  return r;
+}
+
+function invTarjetasSedes() {
+  var resumen = invResumenSedes();
+  var sedes = ['', 'Santa Anita', 'Chorrillos', 'SMP'];
+  if ((resumen['Almacén general'] || {}).und) sedes.push('Almacén general');
+  var out = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px">';
+  for (var i = 0; i < sedes.length; i++) {
+    var s = sedes[i];
+    var dato;
+    if (s === '') {
+      var totU = 0, totV = 0;
+      for (var k in resumen) { totU += resumen[k].und; totV += resumen[k].valor; }
+      dato = { und: totU, valor: totV, prods: invProductos.length };
+    } else dato = resumen[s] || { und: 0, valor: 0, prods: 0 };
+    var activo = invSedeFiltro === s;
+    var nombre = s === '' ? '🏢 Todas las sedes' : (s === GM_INV_SEDE_PRINCIPAL ? '⭐ ' + s : s.replace('Almacén general', '📦 Almacén'));
+    out += '<div onclick="invSedeFiltro=\'' + s + '\';invPintar()" style="cursor:pointer;background:' + (activo ? '#008184' : 'white') + ';border:1.5px solid ' + (activo ? '#008184' : '#D9D9D9') + ';border-radius:12px;padding:11px 13px">' +
+      '<div style="font-size:12px;font-weight:800;color:' + (activo ? '#ffffff' : '#131313') + '">' + nombre + '</div>' +
+      '<div style="font-size:17px;font-weight:900;color:' + (activo ? '#ffffff' : '#008184') + ';margin-top:2px">' + fmtSoles(dato.valor) + '</div>' +
+      '<div style="font-size:10.5px;color:' + (activo ? 'rgba(255,255,255,.85)' : '#8a8a8a') + '">' + dato.und + ' und · ' + dato.prods + ' productos</div>' +
+    '</div>';
+  }
+  return out + '</div>';
+}
+
 function invPintar() {
   var cont = document.getElementById('inventarioContent');
   if (!cont) return;
@@ -10428,6 +10470,10 @@ function invPintar() {
         (p.categoria || '').toLowerCase().indexOf(b) !== -1;
     });
   }
+  // Con una sede elegida se muestra SOLO lo que hay disponible en esa sede
+  if (invSedeFiltro) {
+    lista = lista.filter(function (p) { return ((p.sedes || {})[invSedeFiltro] || 0) > 0; });
+  }
   var valorTotal = 0, bajos = 0;
   for (var i = 0; i < invProductos.length; i++) {
     valorTotal += (invProductos[i].stock || 0) * (invProductos[i].precio || 0);
@@ -10438,14 +10484,15 @@ function invPintar() {
   for (var j = 0; j < lista.length; j++) {
     var p = lista[j];
     var bajo = (p.stock || 0) <= (p.stock_min || 0);
+    var stockVisible = invSedeFiltro ? ((p.sedes || {})[invSedeFiltro] || 0) : p.stock;
     filas +=
       '<tr>' +
         '<td style="font-family:monospace;font-size:12px">' + shEsc(p.codigo || '—') + '</td>' +
         '<td><b>' + shEsc(p.nombre) + '</b>' + (p.notas ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(p.notas) + '</div>' : '') + '</td>' +
         '<td>' + shEsc(p.categoria || '—') + '</td>' +
-        '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</span>' +
+        '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + stockVisible + ' ' + shEsc(p.unidad || 'und') + (invSedeFiltro ? ' aquí' : '') + '</span>' +
           (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') +
-          invDesgloseSedes(p) + '</td>' +
+          (invSedeFiltro ? '<div style="font-size:10.5px;color:#667781;margin-top:3px">total: ' + p.stock + '</div>' : invDesgloseSedes(p)) + '</td>' +
         '<td>' + fmtSoles(p.precio) + '</td>' +
         '<td style="white-space:nowrap">' +
           '<button class="btn btn-sm btn-teal" style="padding:5px 9px" title="Registrar entrada" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'entrada\')">⬇ Entrada</button> ' +
@@ -10460,6 +10507,7 @@ function invPintar() {
   }
 
   cont.innerHTML =
+    invTarjetasSedes() +
     '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">' +
       '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#131313">' + invProductos.length + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Productos activos</div></div>' +
       '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + fmtSoles(valorTotal) + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Valor del stock</div></div>' +
@@ -10472,9 +10520,10 @@ function invPintar() {
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
         '<button class="btn btn-outline" onclick="invSheetDespachos()">🚚 Despachos' + (invDspPendientesMios() ? ' <span style="background:#dc2626;color:#ffffff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:4px">' + invDspPendientesMios() + '</span>' : '') + '</button>' +
         '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
+        (invEsAdminSedes() ? '<button class="btn btn-outline" style="color:#dc2626;border-color:#fca5a5" onclick="invSheetControl()">🛡 Control</button>' : '') +
       '</div>' +
       '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>' +
-      '<tbody>' + (filas || '<tr><td colspan="6" style="text-align:center;color:#8a8a8a;padding:26px">' + (invBusca ? 'Sin resultados' : 'Aún no hay productos. Crea el primero con “+ Producto”.') + '</td></tr>') + '</tbody></table></div>' +
+      '<tbody>' + (filas || '<tr><td colspan="6" style="text-align:center;color:#8a8a8a;padding:26px">' + (invBusca ? 'Sin resultados' : (invSedeFiltro ? 'No hay stock disponible en ' + shEsc(invSedeFiltro) : 'Aún no hay productos. Crea el primero con “+ Producto”.')) + '</td></tr>') + '</tbody></table></div>' +
     '</div>';
 }
 
@@ -10564,6 +10613,7 @@ function invGuardarMov(id, tipo) {
   var cant = parseFloat(document.getElementById('invMovCant').value) || 0;
   if (cant <= 0) { showToast('Cantidad inválida', 'error'); return; }
   var sede = document.getElementById('invMovSede').value;
+  var motivoMov = document.getElementById('invMovMot').value.trim();
   var placa = '';
   if (tipo === 'salida') {
     var sinPlaca = document.getElementById('invMovSinPlaca').checked;
@@ -10572,11 +10622,14 @@ function invGuardarMov(id, tipo) {
       showToast('Toda salida debe destinarse a la placa del vehículo (o marca "sin vehículo")', 'error');
       return;
     }
-    if (sinPlaca) placa = '';
+    if (sinPlaca) {
+      placa = '';
+      if (!motivoMov) { showToast('Una salida sin vehículo necesita un motivo que la justifique', 'error'); return; }
+    }
   }
   agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
     productoId: id, tipo: tipo, cantidad: cant, sede: sede, placa: placa,
-    motivo: document.getElementById('invMovMot').value.trim(),
+    motivo: motivoMov,
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
     if (d && d.ok) { gmModalCerrar(); showToast('Registrado — ' + sede + ': ' + d.stock + (placa ? ' · 🚗 ' + placa : ''), 'success'); renderInventario(); }
@@ -10611,6 +10664,51 @@ function invGuardarTransfer(id) {
   }}).then(function (d) {
     if (d && d.ok) { gmModalCerrar(); showToast('Transferido ' + origen + ' → ' + destino, 'success'); renderInventario(); }
     else showToast(d && d.error ? d.error : 'No se pudo transferir', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ── 🛡 Control de faltantes (anti-robos): mermas detectadas en conteos ──
+// ── fisicos + salidas sin placa ni documento, para revision del admin. ──
+function invSheetControl() {
+  gmModalAbrir('<div style="color:#8a8a8a;text-align:center;padding:20px">Cargando control de faltantes…</div>', 640);
+  agendaWorkerFetch('invFaltantes', {}).then(function (d) {
+    if (!d || !d.ok) { showToast('No se pudo cargar el control', 'error'); return; }
+    var mermas = d.mermas || [];
+    var sinPlaca = d.sinPlaca || [];
+
+    var filasM = '';
+    for (var i = 0; i < mermas.length; i++) {
+      var m = mermas[i];
+      var pm = invBuscarProd(m.producto_id);
+      filasM += '<div style="border:1.5px solid #fecaca;background:#fef2f2;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px">' +
+        '<b style="color:#dc2626">−' + m.merma + ' ' + (pm ? shEsc(pm.unidad || 'und') : 'und') + '</b> de <b>' + (pm ? shEsc(pm.nombre) : 'Producto') + '</b> en <b>' + shEsc(m.sede || '—') + '</b>' +
+        '<div style="color:#8a8a8a;font-size:11px;margin-top:3px">' + new Date(m.creado_en).toLocaleString('es-PE') +
+          (m.nombre ? ' · contó: <b>' + shEsc(m.nombre) + '</b>' : '') +
+          (m.motivo ? ' · ' + shEsc(m.motivo) : '') + '</div>' +
+      '</div>';
+    }
+
+    var filasS = '';
+    for (var k = 0; k < sinPlaca.length; k++) {
+      var s = sinPlaca[k];
+      var ps = invBuscarProd(s.producto_id);
+      filasS += '<div style="border:1.5px solid #fde68a;background:#fffbeb;border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px">' +
+        '<b style="color:#92400e">−' + Math.abs(s.cantidad) + ' ' + (ps ? shEsc(ps.unidad || 'und') : 'und') + '</b> de <b>' + (ps ? shEsc(ps.nombre) : 'Producto') + '</b> en <b>' + shEsc(s.sede || '—') + '</b>' +
+        '<div style="margin-top:3px">Justificación: <b>' + shEsc(s.motivo || 'SIN MOTIVO') + '</b></div>' +
+        '<div style="color:#8a8a8a;font-size:11px;margin-top:2px">' + new Date(s.creado_en).toLocaleString('es-PE') +
+          (s.nombre ? ' · registró: <b>' + shEsc(s.nombre) + '</b>' : '') + '</div>' +
+      '</div>';
+    }
+
+    gmModalAbrir(
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🛡 Control de faltantes</div>' +
+      '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Cada unidad tiene rastro: sale a una placa, con un documento o con un motivo firmado por quien la registró. Lo que no cuadra, aparece aquí.</div>' +
+      '<div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px">🚨 Faltantes detectados en conteos físicos</div>' +
+      (filasM || '<div style="color:#8a8a8a;font-size:12.5px;padding:8px 0 14px">Ninguno — los conteos cuadran con el sistema ✔</div>') +
+      '<div style="font-size:13px;font-weight:800;color:#92400e;margin:14px 0 8px">⚠️ Salidas sin placa ni documento (revisar justificación)</div>' +
+      (filasS || '<div style="color:#8a8a8a;font-size:12.5px;padding:8px 0">Ninguna ✔</div>') +
+      '<div style="font-size:11px;color:#8a8a8a;margin-top:12px;border-top:1px solid #eee;padding-top:10px">💡 Haz conteos físicos sorpresa con el 📷 modo escaneo (pestaña Conteo): si falta stock, la diferencia queda registrada con quién contó y te llega una alerta al instante.</div>' +
+      '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px" onclick="gmModalCerrar()">Cerrar</button>', 640);
   }).catch(function () { showToast('Error de conexión', 'error'); });
 }
 
@@ -10984,7 +11082,17 @@ function invScanAplicarConteo() {
     }}).then(function (d) {
       pendientes--;
       var p = invBuscarProd(pid);
-      if (d && d.ok && p) { invScanLogAdd('✔ Ajustado <b>' + shEsc(p.nombre) + '</b> → ' + d.stock + ' en ' + shEsc(sede)); }
+      if (d && d.ok && p) {
+        if (d.merma && d.merma > 0) {
+          // Faltante: se conto MENOS de lo que dice el sistema -> alerta al admin
+          invScanLogAdd('🚨 FALTANTE: <b>' + d.merma + ' ' + shEsc(p.unidad || 'und') + '</b> de <b>' + shEsc(p.nombre) + '</b> menos que el sistema en ' + shEsc(sede), true);
+          crearNotificacion(uidsPorRol(['admin']), 'inventario',
+            '🚨 Faltante en conteo — ' + sede,
+            'Faltan ' + d.merma + ' ' + (p.unidad || 'und') + ' de "' + p.nombre + '" respecto al sistema. Contó: ' + (CU ? CU.nombre : 'desconocido') + '. Revisa 🛡 Control en Inventario.', '', true);
+        } else {
+          invScanLogAdd('✔ Ajustado <b>' + shEsc(p.nombre) + '</b> → ' + d.stock + ' en ' + shEsc(sede));
+        }
+      }
       else invScanLogAdd('⚠ ' + shEsc(d && d.error ? d.error : 'Error ajustando'), true);
       if (pendientes === 0) { invConteoTmp = {}; invScanPintarConteo(); renderInventario(); }
     }).catch(function () { pendientes--; });
