@@ -10320,6 +10320,9 @@ function gmSedeDefecto() {
 
 function invSedeUsuario() { return CU ? CU.sede : ''; }
 function invEsAdminSedes() { return !!(CU && (CU.role === 'admin' || CU.sede === 'Todas')); }
+// Los montos en soles del inventario solo los ven los perfiles administrativos;
+// el personal de almacen/sede trabaja con unidades, sin ver el valor monetario.
+function invVeMontos() { return !!(CU && (CU.role === 'admin' || CU.role === 'supervisor')); }
 
 function gmSedesOptions(sel) {
   var out = '';
@@ -10451,8 +10454,8 @@ function invTarjetasSedes() {
     var nombre = s === '' ? '🏢 Todas las sedes' : (s === GM_INV_SEDE_PRINCIPAL ? '⭐ ' + s : s.replace('Almacén general', '📦 Almacén'));
     out += '<div onclick="invSedeFiltro=\'' + s + '\';invPintar()" style="cursor:pointer;background:' + (activo ? '#008184' : 'white') + ';border:1.5px solid ' + (activo ? '#008184' : '#D9D9D9') + ';border-radius:12px;padding:11px 13px">' +
       '<div style="font-size:12px;font-weight:800;color:' + (activo ? '#ffffff' : '#131313') + '">' + nombre + '</div>' +
-      '<div style="font-size:17px;font-weight:900;color:' + (activo ? '#ffffff' : '#008184') + ';margin-top:2px">' + fmtSoles(dato.valor) + '</div>' +
-      '<div style="font-size:10.5px;color:' + (activo ? 'rgba(255,255,255,.85)' : '#8a8a8a') + '">' + dato.und + ' und · ' + dato.prods + ' productos</div>' +
+      '<div style="font-size:17px;font-weight:900;color:' + (activo ? '#ffffff' : '#008184') + ';margin-top:2px">' + (invVeMontos() ? fmtSoles(dato.valor) : dato.und + ' und') + '</div>' +
+      '<div style="font-size:10.5px;color:' + (activo ? 'rgba(255,255,255,.85)' : '#8a8a8a') + '">' + (invVeMontos() ? dato.und + ' und · ' : '') + dato.prods + ' productos</div>' +
     '</div>';
   }
   return out + '</div>';
@@ -10474,9 +10477,10 @@ function invPintar() {
   if (invSedeFiltro) {
     lista = lista.filter(function (p) { return ((p.sedes || {})[invSedeFiltro] || 0) > 0; });
   }
-  var valorTotal = 0, bajos = 0;
+  var valorTotal = 0, bajos = 0, unidadesTotal = 0;
   for (var i = 0; i < invProductos.length; i++) {
     valorTotal += (invProductos[i].stock || 0) * (invProductos[i].precio || 0);
+    unidadesTotal += invProductos[i].stock || 0;
     if ((invProductos[i].stock || 0) <= (invProductos[i].stock_min || 0)) bajos++;
   }
 
@@ -10493,7 +10497,7 @@ function invPintar() {
         '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + stockVisible + ' ' + shEsc(p.unidad || 'und') + (invSedeFiltro ? ' aquí' : '') + '</span>' +
           (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') +
           (invSedeFiltro ? '<div style="font-size:10.5px;color:#667781;margin-top:3px">total: ' + p.stock + '</div>' : invDesgloseSedes(p)) + '</td>' +
-        '<td>' + fmtSoles(p.precio) + '</td>' +
+        (invVeMontos() ? '<td>' + fmtSoles(p.precio) + '</td>' : '') +
         '<td style="white-space:nowrap">' +
           '<button class="btn btn-sm btn-teal" style="padding:5px 9px" title="Registrar entrada" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'entrada\')">⬇ Entrada</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Registrar salida" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'salida\')">⬆ Salida</button> ' +
@@ -10510,7 +10514,9 @@ function invPintar() {
     invTarjetasSedes() +
     '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">' +
       '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#131313">' + invProductos.length + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Productos activos</div></div>' +
-      '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + fmtSoles(valorTotal) + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Valor del stock</div></div>' +
+      (invVeMontos()
+        ? '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + fmtSoles(valorTotal) + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Valor del stock</div></div>'
+        : '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:#008184">' + unidadesTotal + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Unidades en stock</div></div>') +
       '<div class="stat-card"><div style="font-size:26px;font-weight:900;color:' + (bajos ? '#dc2626' : '#131313') + '">' + bajos + '</div><div style="font-size:11px;color:#8a8a8a;font-weight:700;text-transform:uppercase">Bajo stock mínimo</div></div>' +
     '</div>' +
     '<div class="card">' +
@@ -10522,7 +10528,7 @@ function invPintar() {
         '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
         (invEsAdminSedes() ? '<button class="btn btn-outline" style="color:#dc2626;border-color:#fca5a5" onclick="invSheetControl()">🛡 Control</button>' : '') +
       '</div>' +
-      '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Acciones</th></tr></thead>' +
+      '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th>' + (invVeMontos() ? '<th>Precio</th>' : '') + '<th>Acciones</th></tr></thead>' +
       '<tbody>' + (filas || '<tr><td colspan="6" style="text-align:center;color:#8a8a8a;padding:26px">' + (invBusca ? 'Sin resultados' : (invSedeFiltro ? 'No hay stock disponible en ' + shEsc(invSedeFiltro) : 'Aún no hay productos. Crea el primero con “+ Producto”.')) + '</td></tr>') + '</tbody></table></div>' +
     '</div>';
 }
@@ -10541,8 +10547,8 @@ function invSheetProducto(id, codigoPre) {
       '<div><label class="gm-lbl">Categoría</label><input id="invCat" class="gm-inp" value="' + shEsc(p ? p.categoria : '') + '" placeholder="Kits, Cilindros..."></div>' +
     '</div>' +
     '<label class="gm-lbl">Nombre *</label><input id="invNom" class="gm-inp" value="' + shEsc(p ? p.nombre : '') + '" placeholder="Kit GLP 5ta generación">' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">Precio (S/, con IGV)</label><input id="invPre" class="gm-inp" type="number" step="0.01" min="0" value="' + (p ? p.precio : '') + '"></div>' +
+    '<div style="display:grid;grid-template-columns:' + (invVeMontos() ? '1fr 1fr 1fr' : '1fr 1fr') + ';gap:10px">' +
+      (invVeMontos() ? '<div><label class="gm-lbl">Precio (S/, con IGV)</label><input id="invPre" class="gm-inp" type="number" step="0.01" min="0" value="' + (p ? p.precio : '') + '"></div>' : '') +
       '<div><label class="gm-lbl">Unidad</label><input id="invUni" class="gm-inp" value="' + shEsc(p ? p.unidad : 'und') + '"></div>' +
       '<div><label class="gm-lbl">Stock mínimo</label><input id="invMin" class="gm-inp" type="number" step="1" min="0" value="' + (p ? p.stock_min : 1) + '"></div>' +
     '</div>' +
@@ -10557,12 +10563,15 @@ function invSheetProducto(id, codigoPre) {
 function invGuardarProducto(id) {
   var nombre = document.getElementById('invNom').value.trim();
   if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
+  // Si el usuario no ve montos, el campo precio no existe: se conserva el actual
+  var elPre = document.getElementById('invPre');
+  var prodActual = id ? invBuscarProd(id) : null;
   var body = {
     nombre: nombre,
     codigo: document.getElementById('invCod').value.trim(),
     categoria: document.getElementById('invCat').value.trim(),
     unidad: document.getElementById('invUni').value.trim() || 'und',
-    precio: parseFloat(document.getElementById('invPre').value) || 0,
+    precio: elPre ? (parseFloat(elPre.value) || 0) : (prodActual ? prodActual.precio || 0 : 0),
     stockMin: parseFloat(document.getElementById('invMin').value) || 0,
     notas: document.getElementById('invNot').value.trim(),
     uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
@@ -11021,7 +11030,7 @@ function invScanProcesar() {
 
   if (invScanModo === 'buscar') {
     var enSede = (p.sedes || {})[sede] || 0;
-    invScanLogAdd('🔍 <b>' + shEsc(p.nombre) + '</b> — ' + fmtSoles(p.precio) + ' · total <b>' + p.stock + '</b> · ' + shEsc(sede) + ': <b>' + enSede + '</b>');
+    invScanLogAdd('🔍 <b>' + shEsc(p.nombre) + '</b> — ' + (invVeMontos() ? fmtSoles(p.precio) + ' · ' : '') + 'total <b>' + p.stock + '</b> · ' + shEsc(sede) + ': <b>' + enSede + '</b>');
     if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
     return;
   }
