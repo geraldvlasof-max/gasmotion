@@ -10528,6 +10528,7 @@ function invPintar() {
         '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
+        '<button class="btn btn-outline" onclick="invSheetGenerador()">🏷 Generador</button>' +
         '<button class="btn btn-outline" onclick="invSheetDespachos()">🚚 Despachos' + (invDspPendientesMios() ? ' <span style="background:#dc2626;color:#ffffff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:4px">' + invDspPendientesMios() + '</span>' : '') + '</button>' +
         '<button class="btn btn-outline" onclick="invVerHistorial()">🕓 Últimos movimientos</button>' +
         (invEsAdminSedes() ? '<button class="btn btn-outline" style="color:#dc2626;border-color:#fca5a5" onclick="invSheetControl()">🛡 Control</button>' : '') +
@@ -10542,14 +10543,52 @@ function invBuscarProd(id) {
   return null;
 }
 
+// ── Generador de códigos: prefijo del nombre/categoría + correlativo único ──
+function invGenerarCodigo(nombre, categoria) {
+  var base = String(categoria || nombre || 'PRD').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'PRD';
+  var existentes = {};
+  for (var i = 0; i < invProductos.length; i++) {
+    if (invProductos[i].codigo) existentes[invProductos[i].codigo.toUpperCase()] = 1;
+  }
+  for (var n = 1; n < 10000; n++) {
+    var cand = base + '-' + (n < 1000 ? ('000' + n).slice(-3) : n);
+    if (!existentes[cand]) return cand;
+  }
+  return base + '-' + Date.now().toString(36).toUpperCase().slice(-5);
+}
+
+function invGenerarCodigoUI() {
+  var nom = document.getElementById('invNom');
+  var cat = document.getElementById('invCat');
+  var inp = document.getElementById('invCod');
+  if (!inp) return;
+  inp.value = invGenerarCodigo(nom ? nom.value : '', cat ? cat.value : '');
+  invPreviaCodigo();
+}
+
+// Vista previa en vivo del código de barras mientras se escribe
+function invPreviaCodigo() {
+  var inp = document.getElementById('invCod');
+  var prev = document.getElementById('invCodPreview');
+  if (!inp || !prev) return;
+  var limpio = inp.value.trim().toUpperCase();
+  var svg = limpio ? gmCodigoBarrasSVG(limpio, 30) : '';
+  prev.innerHTML = svg
+    ? '<div style="height:38px;max-width:220px;margin:0 auto">' + svg + '</div><div style="font-size:10px;font-family:monospace;font-weight:700;letter-spacing:.1em;text-align:center;margin-top:2px">' + shEsc(limpio) + '</div>'
+    : '<div style="font-size:10.5px;color:#c0c0c0;text-align:center;padding:12px 0">La vista previa del código de barras aparece aquí</div>';
+}
+
 function invSheetProducto(id, codigoPre) {
   var p = id ? invBuscarProd(id) : null;
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:14px">' + (p ? 'Editar producto' : 'Nuevo producto') + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">Código (= código de barras)</label><input id="invCod" class="gm-inp" value="' + shEsc(p ? p.codigo : (codigoPre || '')) + '" placeholder="KIT-5G" style="text-transform:uppercase"></div>' +
+      '<div><label class="gm-lbl">Código (= código de barras)</label>' +
+        '<div style="display:flex;gap:6px"><input id="invCod" class="gm-inp" value="' + shEsc(p ? p.codigo : (codigoPre || '')) + '" placeholder="KIT-5G" style="text-transform:uppercase;flex:1;min-width:0" oninput="invPreviaCodigo()">' +
+        '<button class="btn btn-sm btn-outline" style="margin-top:6px;white-space:nowrap" title="Generar un código único automáticamente" onclick="invGenerarCodigoUI()">⚙ Generar</button></div></div>' +
       '<div><label class="gm-lbl">Categoría</label><input id="invCat" class="gm-inp" value="' + shEsc(p ? p.categoria : '') + '" placeholder="Kits, Cilindros..."></div>' +
     '</div>' +
+    '<div id="invCodPreview" style="border:1.5px dashed #D9D9D9;border-radius:10px;padding:8px;margin-top:8px;min-height:44px"></div>' +
     '<label class="gm-lbl">Nombre *</label><input id="invNom" class="gm-inp" value="' + shEsc(p ? p.nombre : '') + '" placeholder="Kit GLP 5ta generación">' +
     '<div style="display:grid;grid-template-columns:' + (invVeMontos() ? '1fr 1fr 1fr' : '1fr 1fr') + ';gap:10px">' +
       (invVeMontos() ? '<div><label class="gm-lbl">Precio (S/, con IGV)</label><input id="invPre" class="gm-inp" type="number" step="0.01" min="0" value="' + (p ? p.precio : '') + '"></div>' : '') +
@@ -10562,6 +10601,7 @@ function invSheetProducto(id, codigoPre) {
     '<label class="gm-lbl">Notas</label><input id="invNot" class="gm-inp" value="' + shEsc(p ? p.notas : '') + '">' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarProducto(\'' + (p ? shEsc(p.id) : '') + '\')">' + (p ? 'Guardar cambios' : 'Crear producto') + '</button>'
   );
+  invPreviaCodigo();
 }
 
 function invGuardarProducto(id) {
@@ -10929,17 +10969,28 @@ function invImprimirEtiquetas(id) {
   if (!p) return;
   var n = Math.min(parseInt(document.getElementById('invEtqN').value, 10) || 1, 500);
   var fmtSel = document.getElementById('invEtqFmt');
-  var esA4 = fmtSel && fmtSel.value === 'a4';
-  var etiqueta =
-    '<div class="lbl">' +
-      '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
-      '<div class="lbl-b">' + gmCodigoBarrasSVG(p.codigo, 30) + '</div>' +
-      '<div class="lbl-c">' + shEsc(p.codigo) + '</div>' +
-    '</div>';
+  invImprimirLote([{ p: p, n: n }], fmtSel && fmtSel.value === 'a4');
+}
+
+// Imprime un lote de etiquetas (uno o varios productos) en rollo o A4.
+// Rollo: una etiqueta por pagina de 40x25mm (la impresora termica corta sola).
+// A4: rejilla de 4x10 con lineas punteadas para recortar (impresora normal).
+function invImprimirLote(items, esA4) {
   var cuerpo = '';
-  for (var i = 0; i < n; i++) cuerpo += etiqueta;
-  // Rollo: una etiqueta por pagina de 40x25mm (la impresora termica corta sola).
-  // A4: rejilla de 4x10 con lineas punteadas para recortar (impresora normal).
+  var total = 0;
+  for (var k = 0; k < items.length; k++) {
+    var p = items[k].p;
+    var n = Math.min(items[k].n || 1, 500);
+    if (!p || !p.codigo) continue;
+    var etiqueta =
+      '<div class="lbl">' +
+        '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
+        '<div class="lbl-b">' + gmCodigoBarrasSVG(p.codigo, 30) + '</div>' +
+        '<div class="lbl-c">' + shEsc(p.codigo) + '</div>' +
+      '</div>';
+    for (var i = 0; i < n; i++) { cuerpo += etiqueta; total++; }
+  }
+  if (!total) { showToast('Nada que imprimir — revisa que los productos tengan código', 'error'); return; }
   var estilos = esA4
     ? ('@page{size:A4;margin:10mm 7mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start}' +
        '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}')
@@ -10947,7 +10998,7 @@ function invImprimirEtiquetas(id) {
        '.lbl{width:40mm;height:25mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}');
   var w = window.open('', '_blank');
   if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
-  w.document.write('<html><head><title>Etiquetas ' + shEsc(p.codigo) + '</title><style>' + estilos +
+  w.document.write('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
     '.lbl-n{font-size:7pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{height:11mm;margin:.8mm 0}.lbl-b svg{width:100%;height:100%}' +
     '.lbl-c{font-size:8pt;font-family:monospace;font-weight:700;letter-spacing:.08em}' +
@@ -10955,6 +11006,70 @@ function invImprimirEtiquetas(id) {
   w.document.close();
   w.focus();
   w.print();
+}
+
+// ── Generador masivo: codigos para todo el catalogo + impresion en lote ──
+function invSheetGenerador() {
+  var filas = '';
+  for (var i = 0; i < invProductos.length; i++) {
+    var p = invProductos[i];
+    filas += '<div style="display:flex;align-items:center;gap:9px;padding:8px 4px;border-bottom:1px solid #f0f0f0;font-size:12.5px">' +
+      '<input type="checkbox" class="inv-gen-chk" data-id="' + shEsc(p.id) + '" checked style="width:16px;height:16px;flex:none">' +
+      '<div style="flex:1;min-width:0"><b>' + shEsc(p.nombre) + '</b><div style="font-size:11px;font-family:monospace;color:' + (p.codigo ? '#008184' : '#dc2626') + '">' +
+        (p.codigo ? shEsc(p.codigo) : '— sin código (se generará solo)') + '</div></div>' +
+      '<input type="number" class="inv-gen-n" data-id="' + shEsc(p.id) + '" value="10" min="1" max="500" style="width:64px;border:1.5px solid #D9D9D9;border-radius:8px;padding:6px 8px;font-size:12.5px">' +
+    '</div>';
+  }
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🏷 Generador de códigos de barras</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Marca los productos, indica cuántas etiquetas de cada uno, y todo sale en una sola impresión. A los productos sin código se les genera uno único automáticamente.</div>' +
+    '<div style="max-height:300px;overflow-y:auto">' + (filas || '<div style="color:#8a8a8a;text-align:center;padding:18px">Aún no hay productos</div>') + '</div>' +
+    '<label class="gm-lbl">¿En qué impresora?</label>' +
+    '<select id="invGenFmt" class="gm-inp">' +
+      '<option value="rollo">Impresora de etiquetas — rollo térmico 40×25mm</option>' +
+      '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja)</option>' +
+    '</select>' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invGenerarEImprimir()">🖨 Generar códigos e imprimir todo</button>'
+  );
+}
+
+function invGenerarEImprimir() {
+  var chks = document.querySelectorAll('.inv-gen-chk');
+  var esA4 = document.getElementById('invGenFmt').value === 'a4';
+  var seleccion = [];
+  for (var i = 0; i < chks.length; i++) {
+    if (!chks[i].checked) continue;
+    var pid = chks[i].getAttribute('data-id');
+    var nInp = document.querySelector('.inv-gen-n[data-id="' + pid + '"]');
+    var p = invBuscarProd(pid);
+    if (p) seleccion.push({ p: p, n: parseInt(nInp ? nInp.value : '10', 10) || 10 });
+  }
+  if (!seleccion.length) { showToast('Marca al menos un producto', 'error'); return; }
+
+  // Primero: generar y GUARDAR los codigos que falten, luego imprimir todo junto
+  var sinCodigo = seleccion.filter(function (s) { return !s.p.codigo; });
+  var pendientes = sinCodigo.length;
+  var imprimir = function () {
+    gmModalCerrar();
+    invImprimirLote(seleccion, esA4);
+    if (sinCodigo.length) renderInventario();
+  };
+  if (!pendientes) { imprimir(); return; }
+  showToast('Generando ' + pendientes + ' código(s) nuevo(s)...', 'success');
+  sinCodigo.forEach(function (s) {
+    s.p.codigo = invGenerarCodigo(s.p.nombre, s.p.categoria);
+    agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: {
+      id: s.p.id, nombre: s.p.nombre, codigo: s.p.codigo, categoria: s.p.categoria || '',
+      unidad: s.p.unidad || 'und', precio: s.p.precio || 0, stockMin: s.p.stock_min || 0,
+      notas: s.p.notas || '', uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
+    }}).then(function () {
+      pendientes--;
+      if (pendientes === 0) imprimir();
+    }).catch(function () {
+      pendientes--;
+      if (pendientes === 0) imprimir();
+    });
+  });
 }
 
 // ── Modo escaneo: pensado para la pistola lectora (teclea el codigo + Enter) ──
