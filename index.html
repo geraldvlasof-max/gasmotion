@@ -11029,8 +11029,34 @@ function invSheetGenerador() {
       '<option value="rollo">Impresora de etiquetas — rollo térmico 40×25mm</option>' +
       '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja)</option>' +
     '</select>' +
-    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invGenerarEImprimir()">🖨 Generar códigos e imprimir todo</button>'
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invGenerarEImprimir()">🖨 Generar códigos e imprimir todo</button>' +
+    '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;font-size:12px" onclick="invAyudaImpresora()">❓ ¿Primera vez? Cómo conectar la impresora de etiquetas</button>'
   );
+}
+
+// Guía de conexión de la impresora de etiquetas — pensada para que cualquier
+// persona de la sede la configure sola, sin llamar al administrador.
+function invAyudaImpresora() {
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🖨 Conectar la impresora de etiquetas</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Se hace UNA sola vez por computadora. Después, imprimir es un solo clic.</div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">1</div>' +
+    '<div style="font-size:13px"><b>Conecta la impresora por USB</b> y enciéndela. Instala el driver que viene en su CD o descárgalo de la web del fabricante (ej. Xprinter, Zebra). Windows la detecta sola.</div></div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">2</div>' +
+    '<div style="font-size:13px"><b>Configura el tamaño del papel una vez</b>: en Windows ve a Configuración → Impresoras → tu impresora → Preferencias de impresión, y pon el tamaño <b>40 × 25 mm</b> (el de tu rollo).</div></div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">3</div>' +
+    '<div style="font-size:13px"><b>Imprime desde aquí</b>: en el Generador marca los productos y las cantidades y toca Imprimir. En la ventana que se abre, <b>elige tu impresora de etiquetas</b> en la lista y dale Imprimir.</div></div>' +
+
+    '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">4</div>' +
+    '<div style="font-size:13px"><b>La cantidad ya va incluida</b>: si pediste 50 etiquetas del Kit, salen 50 etiquetas — una por página del rollo, la impresora corta sola. No cambies el número de copias en la ventana de impresión.</div></div>' +
+
+    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada, revisa el paso 2 (tamaño 40×25mm). La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+
+    '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetGenerador()">← Volver al generador</button>'
+  , 520);
 }
 
 function invGenerarEImprimir() {
