@@ -10942,6 +10942,29 @@ function invDspAnular(id) {
 }
 
 // ── Etiquetas de codigo de barras (para la impresora termica) ──
+// El tamano del rollo varia por sede/impresora: se elige una vez y la
+// computadora lo recuerda. El rollo de Carrigas es de 30x20mm (3x2 cm).
+function gmEtqTam() {
+  var t = '';
+  try { t = localStorage.getItem('gm_etq_tam') || ''; } catch (e) {}
+  return t || '30x20';
+}
+
+function gmEtqTamOptions(idSel) {
+  var sel = gmEtqTam();
+  var ops = [
+    ['30x20', 'Rollo 30 × 20 mm (3×2 cm)'],
+    ['40x25', 'Rollo 40 × 25 mm'],
+    ['50x30', 'Rollo 50 × 30 mm'],
+    ['58x40', 'Rollo 58 × 40 mm']
+  ];
+  var out = '<label class="gm-lbl">Tamaño de la etiqueta (tu rollo)</label><select id="' + idSel + '" class="gm-inp">';
+  for (var i = 0; i < ops.length; i++) {
+    out += '<option value="' + ops[i][0] + '"' + (ops[i][0] === sel ? ' selected' : '') + '>' + ops[i][1] + '</option>';
+  }
+  return out + '</select>';
+}
+
 function invSheetEtiquetas(id) {
   var p = invBuscarProd(id);
   if (!p) return;
@@ -10956,9 +10979,10 @@ function invSheetEtiquetas(id) {
     '<label class="gm-lbl">¿Cuántas etiquetas imprimir?</label><input id="invEtqN" class="gm-inp" type="number" min="1" max="500" value="10">' +
     '<label class="gm-lbl">¿En qué impresora?</label>' +
     '<select id="invEtqFmt" class="gm-inp">' +
-      '<option value="rollo">Impresora de etiquetas — rollo térmico 40×25mm</option>' +
+      '<option value="rollo">Impresora de etiquetas — rollo térmico</option>' +
       '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja, 4×10)</option>' +
     '</select>' +
+    gmEtqTamOptions('invEtqTam') +
     '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">💡 ¿Aún no llega la impresora térmica? Elige <b>hoja A4</b>: imprime en papel adhesivo A4 (se vende en librerías) con cualquier impresora, y recorta por las líneas punteadas. También puedes guardar como PDF.</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invImprimirEtiquetas(\'' + shEsc(id) + '\')">🖨 Imprimir</button>'
   );
@@ -10969,13 +10993,24 @@ function invImprimirEtiquetas(id) {
   if (!p) return;
   var n = Math.min(parseInt(document.getElementById('invEtqN').value, 10) || 1, 500);
   var fmtSel = document.getElementById('invEtqFmt');
-  invImprimirLote([{ p: p, n: n }], fmtSel && fmtSel.value === 'a4');
+  var tamSel = document.getElementById('invEtqTam');
+  invImprimirLote([{ p: p, n: n }], fmtSel && fmtSel.value === 'a4', tamSel ? tamSel.value : gmEtqTam());
 }
 
 // Imprime un lote de etiquetas (uno o varios productos) en rollo o A4.
-// Rollo: una etiqueta por pagina de 40x25mm (la impresora termica corta sola).
-// A4: rejilla de 4x10 con lineas punteadas para recortar (impresora normal).
-function invImprimirLote(items, esA4) {
+// Rollo: una etiqueta por pagina del tamano del rollo (la termica corta sola).
+// A4: rejilla con lineas punteadas para recortar (impresora normal).
+function invImprimirLote(items, esA4, tam) {
+  tam = String(tam || gmEtqTam());
+  try { localStorage.setItem('gm_etq_tam', tam); } catch (e) {}
+  var wh = tam.split('x');
+  var W = parseInt(wh[0], 10) || 30;
+  var H = parseInt(wh[1], 10) || 20;
+  // proporciones segun el alto de la etiqueta
+  var altoBarra = Math.max(6, Math.round(H * 0.44));
+  var fNom = H >= 25 ? '7pt' : '5.5pt';
+  var fCod = H >= 25 ? '8pt' : '6.5pt';
+  var pad = H >= 25 ? '1.5mm 2mm' : '1mm 1.5mm';
   var cuerpo = '';
   var total = 0;
   for (var k = 0; k < items.length; k++) {
@@ -10993,15 +11028,17 @@ function invImprimirLote(items, esA4) {
   if (!total) { showToast('Nada que imprimir — revisa que los productos tengan código', 'error'); return; }
   var estilos = esA4
     ? ('@page{size:A4;margin:10mm 7mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start}' +
-       '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}')
-    : ('@page{size:40mm 25mm;margin:0}body{margin:0;padding:0}' +
-       '.lbl{width:40mm;height:25mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}');
+       '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}' +
+       '.lbl-n{font-size:7pt}.lbl-b{height:11mm}.lbl-c{font-size:8pt}')
+    : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}body{margin:0;padding:0}' +
+       '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}' +
+       '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
   var w = window.open('', '_blank');
   if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
   w.document.write('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
-    '.lbl-n{font-size:7pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-    '.lbl-b{height:11mm;margin:.8mm 0}.lbl-b svg{width:100%;height:100%}' +
-    '.lbl-c{font-size:8pt;font-family:monospace;font-weight:700;letter-spacing:.08em}' +
+    '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+    '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
+    '.lbl-c{font-family:monospace;font-weight:700;letter-spacing:.08em}' +
     '</style></head><body>' + cuerpo + '</body></html>');
   w.document.close();
   w.focus();
@@ -11026,9 +11063,10 @@ function invSheetGenerador() {
     '<div style="max-height:300px;overflow-y:auto">' + (filas || '<div style="color:#8a8a8a;text-align:center;padding:18px">Aún no hay productos</div>') + '</div>' +
     '<label class="gm-lbl">¿En qué impresora?</label>' +
     '<select id="invGenFmt" class="gm-inp">' +
-      '<option value="rollo">Impresora de etiquetas — rollo térmico 40×25mm</option>' +
+      '<option value="rollo">Impresora de etiquetas — rollo térmico</option>' +
       '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja)</option>' +
     '</select>' +
+    gmEtqTamOptions('invGenTam') +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invGenerarEImprimir()">🖨 Generar códigos e imprimir todo</button>' +
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;font-size:12px" onclick="invAyudaImpresora()">❓ ¿Primera vez? Cómo conectar la impresora de etiquetas</button>'
   );
@@ -11045,7 +11083,7 @@ function invAyudaImpresora() {
     '<div style="font-size:13px"><b>Conecta la impresora por USB</b> y enciéndela. Instala el driver que viene en su CD o descárgalo de la web del fabricante (ej. Xprinter, Zebra). Windows la detecta sola.</div></div>' +
 
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">2</div>' +
-    '<div style="font-size:13px"><b>Configura el tamaño del papel una vez</b>: en Windows ve a Configuración → Impresoras → tu impresora → Preferencias de impresión, y pon el tamaño <b>40 × 25 mm</b> (el de tu rollo).</div></div>' +
+    '<div style="font-size:13px"><b>Configura el tamaño del papel una vez</b>: en Windows ve a Configuración → Impresoras → tu impresora → Preferencias de impresión, y pon el tamaño <b>EXACTO de tu rollo</b> — el de Carrigas es <b>30 × 20 mm</b> (3×2 cm). En la web elige el mismo tamaño en \u201cTamaño de la etiqueta\u201d.</div></div>' +
 
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">3</div>' +
     '<div style="font-size:13px"><b>Imprime desde aquí</b>: en el Generador marca los productos y las cantidades y toca Imprimir. En la ventana que se abre, <b>elige tu impresora de etiquetas</b> en la lista y dale Imprimir.</div></div>' +
@@ -11053,7 +11091,7 @@ function invAyudaImpresora() {
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">4</div>' +
     '<div style="font-size:13px"><b>La cantidad ya va incluida</b>: si pediste 50 etiquetas del Kit, salen 50 etiquetas — una por página del rollo, la impresora corta sola. No cambies el número de copias en la ventana de impresión.</div></div>' +
 
-    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada, revisa el paso 2 (tamaño 40×25mm). La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada, revisa que el tamaño en Windows y en la web sean el MISMO de tu rollo (30×20mm). La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
 
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetGenerador()">← Volver al generador</button>'
   , 520);
@@ -11062,6 +11100,8 @@ function invAyudaImpresora() {
 function invGenerarEImprimir() {
   var chks = document.querySelectorAll('.inv-gen-chk');
   var esA4 = document.getElementById('invGenFmt').value === 'a4';
+  var tamSel = document.getElementById('invGenTam');
+  var tamGen = tamSel ? tamSel.value : gmEtqTam();
   var seleccion = [];
   for (var i = 0; i < chks.length; i++) {
     if (!chks[i].checked) continue;
@@ -11077,7 +11117,7 @@ function invGenerarEImprimir() {
   var pendientes = sinCodigo.length;
   var imprimir = function () {
     gmModalCerrar();
-    invImprimirLote(seleccion, esA4);
+    invImprimirLote(seleccion, esA4, tamGen);
     if (sinCodigo.length) renderInventario();
   };
   if (!pendientes) { imprimir(); return; }
