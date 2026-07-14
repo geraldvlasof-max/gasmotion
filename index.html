@@ -11077,10 +11077,15 @@ function invSheetGenerador() {
 function invAyudaImpresora() {
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🖨 Conectar la impresora de etiquetas</div>' +
-    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:14px">Se hace UNA sola vez por computadora. Después, imprimir es un solo clic.</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:10px">Se hace UNA sola vez por computadora. Después, imprimir es un solo clic.</div>' +
+
+    '<div style="background:#131313;color:#f5f5f0;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:12px">📠 <b>Impresora de Carrigas: POS-5811</b> (térmica, rollo 30×20mm) · PIN Bluetooth: <b style="letter-spacing:2px">0000</b><br>' +
+    '<span style="color:#a8a8a8">Las apps del manual (4BarCode / POS-Printer) son solo para el celular — para Gasmotion NO se necesitan.</span></div>' +
 
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">1</div>' +
-    '<div style="font-size:13px"><b>Conecta la impresora por USB</b> y enciéndela. Instala el driver que viene en su CD o descárgalo de la web del fabricante (ej. Xprinter, Zebra). Windows la detecta sola.</div></div>' +
+    '<div style="font-size:13px"><b>Conéctala a la computadora</b> (elige una):<br>' +
+      '<b>· USB (recomendado):</b> cable USB + driver de Windows del CD o QR de la caja (si no lo tienes, pide al vendedor el “driver Windows POS-5811”).<br>' +
+      '<b>· Bluetooth:</b> Configuración de Windows → Bluetooth → Agregar dispositivo → <b>POS-5811</b> → PIN <b>0000</b>, e instala el mismo driver eligiendo el puerto COM del Bluetooth.</div></div>' +
 
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">2</div>' +
     '<div style="font-size:13px"><b>Configura el tamaño del papel una vez</b>: en Windows ve a Configuración → Impresoras → tu impresora → Preferencias de impresión, y pon el tamaño <b>EXACTO de tu rollo</b> — el de Carrigas es <b>30 × 20 mm</b> (3×2 cm). En la web elige el mismo tamaño en \u201cTamaño de la etiqueta\u201d.</div></div>' +
@@ -11091,7 +11096,8 @@ function invAyudaImpresora() {
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">4</div>' +
     '<div style="font-size:13px"><b>La cantidad ya va incluida</b>: si pediste 50 etiquetas del Kit, salen 50 etiquetas — una por página del rollo, la impresora corta sola. No cambies el número de copias en la ventana de impresión.</div></div>' +
 
-    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada, revisa que el tamaño en Windows y en la web sean el MISMO de tu rollo (30×20mm). La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada: (1) revisa que el tamaño en Windows y en la web sean el MISMO del rollo (30×20mm) y (2) calibra el sensor — apaga la impresora y enciéndela manteniendo apretado el botón de avance hasta que saque 2-3 etiquetas solas. La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+    '<div style="text-align:center;margin-bottom:4px"><button class="btn btn-sm btn-outline" onclick="window.print()" style="font-size:11px">🖨 Imprimir esta guía para pegarla en la sede</button></div>' +
 
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetGenerador()">← Volver al generador</button>'
   , 520);
