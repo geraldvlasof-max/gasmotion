@@ -1,6 +1,8 @@
-// Gasmotion Service Worker v5.10
-const CACHE_NAME = 'gasmotion-v510';
-const WORKER_DOMAIN = 'gasmotion-sync.geraldvlasof.workers.dev';
+// Gasmotion Service Worker v5.11
+const CACHE_NAME = 'gasmotion-v511';
+// Los DOS workers (sync y agenda/sales hub) van SIEMPRE a la red, sin caché:
+// cachear respuestas de API muestra datos viejos y llena el almacenamiento.
+const WORKER_DOMAINS = ['gasmotion-sync.geraldvlasof.workers.dev', 'gasmotion-worker.geraldvlasof.workers.dev'];
 self.addEventListener('install', function(e) { self.skipWaiting(); });
 self.addEventListener('activate', function(e) {
   e.waitUntil(
@@ -11,7 +13,9 @@ self.addEventListener('activate', function(e) {
 });
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
-  if(url.indexOf(WORKER_DOMAIN) !== -1) { e.respondWith(fetch(e.request, {cache:'no-store'})); return; }
+  var esWorker = false;
+  for(var i=0;i<WORKER_DOMAINS.length;i++){ if(url.indexOf(WORKER_DOMAINS[i]) !== -1) esWorker = true; }
+  if(esWorker) { e.respondWith(fetch(e.request, {cache:'no-store'})); return; }
   if(e.request.method === 'GET') {
     e.respondWith(
       fetch(e.request, {cache:'no-cache'})

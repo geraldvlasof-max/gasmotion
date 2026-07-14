@@ -14,6 +14,8 @@
 <title>Gasmotion — Software Automotriz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://gasmotion-sync.geraldvlasof.workers.dev">
+  <link rel="preconnect" href="https://gasmotion-worker.geraldvlasof.workers.dev">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script>
     // Control de versión — fuerza recarga cuando hay versión nueva
@@ -459,6 +461,30 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
 .cockpit-progress-label{display:flex;justify-content:space-between;align-items:center}
 .cockpit-progress-bar{height:4px;background:#1e2330;border-radius:2px;overflow:hidden}
 .cockpit-progress-fill{height:100%;background:linear-gradient(90deg,#008184,#FC682F);border-radius:2px;transition:width 0.8s ease}
+/* ── RANKING COMERCIAL: podio estilo videojuego ── */
+.rk-btn{background:transparent;border:1px solid #2a3346;color:#6b82a0;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:.04em}
+.rk-btn.rk-on{background:#008184;border-color:#008184;color:white}
+.rk-podio{display:flex;align-items:flex-end;justify-content:center;gap:14px;padding:16px 0 0;flex-wrap:wrap}
+.rk-col{display:flex;flex-direction:column;align-items:center;gap:6px;width:132px;min-width:108px}
+.rk-corona{font-size:28px;line-height:1;animation:rk-flota 2.2s ease-in-out infinite}
+@keyframes rk-flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.rk-ava{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:white;overflow:hidden;border:3px solid #2a3346;background:#1e2330;flex:none}
+.rk-ava img{width:100%;height:100%;object-fit:cover;display:block}
+.rk-col.rk-1 .rk-ava{width:86px;height:86px;font-size:30px;border-color:#f5c542;box-shadow:0 0 24px rgba(245,197,66,.5)}
+.rk-nombre{font-size:12px;font-weight:800;color:#e8edf5;max-width:128px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk-pts{font-size:15px;font-weight:900;color:#f5c542}
+.rk-sub{font-size:9.5px;color:#6b82a0;letter-spacing:.04em;text-align:center}
+.rk-base{width:100%;border-radius:12px 12px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-size:20px;font-weight:900}
+.rk-1 .rk-base{height:112px;background:linear-gradient(180deg,rgba(245,197,66,.30),rgba(245,197,66,.04));border:1px solid rgba(245,197,66,.55);border-bottom:none;color:#f5c542}
+.rk-2 .rk-base{height:80px;background:linear-gradient(180deg,rgba(192,203,220,.22),rgba(192,203,220,.03));border:1px solid rgba(192,203,220,.4);border-bottom:none;color:#c0cbdc}
+.rk-3 .rk-base{height:62px;background:linear-gradient(180deg,rgba(205,127,50,.22),rgba(205,127,50,.03));border:1px solid rgba(205,127,50,.45);border-bottom:none;color:#cd7f32}
+.rk-4 .rk-base{height:46px;background:linear-gradient(180deg,rgba(90,105,130,.2),rgba(90,105,130,.03));border:1px solid rgba(90,105,130,.4);border-bottom:none;color:#8a9ab5;font-size:15px}
+.rk-tabla{margin-top:16px;border-top:1px solid #1e2330;padding-top:12px}
+.rk-fila{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:9px;font-size:12.5px;color:#c8d2e0}
+.rk-fila:nth-child(odd){background:rgba(255,255,255,.025)}
+.rk-mini{width:30px;height:30px;border-radius:50%;overflow:hidden;background:#1e2330;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex:none}
+.rk-mini img{width:100%;height:100%;object-fit:cover}
+@media(max-width:560px){.rk-podio{gap:8px}.rk-col{width:23%;min-width:78px}.rk-col.rk-1 .rk-ava{width:64px;height:64px}.rk-ava{width:48px;height:48px;font-size:17px}.rk-nombre{font-size:10.5px;max-width:100%}}
 @media(max-width:768px){
   .cockpit-gauges{grid-template-columns:repeat(2,1fr);gap:10px}
   .gauge-ring{width:70px;height:70px}
@@ -703,7 +729,7 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
       </div>
       <nav class="sidebar-nav">
         <div class="nav-section">Principal</div>
-        <button class="nav-item active" onclick="switchTab('panel',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> Panel de Control</button>
+        <button class="nav-item active" onclick="switchTab('panel',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span> Ranking Comercial</button>
         <button class="nav-item" id="navBandeja" onclick="switchTab('bandeja',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span> Expedientes FISE GNV</button>
         <button class="nav-item" id="navGLP" onclick="switchTab('glp',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="11" x2="11" y2="11"/></svg></span> Expedientes GLP</button>
         <button class="nav-item" onclick="switchTab('expedientes',this)"><span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span> Mis Expedientes</button>
@@ -743,7 +769,7 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
       <div class="topbar">
         <button class="mobile-btn" onclick="toggleSidebar()">☰</button>
         <div>
-          <div class="topbar-title" id="topbarTitle">Panel de Control</div>
+          <div class="topbar-title" id="topbarTitle">Ranking Comercial</div>
           <div class="topbar-sub" id="topbarSub">Resumen de actividad</div>
         </div>
         <div class="topbar-right"><button id="btnDarkMode" onclick="toggleDarkMode()" title="Modo oscuro" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35);border-radius:8px;padding:5px 9px;cursor:pointer;font-size:15px;line-height:1;margin-right:6px">🌙</button><span class="sede-badge" id="topbarSede">-</span></div>
@@ -753,66 +779,18 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
         <!-- PANEL -->
         <div class="tab-content active" id="tab-panel">
           <div class="cockpit-panel">
-            <!-- Barra superior tipo HUD -->
             <div class="cockpit-header">
               <div class="cockpit-title">
-                <span class="cockpit-label">GASMOTION</span>
-                <span class="cockpit-sub">PANEL DE CONTROL · <span id="cockpit-fecha"></span></span>
+                <span class="cockpit-label">🏆 RANKING COMERCIAL</span>
+                <span class="cockpit-sub">EXPEDIENTES FISE GNV + GLP · <span id="cockpit-fecha"></span></span>
               </div>
-              <div class="cockpit-status">
-                <span class="cockpit-dot"></span>
-                <span style="font-size:10px;color:#4a9d6f;font-weight:700;letter-spacing:.1em">SISTEMA ACTIVO</span>
-              </div>
-            </div>
-            <!-- Instrumentos -->
-            <div class="cockpit-gauges">
-              <div class="cockpit-gauge">
-                <div class="gauge-ring gauge-amber">
-                  <div class="gauge-inner">
-                    <div class="gauge-num" id="st-total">0</div>
-                    <div class="gauge-unit">EXP</div>
-                  </div>
-                </div>
-                <div class="gauge-label">TOTAL</div>
-              </div>
-              <div class="cockpit-gauge">
-                <div class="gauge-ring gauge-orange">
-                  <div class="gauge-inner">
-                    <div class="gauge-num" id="st-e1">0</div>
-                    <div class="gauge-unit">EXP</div>
-                  </div>
-                </div>
-                <div class="gauge-label">ETAPA 1</div>
-              </div>
-              <div class="cockpit-gauge">
-                <div class="gauge-ring gauge-blue">
-                  <div class="gauge-inner">
-                    <div class="gauge-num" id="st-e2">0</div>
-                    <div class="gauge-unit">EXP</div>
-                  </div>
-                </div>
-                <div class="gauge-label">PEND. FISE</div>
-              </div>
-              <div class="cockpit-gauge">
-                <div class="gauge-ring gauge-green">
-                  <div class="gauge-inner">
-                    <div class="gauge-num" id="st-comp">0</div>
-                    <div class="gauge-unit">EXP</div>
-                  </div>
-                </div>
-                <div class="gauge-label">COMPLETADOS</div>
+              <div style="display:flex;gap:6px" id="rkPeriodoBtns">
+                <button class="rk-btn rk-on" data-p="mes" onclick="rkSetPeriodo('mes')">Este mes</button>
+                <button class="rk-btn" data-p="todo" onclick="rkSetPeriodo('todo')">Histórico</button>
               </div>
             </div>
-            <!-- Barra de progreso global -->
-            <div class="cockpit-progress-wrap">
-              <div class="cockpit-progress-label">
-                <span style="font-size:10px;color:#6b82a0;letter-spacing:.08em">PROGRESO GLOBAL</span>
-                <span id="cockpit-pct" style="font-size:10px;color:#008184;font-weight:800">0%</span>
-              </div>
-              <div class="cockpit-progress-bar">
-                <div class="cockpit-progress-fill" id="cockpit-fill" style="width:0%"></div>
-              </div>
-            </div>
+            <div id="rkPodio"></div>
+            <div id="rkTabla"></div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></div><div><div class="card-title">Ultimos expedientes</div><div class="card-sub">Clic en la placa para abrir</div></div></div>
@@ -1827,56 +1805,21 @@ var USERS_CACHE = null;
 // 6 dígitos, validez 10 minutos
 // ═══════════════════════════════════════════════════════════
 
-var _codigosVerificacion = {}; // { uid: { codigo, expira, intentos } }
 // FLAG: cuando el dominio carrigasperu.com esté verificado en Resend, cambiar a true
-var CODIGOS_EMAIL_ACTIVOS = false;
-
-function generarCodigo6() {
-  var c = '';
-  for(var i=0; i<6; i++) c += Math.floor(Math.random()*10);
-  return c;
-}
+var CODIGOS_EMAIL_ACTIVOS = true;
 
 function enviarCodigoVerificacion(uid, correoDestino, callback) {
-  // BLOQUEO GLOBAL: mientras el dominio no esté verificado en Resend
   if(!CODIGOS_EMAIL_ACTIVOS) {
     callback(false, 'El envío de códigos por correo aún no está habilitado. Contacta a Iki.');
     return;
   }
-  var codigo = generarCodigo6();
-  var expira = Date.now() + 10*60*1000; // 10 minutos
-  _codigosVerificacion[uid] = { codigo: codigo, expira: expira, intentos: 0 };
-
-  // Guardar también en sessionStorage por si recarga
-  try {
-    sessionStorage.setItem('gm_codigo_' + uid, JSON.stringify(_codigosVerificacion[uid]));
-  } catch(e){}
-
-  var htmlCorreo = '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:0">' +
-    '<div style="background:#131313;padding:24px;text-align:center;border-radius:12px 12px 0 0">' +
-    '<div style="color:#008184;font-size:22px;font-weight:800">Gasmotion</div>' +
-    '<div style="color:#a8a8a8;font-size:12px;margin-top:2px">Carrigas Perú</div></div>' +
-    '<div style="padding:32px 24px;background:#f5f5f0;text-align:center">' +
-    '<div style="font-size:15px;color:#131313;font-weight:600;margin-bottom:8px">Código de verificación</div>' +
-    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:24px">Usa este código para cambiar tu contraseña. Válido por 10 minutos.</div>' +
-    '<div style="background:white;border:2px dashed #008184;border-radius:12px;padding:20px;margin:0 auto;max-width:240px">' +
-    '<div style="font-size:36px;font-weight:900;letter-spacing:8px;color:#131313;font-family:monospace">' + codigo + '</div>' +
-    '</div>' +
-    '<div style="font-size:12px;color:#a8a8a8;margin-top:24px">Si no solicitaste este código, ignora este correo.</div>' +
-    '</div>' +
-    '<div style="background:#131313;padding:14px;text-align:center;font-size:11px;color:#a8a8a8;border-radius:0 0 12px 12px">Carrigas Perú E.I.R.L. · Sistema Gasmotion</div></div>';
-
   if(!GM_CONFIG.workerUrl) { callback(false, 'Sin conexión al servidor'); return; }
-
-  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendEmail', {
+  // El código se genera y guarda EN EL SERVIDOR y viaja solo por correo
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=passCodigoEnviar', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     cache: 'no-store',
-    body: JSON.stringify({
-      to: correoDestino,
-      subject: 'Código de verificación Gasmotion: ' + codigo,
-      html: htmlCorreo
-    })
+    body: JSON.stringify({ uid: uid })
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
@@ -1886,24 +1829,17 @@ function enviarCodigoVerificacion(uid, correoDestino, callback) {
   .catch(function(){ callback(false, 'Error de conexión'); });
 }
 
-function verificarCodigo(uid, codigoIngresado) {
-  var registro = _codigosVerificacion[uid];
-  // Recuperar de sessionStorage si no está en memoria
-  if(!registro) {
-    try {
-      var saved = sessionStorage.getItem('gm_codigo_' + uid);
-      if(saved) registro = JSON.parse(saved);
-    } catch(e){}
-  }
-  if(!registro) return { ok:false, error:'No hay código activo. Solicita uno nuevo.' };
-  if(Date.now() > registro.expira) return { ok:false, error:'El código expiró. Solicita uno nuevo.' };
-  registro.intentos = (registro.intentos||0) + 1;
-  if(registro.intentos > 5) return { ok:false, error:'Demasiados intentos. Solicita un código nuevo.' };
-  if(String(codigoIngresado).trim() !== String(registro.codigo)) return { ok:false, error:'Código incorrecto.' };
-  // Código válido — limpiar
-  delete _codigosVerificacion[uid];
-  try{ sessionStorage.removeItem('gm_codigo_' + uid); }catch(e){}
-  return { ok:true };
+function verificarCodigo(uid, codigoIngresado, callback) {
+  if(!GM_CONFIG.workerUrl) { callback({ ok:false, error:'Sin conexión al servidor' }); return; }
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=passCodigoVerificar', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    cache: 'no-store',
+    body: JSON.stringify({ uid: uid, codigo: codigoIngresado })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){ callback(d.ok ? { ok:true } : { ok:false, error: d.error || 'Código incorrecto' }); })
+  .catch(function(){ callback({ ok:false, error:'Error de conexión' }); });
 }
 
 function getUsers() {
@@ -2847,9 +2783,63 @@ function doLogout() {
 
 
 function actualizarSidebarUser() {
-  document.getElementById('sidebarAvatar').textContent=CU.nombre.charAt(0).toUpperCase();
+  var av = document.getElementById('sidebarAvatar');
+  var u = getUsers()[CU.id];
+  if (u && u.foto) {
+    av.innerHTML = '<img src="' + u.foto + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">';
+  } else {
+    av.textContent = CU.nombre.charAt(0).toUpperCase();
+  }
+  av.style.cursor = 'pointer';
+  av.title = 'Clic para cambiar tu foto';
+  av.onclick = function () { gmCambiarFoto(CU.id); };
   document.getElementById('sidebarName').textContent=CU.nombre;
   document.getElementById('sidebarRole').textContent=roleLabel(CU.role)+' — '+CU.sede;
+}
+
+// ── Fotos de usuario: se reducen a 128px y se guardan con el usuario en D1 ──
+function gmRedimensionarFoto(file, cb) {
+  var lector = new FileReader();
+  lector.onload = function (ev) {
+    var img = new Image();
+    img.onload = function () {
+      var lado = 128;
+      var canvas = document.createElement('canvas');
+      canvas.width = lado; canvas.height = lado;
+      var ctx = canvas.getContext('2d');
+      // recorte cuadrado centrado
+      var min = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - min) / 2, (img.height - min) / 2, min, min, 0, 0, lado, lado);
+      cb(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = function () { cb(''); };
+    img.src = ev.target.result;
+  };
+  lector.readAsDataURL(file);
+}
+
+function gmCambiarFoto(uid) {
+  if (!CU) return;
+  if (uid !== CU.id && CU.role !== 'admin') { showToast('Solo el administrador cambia fotos de otros', 'error'); return; }
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = function () {
+    var f = input.files && input.files[0];
+    if (!f) return;
+    gmRedimensionarFoto(f, function (dataUrl) {
+      if (!dataUrl) { showToast('No se pudo leer la imagen', 'error'); return; }
+      var users = getUsers();
+      if (!users[uid]) return;
+      users[uid].foto = dataUrl;
+      saveUsers(users);
+      showToast('Foto actualizada 📸', 'success');
+      if (uid === CU.id) actualizarSidebarUser();
+      if (typeof renderGestionUsuarios === 'function' && document.getElementById('tabUsuarios')) renderGestionUsuarios();
+      renderPanel();
+    });
+  };
+  input.click();
 }
 
 function editarNombreAdmin() {
@@ -2887,7 +2877,7 @@ var TAB_TITLES={
   videoteca:['Videoteca','Contenido multimedia para vendedores'],
   creditos:['Creditos','Gestion de creditos AUTOCASH y CBET'],
   clientes:['Panel de Clientes','Dashboard de clientes y agenda de mantenimiento'],
-  panel:['Panel de Control','Resumen de actividad'],
+  panel:['Ranking Comercial','Los mejores vendedores — FISE GNV + GLP'],
   bandeja:['Expedientes FISE GNV','Pendientes de procesar — Programa GNV FISE'],
   glp:['Expedientes GLP','Pendientes de procesar — Programa GLP'],
   misventas:['Mis Ventas','Tus expedientes del mes como Vendedor de Servicio'],
@@ -4107,7 +4097,7 @@ function verificarCodigoRecuperacion() {
 
   if(newPass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
 
-  var resultado = verificarCodigo(uid, codigo);
+  verificarCodigo(uid, codigo, function(resultado) {
   if(!resultado.ok) { errEl.textContent = resultado.error; return; }
 
   // Código válido — cambiar contraseña (hasheada)
@@ -4129,6 +4119,7 @@ function verificarCodigoRecuperacion() {
     setTimeout(function(){ mostrarLogin(); }, 2000);
     }); // fin sha256Hex
   }
+  }); // fin verificarCodigo
 }
 
 function mostrarLogin() {
@@ -4154,7 +4145,11 @@ function renderGestionUsuarios() {
       'asistente_fise':'Asistente FISE'
     }[u.role] || u.role;
     var esIki = uid === 'iki';
+    var avUsr = u.foto
+      ? '<img src="' + u.foto + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block">'
+      : '<span style="font-weight:800;color:white;font-size:14px">' + (u.nombre||uid).charAt(0).toUpperCase() + '</span>';
     rows += '<div style="display:flex;align-items:center;gap:8px;padding:10px;border:1px solid #D9D9D9;border-radius:8px;margin-bottom:8px;background:white">' +
+      '<div onclick="gmCambiarFoto(\'' + uid + '\')" title="Cambiar foto" style="width:38px;height:38px;border-radius:50%;overflow:hidden;background:#008184;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none">' + avUsr + '</div>' +
       '<div style="flex:1">' +
         '<div style="font-weight:700;font-size:14px">' + (u.nombre||uid) + ' <span style="font-size:11px;color:#6b82a0">@' + uid + '</span></div>' +
         '<div style="font-size:12px;color:#8a8a8a">' + rolLabel + ' — ' + (u.sede||'Todas') + (u.mustChangePass?' — <span style="color:#f59e0b">! Debe cambiar pass</span>':'') + '</div>' +
@@ -4437,7 +4432,7 @@ function mostrarCambiarMiPassword() {
         // Cambiar la acción del botón al segundo paso
         btnG.onclick = function() {
           var codigo = document.getElementById('cpCodigo').value.trim();
-          var resultado = verificarCodigo(uid, codigo);
+          verificarCodigo(uid, codigo, function(resultado) {
           if(!resultado.ok) { msgEl.style.color='#dc2626'; msgEl.textContent = resultado.error; return; }
           // Código válido — guardar nueva contraseña (hasheada)
           sha256Hex(nueva, function(hashNueva){
@@ -4457,6 +4452,7 @@ function mostrarCambiarMiPassword() {
           msgEl.textContent = 'Contraseña cambiada correctamente.';
           setTimeout(function(){ if(overlay.parentNode) document.body.removeChild(overlay); }, 1500);
           }); // fin sha256Hex
+          }); // fin verificarCodigo
         };
       });
       return;
@@ -9861,7 +9857,15 @@ function shReasignarA(uid) {
   agendaWorkerFetch('shLeadActualizar', {}, { method: 'POST', body: { id: lead.id, vendedoraUid: uid } })
     .then(function (d) {
       shCerrarSheet();
-      if (d && d.ok) { shToast('Lead reasignado ✔'); shCargarLeads(); }
+      if (d && d.ok) {
+        shToast('Lead reasignado ✔');
+        // Aviso emergente a quien recibe el lead — trabajo nuevo asignado
+        if (uid && (!CU || uid !== CU.id)) {
+          crearNotificacion([uid], 'tarea', 'Nuevo cliente asignado',
+            (CU ? CU.nombre : 'Alguien') + ' te asignó el cliente ' + (lead.nombre || shTelBonito(lead.telefono)) + ' en Sales Hub', lead.id, true);
+        }
+        shCargarLeads();
+      }
       else shToast('No se pudo reasignar');
     }).catch(function () { shToast('Sin conexión'); });
 }
@@ -12404,6 +12408,11 @@ function servicioGuardar(id) {
   accion.then(function (d) {
     if (d.ok) {
       showToast(id ? 'Reserva actualizada' : 'Reserva creada', 'success');
+      // Aviso emergente al especialista asignado — este es su trabajo nuevo
+      if (datos.especialistaUid && datos.especialistaUid !== datos.uid) {
+        crearNotificacion([datos.especialistaUid], 'tarea', id ? 'Servicio reprogramado' : 'Nuevo servicio asignado',
+          (datos.nombre || 'Alguien') + ' te asignó: ' + datos.tipoServicio + ' de ' + datos.cliente + ' — ' + datos.fecha + ' ' + datos.horaInicio, id || null, true);
+      }
       var ov = document.getElementById('servicioModalOv');
       if (ov) document.body.removeChild(ov);
       serviciosCargar();
@@ -12677,27 +12686,131 @@ function renderRadar() {
   }
 }
 
-function renderPanel() {
-  var total=expedientes.length;
-  var e1=0,e2=0,comp=0;
-  for(var i=0;i<expedientes.length;i++){
-    if(expedientes[i].etapa===1)e1++;
-    if(expedientes[i].etapa===2)e2++;
-    if(expedientes[i].etapa===5||expedientes[i].etapa===6)comp++;
+// ═══════════════════════════════════════════════════════════
+// RANKING COMERCIAL — puntaje por vendedor alimentado por los
+// expedientes FISE GNV y GLP. 10 pts por expediente ingresado,
+// +5 pts extra cuando llega a completado (etapa 5/6).
+// ═══════════════════════════════════════════════════════════
+var rkPeriodo = 'mes';
+
+function rkSetPeriodo(p) {
+  rkPeriodo = p;
+  var bs = document.querySelectorAll('#rkPeriodoBtns .rk-btn');
+  for (var i = 0; i < bs.length; i++) {
+    bs[i].className = 'rk-btn' + (bs[i].getAttribute('data-p') === p ? ' rk-on' : '');
   }
-  var el;
-  el=document.getElementById('st-total');if(el)el.textContent=total;
-  el=document.getElementById('st-e1');if(el)el.textContent=e1;
-  el=document.getElementById('st-e2');if(el)el.textContent=e2;
-  el=document.getElementById('st-comp');if(el)el.textContent=comp;
-  // Cockpit extras
+  renderPanel();
+}
+
+function rkPuntosDe(e) { return 10 + ((e.etapa === 5 || e.etapa === 6) ? 5 : 0); }
+
+function rkEnPeriodo(e) {
+  if (rkPeriodo !== 'mes') return true;
+  var hoy = new Date();
+  if (e.timestamp) {
+    var t = new Date(e.timestamp);
+    return t.getMonth() === hoy.getMonth() && t.getFullYear() === hoy.getFullYear();
+  }
+  // fecha legacy dd/mm/yyyy
+  var m = String(e.fecha || '').match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (!m) return true;
+  return parseInt(m[2], 10) === hoy.getMonth() + 1 && parseInt(m[3], 10) === hoy.getFullYear();
+}
+
+function rkRanking() {
+  var por = {};
+  for (var i = 0; i < expedientes.length; i++) {
+    var e = expedientes[i];
+    var vend = e.vendedorServicio || e.vendedorSede || '';
+    if (!vend || !rkEnPeriodo(e)) continue;
+    if (!por[vend]) por[vend] = { nombre: vend, pts: 0, fise: 0, glp: 0, comp: 0 };
+    if (e.tipoGas === 'GLP') por[vend].glp++; else por[vend].fise++;
+    if (e.etapa === 5 || e.etapa === 6) por[vend].comp++;
+    por[vend].pts += rkPuntosDe(e);
+  }
+  var lista = [];
+  for (var k in por) lista.push(por[k]);
+  lista.sort(function (a, b) { return b.pts - a.pts || b.comp - a.comp; });
+  return lista;
+}
+
+function rkIniciales(nombre) {
+  var partes = String(nombre).trim().split(/\s+/);
+  var ini = partes[0] ? partes[0].charAt(0) : '?';
+  if (partes[1]) ini += partes[1].charAt(0);
+  return ini.toUpperCase();
+}
+
+function rkColorDe(nombre) {
+  var h = 0;
+  for (var i = 0; i < nombre.length; i++) h = (h * 31 + nombre.charCodeAt(i)) % 360;
+  return 'hsl(' + h + ',55%,45%)';
+}
+
+function rkFotoDe(nombre) {
+  var users = getUsers();
+  for (var uid in users) {
+    if (users[uid].nombre === nombre && users[uid].foto) return users[uid].foto;
+  }
+  return '';
+}
+
+function rkAvatarHTML(v, clase) {
+  var foto = rkFotoDe(v.nombre);
+  if (foto) return '<div class="' + clase + '"><img src="' + foto + '" alt=""></div>';
+  return '<div class="' + clase + '" style="background:' + rkColorDe(v.nombre) + '">' + shEsc(rkIniciales(v.nombre)) + '</div>';
+}
+
+function renderPanel() {
   var fechaEl=document.getElementById('cockpit-fecha');
   if(fechaEl)fechaEl.textContent=nowFecha();
-  var pct = total>0?Math.round((comp/total)*100):0;
-  var pctEl=document.getElementById('cockpit-pct');
-  if(pctEl)pctEl.textContent=pct+'%';
-  var fillEl=document.getElementById('cockpit-fill');
-  if(fillEl)fillEl.style.width=pct+'%';
+
+  var lista = rkRanking();
+  var podioEl = document.getElementById('rkPodio');
+  var tablaEl = document.getElementById('rkTabla');
+  if (podioEl) {
+    if (!lista.length) {
+      podioEl.innerHTML = '<div style="text-align:center;color:#6b82a0;padding:26px;font-size:13px">Aún no hay expedientes ' + (rkPeriodo === 'mes' ? 'este mes' : '') + ' — ¡el podio espera a los primeros! 🏁</div>';
+    } else {
+      // Orden visual del podio: 2° | 1° | 3° | 4°
+      var medallas = ['👑', '🥈', '🥉', '4°'];
+      var orden = [1, 0, 2, 3];
+      var out = '<div class="rk-podio">';
+      for (var o = 0; o < orden.length; o++) {
+        var pos = orden[o];
+        if (pos >= lista.length) continue;
+        var v = lista[pos];
+        out += '<div class="rk-col rk-' + (pos + 1) + '">' +
+          (pos === 0 ? '<div class="rk-corona">👑</div>' : '') +
+          rkAvatarHTML(v, 'rk-ava') +
+          '<div class="rk-nombre">' + shEsc(v.nombre) + '</div>' +
+          '<div class="rk-pts">' + v.pts + ' pts</div>' +
+          '<div class="rk-sub">' + v.fise + ' FISE · ' + v.glp + ' GLP · ' + v.comp + ' ✔</div>' +
+          '<div class="rk-base">' + (pos === 0 ? '1°' : (pos === 1 ? '2°' : (pos === 2 ? '3°' : '4°'))) + '</div>' +
+        '</div>';
+      }
+      out += '</div>';
+      podioEl.innerHTML = out;
+    }
+  }
+  if (tablaEl) {
+    var filasRk = '';
+    for (var r = 0; r < lista.length; r++) {
+      var vr = lista[r];
+      filasRk += '<div class="rk-fila">' +
+        '<b style="min-width:24px;color:' + (r === 0 ? '#f5c542' : '#6b82a0') + '">' + (r + 1) + '°</b>' +
+        rkAvatarHTML(vr, 'rk-mini') +
+        '<span style="flex:1;font-weight:700">' + shEsc(vr.nombre) + '</span>' +
+        '<span style="color:#6b82a0;font-size:11px">' + vr.fise + ' FISE · ' + vr.glp + ' GLP · ' + vr.comp + ' completados</span>' +
+        '<b style="color:#f5c542;min-width:56px;text-align:right">' + vr.pts + ' pts</b>' +
+      '</div>';
+    }
+    tablaEl.innerHTML = lista.length
+      ? '<div class="rk-tabla">' + filasRk +
+        '<div style="font-size:10px;color:#4a5568;margin-top:10px;text-align:center">Cada expediente ingresado vale 10 pts · +5 pts al completarse (etapa 5/6) · Se cuentan FISE GNV y GLP</div></div>'
+      : '';
+  }
+
   var tbody=document.getElementById('recentBody');
   var empty=document.getElementById('recentEmpty');
   if(!tbody) return;
@@ -12709,10 +12822,10 @@ function renderPanel() {
     var e=recientes[ri];
     var tr=document.createElement('tr');
     tr.innerHTML='<td id="rpl_'+ri+'"></td>'+
-      '<td style="font-size:12px;font-weight:600;color:#131313">'+(e.nombre||'(sin datos)')+'</td>'+
-      '<td style="font-size:11px;color:#6b82a0">'+e.sede+'</td>'+
+      '<td style="font-size:12px;font-weight:600;color:#131313">'+shEsc(e.nombre||'(sin datos)')+'</td>'+
+      '<td style="font-size:11px;color:#6b82a0">'+shEsc(e.sede||'')+'</td>'+
       '<td id="ret_'+ri+'"></td>'+
-      '<td style="font-size:11px;color:#6b82a0">'+e.fecha+'</td>';
+      '<td style="font-size:11px;color:#6b82a0">'+shEsc(e.fecha||'')+'</td>';
     tbody.appendChild(tr);
     tr.querySelector('#rpl_'+ri).appendChild(mkSpan('td-placa','abrirExpediente',e.id,e.placa||'(sin placa)'));
     tr.querySelector('#ret_'+ri).appendChild(etapaBadge(e.etapa));
@@ -15383,10 +15496,13 @@ function renderUsuarios() {
       '<div style="font-size:10px;color:#a8a8a8;margin-top:4px">Puede ingresar con su nombre o su correo</div>'+
       '</div>';
 
+    var avatarInterior = u.foto
+      ? '<img src="'+u.foto+'" alt="" style="width:100%;height:100%;object-fit:cover;display:block">'
+      : u.nombre.charAt(0).toUpperCase();
     card.innerHTML=
-      '<div style="width:42px;height:42px;border-radius:50%;background:'+bg+
-      ';color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0">'+
-      u.nombre.charAt(0).toUpperCase()+'</div>'+
+      '<div onclick="gmCambiarFoto(\''+id+'\')" title="Clic para cambiar la foto" style="width:42px;height:42px;border-radius:50%;overflow:hidden;background:'+bg+
+      ';color:white;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0;cursor:pointer">'+
+      avatarInterior+'</div>'+
       '<div style="flex:1;min-width:0">'+
         '<div style="font-size:15px;font-weight:700;color:#131313">'+u.nombre+'</div>'+
         '<div style="font-size:12px;color:#8a8a8a;margin-top:2px">'+meta+'</div>'+
@@ -15408,6 +15524,12 @@ function renderUsuarios() {
     cb.textContent='Cambiar clave';
     cb.onclick=(function(uid){return function(){resetPassUsuario(uid);};})(id);
     btns.appendChild(cb);
+
+    var fb=document.createElement('button');
+    fb.style.cssText='background:#f0fdfa;color:#008184;border:1px solid #99e5e0;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
+    fb.innerHTML='&#128247; Foto';
+    fb.onclick=(function(uid){return function(){gmCambiarFoto(uid);};})(id);
+    btns.appendChild(fb);
 
     var hb=document.createElement('button');
     hb.style.cssText='background:#fff8eb;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap';
