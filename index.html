@@ -10793,6 +10793,7 @@ function invPintar() {
     '<div class="card">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">' +
         '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<button class="btn" style="background:#131313;color:#ffffff;font-weight:800" onclick="invEstacion()">⚡ Estación de escaneo</button>' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
         '<button class="btn btn-outline" onclick="invSheetGenerador()">🏷 Generador</button>' +
@@ -11205,6 +11206,252 @@ function invDspAnular(id) {
   }}).then(function (r) {
     if (r && r.ok) { showToast('Despacho anulado — stock repuesto en ' + d.sede_origen, 'success'); renderInventario(); invSheetDespachos(); }
     else showToast(r && r.error ? r.error : 'No se pudo anular', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ═══════════════════════════════════════════════════════════
+// ⚡ ESTACIÓN DE ESCANEO — pantalla simple tipo kiosco para operar el
+// almacén SOLO con la pistola y la impresora: cargar stock, descargar a
+// una placa y crear productos con su etiqueta en segundos. Pensada para
+// que cualquier persona de la sede la use sin capacitación.
+// ═══════════════════════════════════════════════════════════
+var invEstModo = '';
+var invEstNum = { cargas: 0, descargas: 0 };
+
+function invEstacion() {
+  var cont = document.getElementById('inventarioContent');
+  if (!cont) return;
+  invEstModo = '';
+  invEstNum = { cargas: 0, descargas: 0 };
+  cont.innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
+      '<button class="btn btn-outline" onclick="renderInventario()">← Volver al inventario</button>' +
+      '<div style="flex:1"></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:800;color:#8a8a8a">SEDE:</span>' +
+      '<select id="invEstSede" class="gm-inp" style="margin-top:0;font-size:15px;font-weight:800;padding:10px 14px">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px" id="invEstModos">' +
+      invEstBotonModo('cargar', '📦', 'CARGAR', 'Llegó mercadería: dispara y suma', '#065f46', '#d1fae5') +
+      invEstBotonModo('descargar', '🚗', 'DESCARGAR', 'Instalación: dispara y descuenta a una placa', '#9a3412', '#ffedd5') +
+      invEstBotonModo('etiquetas', '🏷', 'ETIQUETAS', 'Crear productos e imprimir sus códigos', '#00565a', '#ccf1f0') +
+    '</div>' +
+    '<div id="invEstZona"></div>';
+  invEstSetModo('cargar');
+}
+
+function invEstBotonModo(m, emoji, titulo, sub, color, fondo) {
+  return '<button data-m="' + m + '" onclick="invEstSetModo(\'' + m + '\')" style="border:2.5px solid #D9D9D9;background:white;border-radius:16px;padding:18px 14px;cursor:pointer;text-align:center;font-family:inherit" class="inv-est-btn">' +
+    '<div style="font-size:34px;line-height:1">' + emoji + '</div>' +
+    '<div style="font-size:16px;font-weight:900;margin-top:6px;color:' + color + '">' + titulo + '</div>' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:2px">' + sub + '</div>' +
+  '</button>';
+}
+
+function invEstSetModo(m) {
+  invEstModo = m;
+  var bs = document.querySelectorAll('#invEstModos .inv-est-btn');
+  for (var i = 0; i < bs.length; i++) {
+    var activo = bs[i].getAttribute('data-m') === m;
+    bs[i].style.borderColor = activo ? '#008184' : '#D9D9D9';
+    bs[i].style.background = activo ? '#f0fdfa' : 'white';
+    bs[i].style.boxShadow = activo ? '0 0 0 3px rgba(0,129,132,.15)' : 'none';
+  }
+  var zona = document.getElementById('invEstZona');
+  if (!zona) return;
+
+  if (m === 'etiquetas') { zona.innerHTML = invEstEtiquetasHTML(); return; }
+
+  zona.innerHTML =
+    '<div class="card" style="border:2px solid ' + (m === 'cargar' ? '#86efac' : '#fdba74') + '">' +
+      (m === 'descargar'
+        ? '<label class="gm-lbl" style="font-size:13px">🚗 Placa del vehículo que recibe (escríbela UNA vez)</label>' +
+          '<input id="invEstPlaca" class="gm-inp" placeholder="ABC-123" maxlength="10" style="font-size:22px;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:3px;padding:12px">'
+        : '') +
+      '<label class="gm-lbl" style="font-size:13px">' + (m === 'cargar' ? '📦 Dispara la pistola aquí — cada disparo SUMA 1' : '📤 Dispara la pistola aquí — cada disparo DESCUENTA 1 a la placa') + '</label>' +
+      '<input id="invEstInput" class="gm-inp" autocomplete="off" placeholder="Esperando escaneo…" ' +
+        'style="font-size:24px;padding:16px;font-family:monospace;text-align:center;border-width:3px;border-color:' + (m === 'cargar' ? '#16a34a' : '#ea580c') + '" ' +
+        'onkeydown="if(event.key===\'Enter\'){event.preventDefault();invEstProcesar();}" onblur="invEstRefoco()">' +
+      '<div style="display:flex;gap:14px;justify-content:center;margin-top:10px;font-size:13px;font-weight:800">' +
+        '<span style="color:#065f46">📦 Cargadas: <span id="invEstNumC">' + invEstNum.cargas + '</span></span>' +
+        '<span style="color:#9a3412">🚗 Descargadas: <span id="invEstNumD">' + invEstNum.descargas + '</span></span>' +
+      '</div>' +
+      '<div id="invEstNuevo"></div>' +
+      '<div id="invEstLog" style="margin-top:12px;max-height:300px;overflow-y:auto"></div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin-top:10px;text-align:center">💡 Sin pistola también funciona: escribe el código y presiona Enter. ¿Escaneaste de más? Corrígelo desde el inventario normal.</div>' +
+    '</div>';
+  setTimeout(function () { var i = document.getElementById('invEstInput'); if (i) i.focus(); }, 120);
+}
+
+function invEstRefoco() {
+  setTimeout(function () {
+    var i = document.getElementById('invEstInput');
+    var activo = document.activeElement;
+    if (i && activo && activo.tagName !== 'INPUT' && activo.tagName !== 'SELECT' && activo.tagName !== 'BUTTON') i.focus();
+  }, 120);
+}
+
+function invEstLog(htmlFila, error) {
+  var log = document.getElementById('invEstLog');
+  if (!log) return;
+  var div = document.createElement('div');
+  div.style.cssText = 'padding:10px 12px;border-radius:10px;margin-bottom:6px;font-size:14px;background:' + (error ? '#fee2e2' : '#f0fdf4') + ';color:' + (error ? '#991b1b' : '#14532d');
+  div.innerHTML = htmlFila;
+  log.insertBefore(div, log.firstChild);
+}
+
+function invEstProcesar() {
+  var inp = document.getElementById('invEstInput');
+  if (!inp) return;
+  var codigo = inp.value.trim().toUpperCase();
+  inp.value = '';
+  if (!codigo) return;
+  var p = null;
+  for (var i = 0; i < invProductos.length; i++) {
+    if ((invProductos[i].codigo || '').toUpperCase() === codigo) { p = invProductos[i]; break; }
+  }
+  var sede = document.getElementById('invEstSede').value;
+
+  if (!p) {
+    if (invEstModo === 'descargar') {
+      invEstLog('❓ El código <b>' + shEsc(codigo) + '</b> no existe — no se puede descargar algo no registrado', true);
+      return;
+    }
+    // CARGAR con codigo nuevo: crear el producto ahi mismo, sin salir
+    var nv = document.getElementById('invEstNuevo');
+    if (nv) {
+      nv.innerHTML = '<div style="border:2px dashed #008184;background:#f0fdfa;border-radius:12px;padding:12px;margin-top:10px">' +
+        '<div style="font-size:13px;font-weight:800;color:#00565a">🆕 Código nuevo: <span style="font-family:monospace">' + shEsc(codigo) + '</span> — ¿Qué producto es?</div>' +
+        '<input id="invEstNvNombre" class="gm-inp" placeholder="Ej: Kit GLP 5ta generación" style="font-size:16px">' +
+        '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:10px" onclick="invEstCrearRapido(\'' + shEsc(codigo) + '\')">✔ Crear y cargar 1 a ' + shEsc(sede) + '</button>' +
+      '</div>';
+      var ni = document.getElementById('invEstNvNombre');
+      if (ni) { ni.focus(); ni.onkeydown = function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); invEstCrearRapido(codigo); } }; }
+    }
+    return;
+  }
+
+  if (invEstModo === 'descargar') {
+    var placaEl = document.getElementById('invEstPlaca');
+    var placa = placaEl ? placaEl.value.trim().toUpperCase() : '';
+    if (!placa) {
+      invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
+      if (placaEl) placaEl.focus();
+      return;
+    }
+    agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
+      productoId: p.id, tipo: 'salida', cantidad: 1, sede: sede, placa: placa,
+      motivo: 'Instalación (estación)', uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+    }}).then(function (d) {
+      if (d && d.ok) {
+        p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
+        invEstNum.descargas++;
+        var nd = document.getElementById('invEstNumD'); if (nd) nd.textContent = invEstNum.descargas;
+        invEstLog('🚗 −1 <b>' + shEsc(p.nombre) + '</b> → placa <b>' + shEsc(placa) + '</b> · quedan ' + d.stock + ' en ' + shEsc(sede));
+        if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+      } else invEstLog('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo descargar'), true);
+    }).catch(function () { invEstLog('⚠ Error de conexión', true); });
+    return;
+  }
+
+  // CARGAR
+  agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
+    productoId: p.id, tipo: 'entrada', cantidad: 1, sede: sede,
+    motivo: 'Carga (estación)', uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
+      invEstNum.cargas++;
+      var nc = document.getElementById('invEstNumC'); if (nc) nc.textContent = invEstNum.cargas;
+      invEstLog('📦 +1 <b>' + shEsc(p.nombre) + '</b> · ahora ' + d.stock + ' en ' + shEsc(sede));
+      if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+    } else invEstLog('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo cargar'), true);
+  }).catch(function () { invEstLog('⚠ Error de conexión', true); });
+}
+
+function invEstCrearRapido(codigo) {
+  var ni = document.getElementById('invEstNvNombre');
+  var nombre = ni ? ni.value.trim() : '';
+  if (!nombre) { showToast('Escribe el nombre del producto', 'error'); return; }
+  var sede = document.getElementById('invEstSede').value;
+  agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: {
+    nombre: nombre, codigo: codigo, categoria: '', unidad: 'und', precio: 0,
+    stockMin: 1, notas: '', stockInicial: 1, sede: sede,
+    uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      var nuevoP = { id: d.id, codigo: d.codigo || codigo, nombre: nombre, categoria: '', unidad: 'und', precio: 0, stock: 1, stock_min: 1, activo: 1, notas: '', sedes: {} };
+      nuevoP.sedes[sede] = 1;
+      invProductos.push(nuevoP);
+      invEstNum.cargas++;
+      var nc = document.getElementById('invEstNumC'); if (nc) nc.textContent = invEstNum.cargas;
+      var nv = document.getElementById('invEstNuevo'); if (nv) nv.innerHTML = '';
+      invEstLog('🆕📦 Creado <b>' + shEsc(nombre) + '</b> [' + shEsc(nuevoP.codigo) + '] con 1 en ' + shEsc(sede) + ' — sigue disparando');
+      showToast('Producto creado — el admin le pone precio después', 'success');
+      var i2 = document.getElementById('invEstInput'); if (i2) i2.focus();
+    } else showToast(d && d.error ? d.error : 'No se pudo crear', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+// ── Modo ETIQUETAS de la estacion: crear producto + imprimir en 2 toques ──
+function invEstEtiquetasHTML() {
+  var filas = '';
+  for (var i = 0; i < invProductos.length; i++) {
+    var p = invProductos[i];
+    filas += '<div style="display:flex;align-items:center;gap:10px;padding:10px 6px;border-bottom:1px solid #f0f0f0">' +
+      '<div style="flex:1;min-width:0"><b style="font-size:14px">' + shEsc(p.nombre) + '</b>' +
+        '<div style="font-size:11.5px;font-family:monospace;color:' + (p.codigo ? '#008184' : '#dc2626') + '">' + (p.codigo ? shEsc(p.codigo) : 'sin código') + '</div></div>' +
+      '<input type="number" id="invEstEtqN_' + shEsc(p.id) + '" value="10" min="1" max="500" style="width:64px;border:1.5px solid #D9D9D9;border-radius:8px;padding:8px;font-size:14px;text-align:center">' +
+      '<button class="btn btn-teal" style="padding:9px 14px" onclick="invEstImprimir(\'' + shEsc(p.id) + '\')">🖨</button>' +
+    '</div>';
+  }
+  return '<div class="card" style="border:2px solid #99e5e0">' +
+    '<div style="border:2px dashed #008184;background:#f0fdfa;border-radius:12px;padding:14px;margin-bottom:14px">' +
+      '<div style="font-size:14px;font-weight:900;color:#00565a;margin-bottom:6px">🆕 Producto nuevo con etiqueta al toque</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 90px;gap:8px">' +
+        '<input id="invEstNuevoNombre" class="gm-inp" placeholder="Nombre del producto (ej: Reductor 5ta gen)" style="margin-top:0;font-size:15px">' +
+        '<input id="invEstNuevoN" class="gm-inp" type="number" value="10" min="1" max="500" style="margin-top:0;text-align:center" title="Cantidad de etiquetas">' +
+      '</div>' +
+      '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:10px;font-size:15px" onclick="invEstCrearEImprimir()">⚡ Crear código e imprimir etiquetas</button>' +
+      '<div style="font-size:10.5px;color:#8a8a8a;margin-top:5px">El código se genera solo (ej. RED-001). Pega las etiquetas y empieza a escanear con CARGAR.</div>' +
+    '</div>' +
+    '<div style="font-size:12px;font-weight:800;color:#8a8a8a;margin-bottom:4px">O IMPRIME DE LOS QUE YA EXISTEN:</div>' +
+    (filas || '<div style="color:#8a8a8a;text-align:center;padding:14px">Aún no hay productos — crea el primero arriba</div>') +
+  '</div>';
+}
+
+function invEstImprimir(pid) {
+  var p = invBuscarProd(pid);
+  if (!p) return;
+  if (!p.codigo) {
+    p.codigo = invGenerarCodigo(p.nombre, p.categoria);
+    agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: {
+      id: p.id, nombre: p.nombre, codigo: p.codigo, categoria: p.categoria || '', unidad: p.unidad || 'und',
+      precio: p.precio || 0, stockMin: p.stock_min || 0, notas: p.notas || '',
+      uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
+    }}).catch(function () {});
+  }
+  var nEl = document.getElementById('invEstEtqN_' + pid);
+  invImprimirLote([{ p: p, n: parseInt(nEl ? nEl.value : '10', 10) || 10 }], false, gmEtqTam());
+}
+
+function invEstCrearEImprimir() {
+  var nomEl = document.getElementById('invEstNuevoNombre');
+  var nombre = nomEl ? nomEl.value.trim() : '';
+  if (!nombre) { showToast('Escribe el nombre del producto', 'error'); return; }
+  var n = parseInt((document.getElementById('invEstNuevoN') || {}).value, 10) || 10;
+  var codigo = invGenerarCodigo(nombre, '');
+  agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: {
+    nombre: nombre, codigo: codigo, categoria: '', unidad: 'und', precio: 0,
+    stockMin: 1, notas: '', stockInicial: 0, sede: gmSedeDefecto(),
+    uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      var nuevoP = { id: d.id, codigo: d.codigo || codigo, nombre: nombre, categoria: '', unidad: 'und', precio: 0, stock: 0, stock_min: 1, activo: 1, notas: '', sedes: {} };
+      invProductos.push(nuevoP);
+      showToast('Creado ' + nuevoP.codigo + ' — imprimiendo ' + n + ' etiquetas', 'success');
+      invImprimirLote([{ p: nuevoP, n: n }], false, gmEtqTam());
+      invEstSetModo('etiquetas');
+    } else showToast(d && d.error ? d.error : 'No se pudo crear', 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
 }
 
