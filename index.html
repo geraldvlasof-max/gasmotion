@@ -2688,6 +2688,22 @@ function buscarUsuario(rawUid, users) {
   return null;
 }
 
+// ── Auto-migración del worker de agenda/inventario ──
+// Corre UNA vez por versión al entrar: crea las tablas/columnas nuevas en la
+// base de datos sin que nadie tenga que abrir la URL de migrate a mano.
+// Subir GM_MIGRATE_VERSION cada vez que el worker traiga cambios de BD.
+var GM_MIGRATE_VERSION = 'v25-merma-despachos';
+function gmAutoMigrate() {
+  try { if (localStorage.getItem('gm_migrate_hecha') === GM_MIGRATE_VERSION) return; } catch (e) {}
+  if (typeof agendaWorkerFetch !== 'function') return;
+  agendaWorkerFetch('migrate', {}).then(function (d) {
+    if (d && d.ok) {
+      try { localStorage.setItem('gm_migrate_hecha', GM_MIGRATE_VERSION); } catch (e) {}
+      console.log('Base de datos actualizada:', GM_MIGRATE_VERSION);
+    }
+  }).catch(function () { /* sin conexion: se reintenta al proximo ingreso */ });
+}
+
 function completarLogin(uid, u) {
   _loginAttempts = 0;
   setLoginError('');
@@ -2696,6 +2712,7 @@ function completarLogin(uid, u) {
     sessionStorage.setItem('gm_session', JSON.stringify(CU));
     sessionStorage.setItem('gm_login_time', String(Date.now()));
   }catch(e){}
+  setTimeout(gmAutoMigrate, 1500);
   // Si debe cambiar contraseña, mostrar formulario antes de entrar
   if(u.mustChangePass) {
     mostrarCambioPasswordObligatorio(uid);
@@ -2890,7 +2907,7 @@ function editarNombreAdmin() {
     });
   }
   var s=sessionStorage.getItem('gm_session');
-  if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();}catch(e){}}
+  if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();setTimeout(gmAutoMigrate,1500);}catch(e){}}
 })();
 
 // ==================
