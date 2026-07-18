@@ -2688,6 +2688,22 @@ function buscarUsuario(rawUid, users) {
   return null;
 }
 
+// ── Auto-migración del worker de agenda/inventario ──
+// Corre UNA vez por versión al entrar: crea las tablas/columnas nuevas en la
+// base de datos sin que nadie tenga que abrir la URL de migrate a mano.
+// Subir GM_MIGRATE_VERSION cada vez que el worker traiga cambios de BD.
+var GM_MIGRATE_VERSION = 'v25-merma-despachos';
+function gmAutoMigrate() {
+  try { if (localStorage.getItem('gm_migrate_hecha') === GM_MIGRATE_VERSION) return; } catch (e) {}
+  if (typeof agendaWorkerFetch !== 'function') return;
+  agendaWorkerFetch('migrate', {}).then(function (d) {
+    if (d && d.ok) {
+      try { localStorage.setItem('gm_migrate_hecha', GM_MIGRATE_VERSION); } catch (e) {}
+      console.log('Base de datos actualizada:', GM_MIGRATE_VERSION);
+    }
+  }).catch(function () { /* sin conexion: se reintenta al proximo ingreso */ });
+}
+
 function completarLogin(uid, u) {
   _loginAttempts = 0;
   setLoginError('');
@@ -2696,6 +2712,7 @@ function completarLogin(uid, u) {
     sessionStorage.setItem('gm_session', JSON.stringify(CU));
     sessionStorage.setItem('gm_login_time', String(Date.now()));
   }catch(e){}
+  setTimeout(gmAutoMigrate, 1500);
   // Si debe cambiar contraseña, mostrar formulario antes de entrar
   if(u.mustChangePass) {
     mostrarCambioPasswordObligatorio(uid);
@@ -2890,7 +2907,7 @@ function editarNombreAdmin() {
     });
   }
   var s=sessionStorage.getItem('gm_session');
-  if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();}catch(e){}}
+  if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();setTimeout(gmAutoMigrate,1500);}catch(e){}}
 })();
 
 // ==================
@@ -10872,9 +10889,25 @@ function invSheetProducto(id, codigoPre) {
   invPreviaCodigo();
 }
 
+var invGuardandoProd = false;
+
 function invGuardarProducto(id) {
+  if (invGuardandoProd) return; // evita duplicados por doble clic
   var nombre = document.getElementById('invNom').value.trim();
   if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
+  // No permitir dos productos con el mismo codigo de barras
+  var codigoVal = document.getElementById('invCod').value.trim().toUpperCase();
+  if (codigoVal) {
+    for (var dv = 0; dv < invProductos.length; dv++) {
+      if (invProductos[dv].id !== id && (invProductos[dv].codigo || '').toUpperCase() === codigoVal) {
+        showToast('El código ' + codigoVal + ' ya lo usa "' + invProductos[dv].nombre + '" — usa ⚙ Generar para uno nuevo', 'error');
+        return;
+      }
+    }
+  }
+  invGuardandoProd = true;
+  var btnGP = document.querySelector('#gmModalOv .btn-teal');
+  if (btnGP) { btnGP.disabled = true; btnGP.textContent = 'Guardando…'; }
   // Si el usuario no ve montos, el campo precio no existe: se conserva el actual
   var elPre = document.getElementById('invPre');
   var prodActual = id ? invBuscarProd(id) : null;
@@ -10895,9 +10928,30 @@ function invGuardarProducto(id) {
     body.sede = selSede ? selSede.value : gmSedeDefecto();
   }
   agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: body }).then(function (d) {
-    if (d && d.ok) { gmModalCerrar(); showToast(id ? 'Producto actualizado' : 'Producto creado', 'success'); renderInventario(); }
-    else showToast('Error: ' + (d && d.error ? d.error : 'no se pudo guardar'), 'error');
-  }).catch(function () { showToast('Error de conexión', 'error'); });
+    invGuardandoProd = false;
+    if (d && d.ok) {
+      gmModalCerrar();
+      renderInventario();
+      if (!id && (d.codigo || body.codigo)) {
+        // Flujo directo: recien creado -> imprimir sus etiquetas de una vez
+        var nuevoProd = { id: d.id, codigo: d.codigo || body.codigo, nombre: body.nombre, categoria: body.categoria, unidad: body.unidad, precio: body.precio, stock: body.stockInicial || 0, stock_min: body.stockMin, activo: 1, notas: body.notas, sedes: {} };
+        if (body.stockInicial > 0 && body.sede) nuevoProd.sedes[body.sede] = body.stockInicial;
+        invProductos.push(nuevoProd);
+        showToast('Producto creado — ¿imprimimos sus etiquetas?', 'success');
+        invSheetEtiquetas(d.id);
+      } else {
+        showToast(id ? 'Producto actualizado' : 'Producto creado', 'success');
+      }
+    }
+    else {
+      showToast('Error: ' + (d && d.error ? d.error : 'no se pudo guardar'), 'error');
+      if (btnGP) { btnGP.disabled = false; btnGP.textContent = id ? 'Guardar cambios' : 'Crear producto'; }
+    }
+  }).catch(function () {
+    invGuardandoProd = false;
+    if (btnGP) { btnGP.disabled = false; btnGP.textContent = id ? 'Guardar cambios' : 'Crear producto'; }
+    showToast('Error de conexión', 'error');
+  });
 }
 
 function invDesgloseSedes(p) {
@@ -11422,6 +11476,7 @@ function invEstEtiquetasHTML() {
 function invEstImprimir(pid) {
   var p = invBuscarProd(pid);
   if (!p) return;
+  var desdeEst = invSerieSiguiente(pid);
   if (!p.codigo) {
     p.codigo = invGenerarCodigo(p.nombre, p.categoria);
     agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: {
@@ -11431,7 +11486,7 @@ function invEstImprimir(pid) {
     }}).catch(function () {});
   }
   var nEl = document.getElementById('invEstEtqN_' + pid);
-  invImprimirLote([{ p: p, n: parseInt(nEl ? nEl.value : '10', 10) || 10 }], false, gmEtqTam());
+  invImprimirLote([{ p: p, n: parseInt(nEl ? nEl.value : '10', 10) || 10, desde: desdeEst }], false, gmEtqTam());
 }
 
 function invEstCrearEImprimir() {
@@ -11449,7 +11504,7 @@ function invEstCrearEImprimir() {
       var nuevoP = { id: d.id, codigo: d.codigo || codigo, nombre: nombre, categoria: '', unidad: 'und', precio: 0, stock: 0, stock_min: 1, activo: 1, notas: '', sedes: {} };
       invProductos.push(nuevoP);
       showToast('Creado ' + nuevoP.codigo + ' — imprimiendo ' + n + ' etiquetas', 'success');
-      invImprimirLote([{ p: nuevoP, n: n }], false, gmEtqTam());
+      invImprimirLote([{ p: nuevoP, n: n, desde: 1 }], false, gmEtqTam());
       invEstSetModo('etiquetas');
     } else showToast(d && d.error ? d.error : 'No se pudo crear', 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
@@ -11463,6 +11518,20 @@ function gmEtqTam() {
   try { t = localStorage.getItem('gm_etq_tam') || ''; } catch (e) {}
   return t || '30x20';
 }
+
+// Contador correlativo de etiquetas por producto: recuerda en que numero
+// quedo la ultima impresion para continuar (001, 002, 003...).
+function invSerieSiguiente(pid) {
+  var n = 0;
+  try { n = parseInt(localStorage.getItem('gm_etq_serie_' + pid) || '0', 10) || 0; } catch (e) {}
+  return n + 1;
+}
+
+function invSerieGuardar(pid, ultimo) {
+  try { localStorage.setItem('gm_etq_serie_' + pid, String(ultimo)); } catch (e) {}
+}
+
+function invPad3(n) { return n < 1000 ? ('00' + n).slice(-3) : String(n); }
 
 function gmEtqTamOptions(idSel) {
   var sel = gmEtqTam();
@@ -11497,7 +11566,11 @@ function invSheetEtiquetas(id) {
       '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja, 4×10)</option>' +
     '</select>' +
     gmEtqTamOptions('invEtqTam') +
-    '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">💡 ¿Aún no llega la impresora térmica? Elige <b>hoja A4</b>: imprime en papel adhesivo A4 (se vende en librerías) con cualquier impresora, y recorta por las líneas punteadas. También puedes guardar como PDF.</div>' +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700">' +
+      '<input type="checkbox" id="invEtqCorr" checked style="width:16px;height:16px"> Numerar cada etiqueta (N° correlativo por unidad)</label>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-top:6px"><span style="font-size:12px;color:#8a8a8a">Empezar en el N°</span>' +
+      '<input id="invEtqDesde" class="gm-inp" type="number" min="1" value="' + invSerieSiguiente(id) + '" style="margin-top:0;width:90px;text-align:center"></div>' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">El código de barras es el del producto (la pistola lo lee igual); el N° va impreso en cada etiqueta para controlar unidad por unidad. La numeración continúa sola en la siguiente impresión.</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invImprimirEtiquetas(\'' + shEsc(id) + '\')">🖨 Imprimir</button>'
   );
 }
@@ -11508,7 +11581,11 @@ function invImprimirEtiquetas(id) {
   var n = Math.min(parseInt(document.getElementById('invEtqN').value, 10) || 1, 500);
   var fmtSel = document.getElementById('invEtqFmt');
   var tamSel = document.getElementById('invEtqTam');
-  invImprimirLote([{ p: p, n: n }], fmtSel && fmtSel.value === 'a4', tamSel ? tamSel.value : gmEtqTam());
+  var corrChk = document.getElementById('invEtqCorr');
+  var desdeEl = document.getElementById('invEtqDesde');
+  var item = { p: p, n: n };
+  if (corrChk && corrChk.checked) item.desde = Math.max(1, parseInt(desdeEl ? desdeEl.value : '1', 10) || 1);
+  invImprimirLote([item], fmtSel && fmtSel.value === 'a4', tamSel ? tamSel.value : gmEtqTam());
 }
 
 // Imprime un lote de etiquetas (uno o varios productos) en rollo o A4.
@@ -11531,13 +11608,19 @@ function invImprimirLote(items, esA4, tam) {
     var p = items[k].p;
     var n = Math.min(items[k].n || 1, 500);
     if (!p || !p.codigo) continue;
-    var etiqueta =
-      '<div class="lbl">' +
-        '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
-        '<div class="lbl-b">' + gmCodigoBarrasSVG(p.codigo, 30) + '</div>' +
-        '<div class="lbl-c">' + shEsc(p.codigo) + '</div>' +
-      '</div>';
-    for (var i = 0; i < n; i++) { cuerpo += etiqueta; total++; }
+    var desde = items[k].desde; // numeracion correlativa por unidad (opcional)
+    var barra = gmCodigoBarrasSVG(p.codigo, 30);
+    for (var i = 0; i < n; i++) {
+      var serie = desde ? ' · N° ' + invPad3(desde + i) : '';
+      cuerpo +=
+        '<div class="lbl">' +
+          '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
+          '<div class="lbl-b">' + barra + '</div>' +
+          '<div class="lbl-c">' + shEsc(p.codigo) + serie + '</div>' +
+        '</div>';
+      total++;
+    }
+    if (desde) items[k].ultimoSerie = desde + n - 1;
   }
   if (!total) { showToast('Nada que imprimir — revisa que los productos tengan código', 'error'); return; }
   var estilos = esA4
@@ -11549,6 +11632,10 @@ function invImprimirLote(items, esA4, tam) {
        '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
   var w = window.open('', '_blank');
   if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
+  // El contador correlativo avanza SOLO si la ventana de impresion abrio bien
+  for (var s2 = 0; s2 < items.length; s2++) {
+    if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
+  }
   w.document.write('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
     '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
@@ -11581,6 +11668,8 @@ function invSheetGenerador() {
       '<option value="a4">Impresora normal — hoja A4 adhesiva (40 por hoja)</option>' +
     '</select>' +
     gmEtqTamOptions('invGenTam') +
+    '<label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700">' +
+      '<input type="checkbox" id="invGenCorr" checked style="width:16px;height:16px"> Numerar cada etiqueta (N° correlativo por unidad — continúa donde quedó)</label>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invGenerarEImprimir()">🖨 Generar códigos e imprimir todo</button>' +
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;font-size:12px" onclick="invAyudaImpresora()">❓ ¿Primera vez? Cómo conectar la impresora de etiquetas</button>'
   );
@@ -11622,13 +11711,19 @@ function invGenerarEImprimir() {
   var esA4 = document.getElementById('invGenFmt').value === 'a4';
   var tamSel = document.getElementById('invGenTam');
   var tamGen = tamSel ? tamSel.value : gmEtqTam();
+  var corrGen = document.getElementById('invGenCorr');
+  var conSerie = corrGen && corrGen.checked;
   var seleccion = [];
   for (var i = 0; i < chks.length; i++) {
     if (!chks[i].checked) continue;
     var pid = chks[i].getAttribute('data-id');
     var nInp = document.querySelector('.inv-gen-n[data-id="' + pid + '"]');
     var p = invBuscarProd(pid);
-    if (p) seleccion.push({ p: p, n: parseInt(nInp ? nInp.value : '10', 10) || 10 });
+    if (p) {
+      var itemG = { p: p, n: parseInt(nInp ? nInp.value : '10', 10) || 10 };
+      if (conSerie) itemG.desde = invSerieSiguiente(pid);
+      seleccion.push(itemG);
+    }
   }
   if (!seleccion.length) { showToast('Marca al menos un producto', 'error'); return; }
 
