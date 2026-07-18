@@ -10895,6 +10895,16 @@ function invGuardarProducto(id) {
   if (invGuardandoProd) return; // evita duplicados por doble clic
   var nombre = document.getElementById('invNom').value.trim();
   if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
+  // No permitir dos productos con el mismo codigo de barras
+  var codigoVal = document.getElementById('invCod').value.trim().toUpperCase();
+  if (codigoVal) {
+    for (var dv = 0; dv < invProductos.length; dv++) {
+      if (invProductos[dv].id !== id && (invProductos[dv].codigo || '').toUpperCase() === codigoVal) {
+        showToast('El código ' + codigoVal + ' ya lo usa "' + invProductos[dv].nombre + '" — usa ⚙ Generar para uno nuevo', 'error');
+        return;
+      }
+    }
+  }
   invGuardandoProd = true;
   var btnGP = document.querySelector('#gmModalOv .btn-teal');
   if (btnGP) { btnGP.disabled = true; btnGP.textContent = 'Guardando…'; }
@@ -10919,7 +10929,20 @@ function invGuardarProducto(id) {
   }
   agendaWorkerFetch('invProductoGuardar', {}, { method: 'POST', body: body }).then(function (d) {
     invGuardandoProd = false;
-    if (d && d.ok) { gmModalCerrar(); showToast(id ? 'Producto actualizado' : 'Producto creado', 'success'); renderInventario(); }
+    if (d && d.ok) {
+      gmModalCerrar();
+      renderInventario();
+      if (!id && (d.codigo || body.codigo)) {
+        // Flujo directo: recien creado -> imprimir sus etiquetas de una vez
+        var nuevoProd = { id: d.id, codigo: d.codigo || body.codigo, nombre: body.nombre, categoria: body.categoria, unidad: body.unidad, precio: body.precio, stock: body.stockInicial || 0, stock_min: body.stockMin, activo: 1, notas: body.notas, sedes: {} };
+        if (body.stockInicial > 0 && body.sede) nuevoProd.sedes[body.sede] = body.stockInicial;
+        invProductos.push(nuevoProd);
+        showToast('Producto creado — ¿imprimimos sus etiquetas?', 'success');
+        invSheetEtiquetas(d.id);
+      } else {
+        showToast(id ? 'Producto actualizado' : 'Producto creado', 'success');
+      }
+    }
     else {
       showToast('Error: ' + (d && d.error ? d.error : 'no se pudo guardar'), 'error');
       if (btnGP) { btnGP.disabled = false; btnGP.textContent = id ? 'Guardar cambios' : 'Crear producto'; }
@@ -11597,7 +11620,7 @@ function invImprimirLote(items, esA4, tam) {
         '</div>';
       total++;
     }
-    if (desde) invSerieGuardar(p.id, desde + n - 1);
+    if (desde) items[k].ultimoSerie = desde + n - 1;
   }
   if (!total) { showToast('Nada que imprimir — revisa que los productos tengan código', 'error'); return; }
   var estilos = esA4
@@ -11609,6 +11632,10 @@ function invImprimirLote(items, esA4, tam) {
        '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
   var w = window.open('', '_blank');
   if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
+  // El contador correlativo avanza SOLO si la ventana de impresion abrio bien
+  for (var s2 = 0; s2 < items.length; s2++) {
+    if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
+  }
   w.document.write('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
     '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
