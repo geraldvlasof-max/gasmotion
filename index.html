@@ -7927,6 +7927,14 @@ function fiseDespertarServicio(intento, callback) {
   fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=fiseWakeup', {cache:'no-store'})
   .then(function(r){ return r.json(); })
   .then(function(d){
+    // Config ausente: reintentar no sirve — avisar de inmediato con la causa real
+    if(d && d.error && d.error.indexOf('no configurada') !== -1) {
+      var divCfg = document.getElementById('fise_progreso');
+      if(divCfg) divCfg.style.display = 'none';
+      showToast('Falta configurar FISE_SERVICE_URL en el worker gasmotion-sync (Cloudflare → Settings → Variables). Avisa al administrador.', 'error');
+      callback(false);
+      return;
+    }
     if(d.ok && d.despierto) {
       fiseProgresoSet(35, '✓ Servicio activo, preparando envío...');
       callback(true);
