@@ -11596,6 +11596,30 @@ function invImprimirEtiquetas(id) {
   invImprimirLote([item], fmtSel && fmtSel.value === 'a4', tamSel ? tamSel.value : gmEtqTam());
 }
 
+// Impresion por iframe oculto: a diferencia de window.open, el navegador
+// NUNCA la bloquea (causa #1 de "toco imprimir y no pasa nada") y ahorra
+// un paso. Con Chrome en modo kiosco (--kiosk-printing) imprime directo
+// a la impresora predeterminada sin mostrar ningun dialogo: 1 solo clic.
+function gmImprimirHTML(htmlCompleto) {
+  var viejo = document.getElementById('gmMarcoImpresion');
+  if (viejo) viejo.remove();
+  var marco = document.createElement('iframe');
+  marco.id = 'gmMarcoImpresion';
+  marco.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;visibility:hidden';
+  document.body.appendChild(marco);
+  var doc = marco.contentWindow.document;
+  doc.open();
+  doc.write(htmlCompleto);
+  doc.close();
+  // Limpieza: al terminar de imprimir (o a los 2 min como respaldo)
+  marco.contentWindow.onafterprint = function () { setTimeout(function () { marco.remove(); }, 500); };
+  setTimeout(function () { if (marco.parentNode) marco.remove(); }, 120000);
+  setTimeout(function () {
+    marco.contentWindow.focus();
+    marco.contentWindow.print();
+  }, 300);
+}
+
 // Imprime un lote de etiquetas (uno o varios productos) en rollo o A4.
 // Rollo: una etiqueta por pagina del tamano del rollo (la termica corta sola).
 // A4: rejilla con lineas punteadas para recortar (impresora normal).
@@ -11638,20 +11662,15 @@ function invImprimirLote(items, esA4, tam) {
     : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}body{margin:0;padding:0}' +
        '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}' +
        '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
-  var w = window.open('', '_blank');
-  if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
-  // El contador correlativo avanza SOLO si la ventana de impresion abrio bien
   for (var s2 = 0; s2 < items.length; s2++) {
     if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
   }
-  w.document.write('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
+  gmImprimirHTML('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
     '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
     '.lbl-c{font-family:monospace;font-weight:700;letter-spacing:.08em}' +
     '</style></head><body>' + cuerpo + '</body></html>');
-  w.document.close();
-  w.focus();
-  w.print();
+  showToast('Enviando ' + total + ' etiquetas a la impresora...', 'success');
 }
 
 // ── Generador masivo: codigos para todo el catalogo + impresion en lote ──
@@ -11708,6 +11727,10 @@ function invAyudaImpresora() {
     '<div style="font-size:13px"><b>La cantidad ya va incluida</b>: si pediste 50 etiquetas del Kit, salen 50 etiquetas — una por página del rollo, la impresora corta sola. No cambies el número de copias en la ventana de impresión.</div></div>' +
 
     '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada: (1) revisa que el tamaño en Windows y en la web sean el MISMO del rollo (30×20mm) y (2) calibra el sensor — apaga la impresora y enciéndela manteniendo apretado el botón de avance hasta que saque 2-3 etiquetas solas. La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+    '<div style="background:#131313;color:#f5f5f0;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:10px">⚡ <b>Impresión en 1 SOLO clic (sin diálogo, recomendado para el almacén):</b><br>' +
+      '1. En Windows pon la POS-5811 como <b>impresora predeterminada</b> (con su papel ya en 30×20mm).<br>' +
+      '2. Clic derecho al acceso directo de Chrome → Propiedades → en \u201cDestino\u201d agrega al final: <b style="font-family:monospace"> --kiosk-printing</b> (con espacio antes).<br>' +
+      '3. Abre Gasmotion desde ESE acceso directo: cada \u201cImprimir\u201d sale directo por la térmica, sin ventanas ni encuadres.</div>' +
     '<div style="text-align:center;margin-bottom:4px"><button class="btn btn-sm btn-outline" onclick="window.print()" style="font-size:11px">🖨 Imprimir esta guía para pegarla en la sede</button></div>' +
 
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetGenerador()">← Volver al generador</button>'
@@ -12223,12 +12246,7 @@ function factVer(id) {
 function factImprimir() {
   var contenido = document.getElementById('factImprimible');
   if (!contenido) return;
-  var w = window.open('', '_blank');
-  if (!w) { showToast('Permite las ventanas emergentes para imprimir', 'error'); return; }
-  w.document.write('<html><head><title>Comprobante</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:26px;color:#131313}table{width:100%;border-collapse:collapse}</style></head><body>' + contenido.innerHTML + '</body></html>');
-  w.document.close();
-  w.focus();
-  w.print();
+  gmImprimirHTML('<html><head><title>Comprobante</title><style>body{font-family:Arial,Helvetica,sans-serif;padding:26px;color:#131313}table{width:100%;border-collapse:collapse}</style></head><body>' + contenido.innerHTML + '</body></html>');
 }
 
 
