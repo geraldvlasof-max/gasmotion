@@ -10805,6 +10805,7 @@ function invPintar() {
           (invSedeFiltro ? '<div style="font-size:10.5px;color:#667781;margin-top:3px">total: ' + p.stock + '</div>' : invDesgloseSedes(p)) + '</td>' +
         (invVeMontos() ? '<td>' + fmtSoles(p.precio) + '</td>' : '') +
         '<td style="white-space:nowrap">' +
+          (p.serializado ? '<button class="btn btn-sm btn-outline" style="padding:5px 8px;border-color:#008184;color:#008184" title="Ver unidades serializadas" onclick="invSheetUnidades(\'' + shEsc(p.id) + '\')">📟</button> ' : '') +
           '<button class="btn btn-sm btn-teal" style="padding:5px 9px" title="Registrar entrada" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'entrada\')">⬇ Entrada</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Registrar salida" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'salida\')">⬆ Salida</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Editar" onclick="invSheetProducto(\'' + shEsc(p.id) + '\')">✎</button> ' +
@@ -10901,6 +10902,9 @@ function invSheetProducto(id, codigoPre) {
     (p ? '' : '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label class="gm-lbl">Stock inicial</label><input id="invIni" class="gm-inp" type="number" step="1" min="0" value="0"></div>' +
       '<div><label class="gm-lbl">En la sede</label><select id="invIniSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div></div>') +
     '<div style="font-size:10.5px;color:#8a8a8a;margin-top:4px">El código admite letras, números, guion y punto — es lo que imprime la etiqueta y lee la pistola.</div>' +
+    '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700">' +
+      '<input type="checkbox" id="invSer"' + (p && p.serializado ? ' checked' : '') + ' style="width:16px;height:16px;flex:none;margin-top:1px"> ' +
+      '<span>📟 Producto con número de serie por unidad <span style="font-weight:400;color:#8a8a8a">(tanques, reductores, ECUs — cada unidad tendrá SU PROPIO código de barras: ' + '' + 'CÓDIGO-001, 002…). Usa un código corto (máx. 6 caracteres) para que las barras salgan legibles.</span></span></label>' +
     '<label class="gm-lbl">Notas</label><input id="invNot" class="gm-inp" value="' + shEsc(p ? p.notas : '') + '">' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarProducto(\'' + (p ? shEsc(p.id) : '') + '\')">' + (p ? 'Guardar cambios' : 'Crear producto') + '</button>'
   );
@@ -10937,6 +10941,7 @@ function invGuardarProducto(id) {
     precio: elPre ? (parseFloat(elPre.value) || 0) : (prodActual ? prodActual.precio || 0 : 0),
     stockMin: parseFloat(document.getElementById('invMin').value) || 0,
     notas: document.getElementById('invNot').value.trim(),
+    serializado: (document.getElementById('invSer') || {}).checked ? 1 : 0,
     uid: CU ? CU.id : '', nombre_usuario: CU ? CU.nombre : ''
   };
   if (id) body.id = id;
@@ -10984,6 +10989,13 @@ function invDesgloseSedes(p) {
 function invSheetMov(id, tipo) {
   var p = invBuscarProd(id);
   if (!p) return;
+  // Producto serializado: entrada = recepcion de unidades con codigo propio;
+  // salida = instalar UNA unidad concreta (escaneada) en una placa
+  if (p.serializado) {
+    if (tipo === 'entrada') { invSheetRecepcionUnidades(id); return; }
+    invSheetInstalarUnidad(id);
+    return;
+  }
   var esEntrada = tipo === 'entrada';
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">' + (esEntrada ? '⬇ Entrada de stock' : '⬆ Salida de stock') + '</div>' +
@@ -11385,20 +11397,40 @@ function invEstProcesar() {
 
   if (!p) {
     if (invEstModo === 'descargar') {
-      invEstLog('❓ El código <b>' + shEsc(codigo) + '</b> no existe — no se puede descargar algo no registrado', true);
+      // ¿Es una UNIDAD serializada? (tanques, reductores, ECUs)
+      var placaU = (document.getElementById('invEstPlaca') || {}).value || '';
+      placaU = placaU.trim().toUpperCase();
+      if (!placaU) {
+        invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
+        return;
+      }
+      agendaWorkerFetch('invUnidadesListar', { codigo: codigo }).then(function (du) {
+        var u = du && du.ok && du.unidades && du.unidades[0];
+        if (!u) { invEstLog('❓ El código <b>' + shEsc(codigo) + '</b> no existe — no se puede descargar algo no registrado', true); return; }
+        agendaWorkerFetch('invUnidadInstalar', {}, { method: 'POST', body: { codigo: codigo, placa: placaU, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : '' } })
+          .then(function (di) {
+            if (di && di.ok) {
+              var pU = invBuscarProd(di.productoId);
+              if (pU) { pU.sedes = pU.sedes || {}; pU.sedes[di.sede] = di.stock; pU.stock = di.total; }
+              invEstNum.descargas++;
+              var ndU = document.getElementById('invEstNumD'); if (ndU) ndU.textContent = invEstNum.descargas;
+              invEstLog('📟 Unidad <b>' + shEsc(codigo) + '</b>' + (pU ? ' (' + shEsc(pU.nombre) + ')' : '') + ' → instalada en 🚗 <b>' + shEsc(di.placa) + '</b>');
+              if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+            } else invEstLog('⚠ ' + shEsc(di && di.error ? di.error : 'No se pudo instalar la unidad'), true);
+          }).catch(function () { invEstLog('⚠ Error de conexión', true); });
+      }).catch(function () { invEstLog('⚠ Error de conexión', true); });
       return;
     }
-    // CARGAR con codigo nuevo: crear el producto ahi mismo, sin salir
-    var nv = document.getElementById('invEstNuevo');
-    if (nv) {
-      nv.innerHTML = '<div style="border:2px dashed #008184;background:#f0fdfa;border-radius:12px;padding:12px;margin-top:10px">' +
-        '<div style="font-size:13px;font-weight:800;color:#00565a">🆕 Código nuevo: <span style="font-family:monospace">' + shEsc(codigo) + '</span> — ¿Qué producto es?</div>' +
-        '<input id="invEstNvNombre" class="gm-inp" placeholder="Ej: Kit GLP 5ta generación" style="font-size:16px">' +
-        '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:10px" onclick="invEstCrearRapido(\'' + shEsc(codigo) + '\')">✔ Crear y cargar 1 a ' + shEsc(sede) + '</button>' +
-      '</div>';
-      var ni = document.getElementById('invEstNvNombre');
-      if (ni) { ni.focus(); ni.onkeydown = function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); invEstCrearRapido(codigo); } }; }
+    // ¿Es una UNIDAD serializada ya registrada? Esas no se cargan de nuevo
+    if (/-\d{3,}$/.test(codigo)) {
+      agendaWorkerFetch('invUnidadesListar', { codigo: codigo }).then(function (du) {
+        var u = du && du.ok && du.unidades && du.unidades[0];
+        if (u) invEstLog('📟 <b>' + shEsc(codigo) + '</b> ya está registrada (' + (u.estado === 'en_stock' ? 'en stock en ' + shEsc(u.sede || '—') : 'instalada en ' + shEsc(u.placa || '?')) + ') — las unidades entran por ⬇ Entrada del producto', true);
+        else invEstMostrarCrearRapido(codigo);
+      }).catch(function () { invEstMostrarCrearRapido(codigo); });
+      return;
     }
+    invEstMostrarCrearRapido(codigo);
     return;
   }
 
@@ -11438,6 +11470,20 @@ function invEstProcesar() {
       if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
     } else invEstLog('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo cargar'), true);
   }).catch(function () { invEstLog('⚠ Error de conexión', true); });
+}
+
+function invEstMostrarCrearRapido(codigo) {
+  var sede = document.getElementById('invEstSede').value;
+  var nv = document.getElementById('invEstNuevo');
+  if (nv) {
+    nv.innerHTML = '<div style="border:2px dashed #008184;background:#f0fdfa;border-radius:12px;padding:12px;margin-top:10px">' +
+      '<div style="font-size:13px;font-weight:800;color:#00565a">🆕 Código nuevo: <span style="font-family:monospace">' + shEsc(codigo) + '</span> — ¿Qué producto es?</div>' +
+      '<input id="invEstNvNombre" class="gm-inp" placeholder="Ej: Kit GLP 5ta generación" style="font-size:16px">' +
+      '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:10px" onclick="invEstCrearRapido(\'' + shEsc(codigo) + '\')">✔ Crear y cargar 1 a ' + shEsc(sede) + '</button>' +
+    '</div>';
+    var ni = document.getElementById('invEstNvNombre');
+    if (ni) { ni.focus(); ni.onkeydown = function (ev) { if (ev.key === 'Enter') { ev.preventDefault(); invEstCrearRapido(codigo); } }; }
+  }
 }
 
 function invEstCrearRapido(codigo) {
@@ -11648,8 +11694,22 @@ function invImprimirLote(items, esA4, tam) {
   var total = 0;
   for (var k = 0; k < items.length; k++) {
     var p = items[k].p;
-    var n = Math.min(items[k].n || 1, 500);
     if (!p || !p.codigo) continue;
+    // Unidades serializadas: una etiqueta por codigo, con BARRAS PROPIAS
+    if (items[k].codigos && items[k].codigos.length) {
+      for (var cu = 0; cu < items[k].codigos.length; cu++) {
+        var codU = items[k].codigos[cu];
+        cuerpo +=
+          '<div class="lbl">' +
+            '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
+            '<div class="lbl-b">' + gmCodigoBarrasSVG(codU, 30) + '</div>' +
+            '<div class="lbl-c">' + shEsc(codU) + '</div>' +
+          '</div>';
+        total++;
+      }
+      continue;
+    }
+    var n = Math.min(items[k].n || 1, 500);
     var desde = items[k].desde; // numeracion correlativa por unidad (opcional)
     var barra = gmCodigoBarrasSVG(p.codigo, 30);
     for (var i = 0; i < n; i++) {
@@ -11681,6 +11741,115 @@ function invImprimirLote(items, esA4, tam) {
     '.lbl-c{font-family:monospace;font-weight:700;letter-spacing:.08em}' +
     '</style></head><body>' + cuerpo + '</body></html>');
   showToast('Enviando ' + total + ' etiquetas a la impresora...', 'success');
+}
+
+// ══ UNIDADES SERIALIZADAS (tanques, reductores, ECUs) ══
+// Cada unidad fisica tiene SU codigo de barras unico (TQ-60-001...) y se
+// rastrea individualmente: en stock o instalada en una placa concreta.
+
+function invSheetRecepcionUnidades(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 Recibir unidades — ' + shEsc(p.nombre) + '</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      '<div><label class="gm-lbl">¿Cuántas unidades llegaron?</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="1"></div>' +
+      '<div><label class="gm-lbl">Sede que recibe</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+    '</div>' +
+    '<label class="gm-lbl">N° de serie del fabricante (opcional, uno por línea — escanéalos con la pistola)</label>' +
+    '<textarea id="invRecSeries" class="gm-inp" rows="3" placeholder="N24526523\nN24526524" style="font-family:monospace;resize:vertical"></textarea>' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
+  );
+}
+
+function invRecibirUnidades(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  var n = Math.min(parseInt(document.getElementById('invRecN').value, 10) || 0, 200);
+  if (n < 1) { showToast('Indica cuántas unidades llegaron', 'error'); return; }
+  var sede = document.getElementById('invRecSede').value;
+  var series = document.getElementById('invRecSeries').value.split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return x; });
+  agendaWorkerFetch('invUnidadesCrear', {}, { method: 'POST', body: {
+    productoId: id, cantidad: n, sede: sede, series: series,
+    uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      gmModalCerrar();
+      p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
+      showToast(n + ' unidad(es) registradas — imprimiendo sus etiquetas', 'success');
+      invImprimirLote([{ p: p, codigos: d.codigos }], false, gmEtqTam());
+      renderInventario();
+    } else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invSheetInstalarUnidad(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  gmModalAbrir(
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 Instalar unidad — ' + shEsc(p.nombre) + '</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Escanea (o escribe) el código de LA UNIDAD que sale del almacén — no el del producto. Así queda registrado exactamente cuál se instaló.</div>' +
+    '<label class="gm-lbl">Código de la unidad *</label>' +
+    '<input id="invInstCod" class="gm-inp" placeholder="' + shEsc(p.codigo) + '-001" style="font-family:monospace;font-size:17px;text-transform:uppercase" autocomplete="off">' +
+    '<label class="gm-lbl">Placa del vehículo que la recibe *</label>' +
+    '<input id="invInstPlaca" class="gm-inp" placeholder="ABC-123" maxlength="10" style="text-transform:uppercase;font-size:17px;text-align:center;letter-spacing:2px">' +
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invInstalarUnidad()">🚗 Instalar en la placa</button>'
+  );
+  setTimeout(function () { var i = document.getElementById('invInstCod'); if (i) i.focus(); }, 150);
+}
+
+function invInstalarUnidad() {
+  var codigo = document.getElementById('invInstCod').value.trim().toUpperCase();
+  var placa = document.getElementById('invInstPlaca').value.trim().toUpperCase();
+  if (!codigo) { showToast('Escanea el código de la unidad', 'error'); return; }
+  if (!placa) { showToast('Escribe la placa del vehículo', 'error'); return; }
+  agendaWorkerFetch('invUnidadInstalar', {}, { method: 'POST', body: {
+    codigo: codigo, placa: placa, uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+  }}).then(function (d) {
+    if (d && d.ok) {
+      gmModalCerrar();
+      var pI = invBuscarProd(d.productoId);
+      if (pI) { pI.sedes = pI.sedes || {}; pI.sedes[d.sede] = d.stock; pI.stock = d.total; }
+      showToast('📟 ' + codigo + ' instalada en 🚗 ' + d.placa, 'success');
+      renderInventario();
+    } else showToast(d && d.error ? d.error : 'No se pudo instalar', 'error');
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invSheetUnidades(id) {
+  var p = invBuscarProd(id);
+  if (!p) return;
+  gmModalAbrir('<div style="color:#8a8a8a;text-align:center;padding:20px">Cargando unidades…</div>', 620);
+  agendaWorkerFetch('invUnidadesListar', { productoId: id }).then(function (d) {
+    if (!d || !d.ok) { showToast('No se pudieron cargar las unidades', 'error'); return; }
+    var unidades = d.unidades || [];
+    var enStock = 0;
+    var filas = '';
+    for (var i = 0; i < unidades.length; i++) {
+      var u = unidades[i];
+      if (u.estado === 'en_stock') enStock++;
+      filas += '<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f0f0f0;font-size:12.5px">' +
+        '<b style="font-family:monospace;color:#008184">' + shEsc(u.codigo) + '</b>' +
+        (u.estado === 'en_stock'
+          ? '<span style="background:#d1fae5;color:#065f46;font-weight:800;border-radius:10px;padding:2px 8px;font-size:10.5px">EN STOCK · ' + shEsc(u.sede || '—') + '</span>'
+          : '<span style="background:#dbeafe;color:#1d4ed8;font-weight:800;border-radius:10px;padding:2px 8px;font-size:10.5px">🚗 ' + shEsc(u.placa || '?') + '</span>') +
+        '<span style="flex:1;color:#8a8a8a;font-size:11px">' + (u.serie_fab ? 'Serie fab: ' + shEsc(u.serie_fab) : '') + '</span>' +
+        '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Reimprimir etiqueta" onclick="invReimprimirUnidad(\'' + shEsc(id) + '\',\'' + shEsc(u.codigo) + '\')">🖨</button>' +
+      '</div>';
+    }
+    gmModalAbrir(
+      '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 Unidades — ' + shEsc(p.nombre) + '</div>' +
+      '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">' + unidades.length + ' unidades · ' + enStock + ' en stock. Cada una con su código de barras propio.</div>' +
+      (filas || '<div style="color:#8a8a8a;text-align:center;padding:18px">Aún no hay unidades — regístralas con ⬇ Entrada</div>') +
+      '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px" onclick="gmModalCerrar()">Cerrar</button>', 620);
+  }).catch(function () { showToast('Error de conexión', 'error'); });
+}
+
+function invReimprimirUnidad(pid, codigo) {
+  var p = invBuscarProd(pid);
+  if (!p) return;
+  invImprimirLote([{ p: p, codigos: [codigo] }], false, gmEtqTam());
 }
 
 // ── Generador masivo: codigos para todo el catalogo + impresion en lote ──
