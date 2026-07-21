@@ -2692,7 +2692,7 @@ function buscarUsuario(rawUid, users) {
 // Corre UNA vez por versión al entrar: crea las tablas/columnas nuevas en la
 // base de datos sin que nadie tenga que abrir la URL de migrate a mano.
 // Subir GM_MIGRATE_VERSION cada vez que el worker traiga cambios de BD.
-var GM_MIGRATE_VERSION = 'v25-merma-despachos';
+var GM_MIGRATE_VERSION = 'v30-unidades-serializadas';
 function gmAutoMigrate() {
   try { if (localStorage.getItem('gm_migrate_hecha') === GM_MIGRATE_VERSION) return; } catch (e) {}
   if (typeof agendaWorkerFetch !== 'function') return;
