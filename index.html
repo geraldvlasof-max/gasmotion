@@ -10695,12 +10695,14 @@ function renderInventario() {
   if (!cont) return;
   if (!agendaWorkerListo()) { agendaWorkerAvisoNoConfigurado(cont); return; }
   cont.innerHTML = '<div class="empty-state">Cargando inventario…</div>';
-  agendaWorkerFetch('invProductosListar', {}).then(function (d) {
-    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return null; }
+  // Productos y despachos EN PARALELO: mitad del tiempo de carga
+  Promise.all([
+    agendaWorkerFetch('invProductosListar', {}),
+    agendaWorkerFetch('invDespachosListar', { estado: 'en_transito' }).catch(function () { return null; })
+  ]).then(function (res) {
+    var d = res[0], dd = res[1];
+    if (!d || !d.ok) { cont.innerHTML = '<div class="empty-state">No se pudo cargar: ' + shEsc(d && d.error ? d.error : 'error') + '</div>'; return; }
     invProductos = d.productos || [];
-    return agendaWorkerFetch('invDespachosListar', { estado: 'en_transito' });
-  }).then(function (dd) {
-    if (dd === null) return;
     invDspPendientes = (dd && dd.ok) ? (dd.despachos || []) : [];
     invPintar();
   }).catch(function () { cont.innerHTML = '<div class="empty-state">Sin conexión con el servidor de inventario</div>'; });
@@ -10755,6 +10757,14 @@ function invTarjetasSedes() {
     '</div>';
   }
   return out + '</div>';
+}
+
+// Debounce compartido: repintar tablas grandes en cada tecla congela la
+// escritura en equipos lentos; con 180ms se siente instantaneo igual.
+var gmDebTimers = {};
+function gmDebounce(clave, fn) {
+  if (gmDebTimers[clave]) clearTimeout(gmDebTimers[clave]);
+  gmDebTimers[clave] = setTimeout(fn, 180);
 }
 
 function invPintar() {
@@ -10817,7 +10827,7 @@ function invPintar() {
     '</div>' +
     '<div class="card">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">' +
-        '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;invPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;gmDebounce(\'inv\',invPintar)" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<button class="btn" style="background:#131313;color:#ffffff;font-weight:800" onclick="invEstacion()">⚡ Estación de escaneo</button>' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
@@ -12067,7 +12077,7 @@ function factPintar() {
     '</div>' +
     '<div class="card">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">' +
-        '<input type="text" placeholder="Buscar por cliente, documento o número..." value="' + shEsc(factBusca) + '" oninput="factBusca=this.value;factPintar()" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<input type="text" placeholder="Buscar por cliente, documento o número..." value="' + shEsc(factBusca) + '" oninput="factBusca=this.value;gmDebounce(\'fact\',factPintar)" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<select onchange="factFiltroEstado=this.value;factPintar()" style="border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;background:white">' +
           '<option value="">Todos</option><option value="pendiente"' + (factFiltroEstado === 'pendiente' ? ' selected' : '') + '>Pendientes</option>' +
           '<option value="pagado"' + (factFiltroEstado === 'pagado' ? ' selected' : '') + '>Pagados</option><option value="anulado"' + (factFiltroEstado === 'anulado' ? ' selected' : '') + '>Anulados</option>' +
