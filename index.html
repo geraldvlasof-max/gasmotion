@@ -11676,6 +11676,24 @@ function gmImprimirHTML(htmlCompleto) {
   }, 300);
 }
 
+// Impresion de etiquetas por VENTANA EMERGENTE: se abre sola, lanza
+// window.print() automaticamente y se cierra sola al terminar. Sin PDF,
+// sin dialogo de "Guardar". Si el navegador bloquea la ventana emergente,
+// cae al iframe oculto como respaldo para que la impresion nunca se pierda.
+function gmImprimirVentana(htmlCompleto) {
+  var v = null;
+  try { v = window.open('', '_blank', 'width=420,height=340'); } catch (e) { v = null; }
+  if (!v || !v.document) { gmImprimirHTML(htmlCompleto); return; }
+  var doc = v.document;
+  doc.open();
+  doc.write(htmlCompleto);
+  doc.close();
+  v.onafterprint = function () { setTimeout(function () { try { v.close(); } catch (e2) {} }, 300); };
+  // Respaldo: si onafterprint no llega a dispararse, cerrar a los 2 minutos
+  setTimeout(function () { try { if (v && !v.closed) v.close(); } catch (e3) {} }, 120000);
+  setTimeout(function () { try { v.focus(); v.print(); } catch (e4) {} }, 300);
+}
+
 // Imprime un lote de etiquetas (uno o varios productos) en rollo o A4.
 // Rollo: una etiqueta por pagina del tamano del rollo (la termica corta sola).
 // A4: rejilla con lineas punteadas para recortar (impresora normal).
@@ -11730,15 +11748,19 @@ function invImprimirLote(items, esA4, tam) {
        '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}' +
        '.lbl-n{font-size:7pt}.lbl-b{height:11mm}.lbl-c{font-size:8pt}')
     : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}' +
-       // html/body clavados al tamano fisico + scale(1): Chrome no tiene
-       // nada que "ajustar" y la etiqueta ocupa exactamente la hoja
-       'html,body{width:' + W + 'mm;height:' + H + 'mm;margin:0;padding:0;transform:scale(1);transform-origin:top left}' +
+       '*{margin:0;padding:0;box-sizing:border-box}' +
+       // html/body clavados al ancho fisico + scale(1): Chrome no tiene
+       // nada que "ajustar" y la etiqueta ocupa exactamente la hoja.
+       // OJO: sin height/overflow aqui — recortarian las etiquetas 2..N
+       // del lote (verificado con render paginado); cada .lbl ya trae
+       // su propio alto fijo y overflow:hidden.
+       'html,body{width:' + W + 'mm;transform:scale(1);transform-origin:top left}' +
        '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif;transform:scale(1);transform-origin:top left}' +
        '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
   for (var s2 = 0; s2 < items.length; s2++) {
     if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
   }
-  gmImprimirHTML('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
+  gmImprimirVentana('<html><head><title>Etiquetas Gasmotion (' + total + ')</title><style>' + estilos +
     '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
     '.lbl-c{font-family:monospace;font-weight:700;letter-spacing:.08em}' +
