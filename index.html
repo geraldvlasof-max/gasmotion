@@ -11729,8 +11729,11 @@ function invImprimirLote(items, esA4, tam) {
     ? ('@page{size:A4;margin:10mm 7mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start}' +
        '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}' +
        '.lbl-n{font-size:7pt}.lbl-b{height:11mm}.lbl-c{font-size:8pt}')
-    : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}body{margin:0;padding:0}' +
-       '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif}' +
+    : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}' +
+       // html/body clavados al tamano fisico + scale(1): Chrome no tiene
+       // nada que "ajustar" y la etiqueta ocupa exactamente la hoja
+       'html,body{width:' + W + 'mm;height:' + H + 'mm;margin:0;padding:0;transform:scale(1);transform-origin:top left}' +
+       '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif;transform:scale(1);transform-origin:top left}' +
        '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
   for (var s2 = 0; s2 < items.length; s2++) {
     if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
@@ -11905,7 +11908,7 @@ function invAyudaImpresora() {
     '<div style="display:flex;gap:10px;margin-bottom:12px"><div style="background:#008184;color:white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none">4</div>' +
     '<div style="font-size:13px"><b>La cantidad ya va incluida</b>: si pediste 50 etiquetas del Kit, salen 50 etiquetas — una por página del rollo, la impresora corta sola. No cambies el número de copias en la ventana de impresión.</div></div>' +
 
-    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada: (1) revisa que el tamaño en Windows y en la web sean el MISMO del rollo (30×20mm) y (2) calibra el sensor — apaga la impresora y enciéndela manteniendo apretado el botón de avance hasta que saque 2-3 etiquetas solas. La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
+    '<div style="background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:10px 12px;font-size:12px;color:#00565a;margin-bottom:6px">💡 <b>Si la etiqueta sale PEQUEÑA (encogida):</b> en el diálogo de impresión → Más ajustes → <b>Escala: Predeterminada (100)</b> — NUNCA \u201cAjustar al área de impresión\u201d — y <b>Tamaño de papel: 30×20mm</b> (si no aparece, créalo en Windows: Preferencias de la impresora → Página → Nuevo tamaño 30×20). Chrome recuerda estos ajustes: se corrige UNA vez y queda. <b>Consejos:</b> el navegador recuerda la última impresora elegida, así que desde la segunda vez es directo. Si la etiqueta sale cortada o desplazada: (1) revisa que el tamaño en Windows y en la web sean el MISMO del rollo (30×20mm) y (2) calibra el sensor — apaga la impresora y enciéndela manteniendo apretado el botón de avance hasta que saque 2-3 etiquetas solas. La pistola no necesita nada de esto: se conecta y ya lee.</div>' +
     '<div style="background:#131313;color:#f5f5f0;border-radius:10px;padding:10px 12px;font-size:12px;margin-bottom:10px">⚡ <b>Impresión en 1 SOLO clic (sin diálogo, recomendado para el almacén):</b><br>' +
       '1. En Windows pon la POS-5811 como <b>impresora predeterminada</b> (con su papel ya en 30×20mm).<br>' +
       '2. Clic derecho al acceso directo de Chrome → Propiedades → en \u201cDestino\u201d agrega al final: <b style="font-family:monospace"> --kiosk-printing</b> (con espacio antes).<br>' +
