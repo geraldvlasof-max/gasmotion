@@ -8054,6 +8054,36 @@ function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
 // ═══════════════════════════════════════════════════════════
 
 var ASIST_YA_MARCADO_HOY = false;
+var GM_ASIST_SNOOZE_HASTA = 0; // pausa temporal del bloqueo (problemas de ubicacion)
+
+// Fecha de HOY en hora de Perú (UTC-5): con la fecha UTC, después de las
+// 7pm de Lima el candado local "saltaba" al día siguiente y el bloqueo
+// reaparecía aunque ya se hubiera marcado el ingreso.
+function asistHoyPeruISO() { return new Date(Date.now() - 5*60*60*1000).toISOString().slice(0,10); }
+
+// Consulta al SERVIDOR si ya marcó hoy. El candado local solo existe en el
+// navegador donde se marcó: si alguien marcaba desde el celular, la laptop
+// no lo sabía y lo volvía a encerrar. Si el servidor dice que ya marcó,
+// se replica el candado local y se quita el bloqueo.
+function asistServidorYaMarco(cb) {
+  fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=asistenciaListar', {cache:'no-store'})
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var regs = (d && d.ok && d.registros) ? d.registros : [];
+    var mio = null;
+    for(var i=0;i<regs.length;i++){ if(String(regs[i].uid) === String(CU ? CU.id : '')) { mio = regs[i]; break; } }
+    if(mio) {
+      ASIST_YA_MARCADO_HOY = true;
+      var data = { estado: mio.estado, hora: mio.hora_real, sede: mio.sede };
+      try { localStorage.setItem('gm_asist_marcado_' + asistHoyPeruISO() + '_' + CU.id, JSON.stringify(data)); } catch(e) {}
+      asistActualizarBotonMarcado(data);
+      var b = document.getElementById('asistBannerGrande');
+      if(b && b.parentNode) b.parentNode.removeChild(b);
+    }
+    cb(!!mio);
+  })
+  .catch(function(){ cb(false); });
+}
 
 // ── Botón "Iniciar operaciones" en el topbar ──
 function insertarBotonAsistencia() {
@@ -8102,9 +8132,13 @@ function asistVerificarBannerGrande() {
     var minActuales = ahora.getHours()*60 + ahora.getMinutes();
     var diff = minActuales - minEsperados;
     // Bloquea TODO el dia laboral (desde la hora de entrada hasta la hora
-    // de salida) mientras no haya marcado ingreso — no solo los primeros 60 min
+    // de salida) mientras no haya marcado ingreso — no solo los primeros 60 min.
+    // Antes de bloquear se confirma con el SERVIDOR que de verdad no marcó.
     if(diff >= 0 && minActuales <= minSalida) {
-      asistMostrarBannerGrande(diff);
+      if(Date.now() < GM_ASIST_SNOOZE_HASTA) return;
+      asistServidorYaMarco(function(marcado){
+        if(!marcado && Date.now() >= GM_ASIST_SNOOZE_HASTA) asistMostrarBannerGrande(diff);
+      });
     }
   })
   .catch(function(){});
@@ -8135,6 +8169,7 @@ function asistMostrarBannerGrande(minutosTarde) {
       '<div style="font-size:20px;font-weight:900;color:#131313;margin-bottom:8px">' + mensaje + '</div>' +
       '<div style="font-size:13px;color:#8a8a8a;margin-bottom:28px">Presiona el botón para activar tu ubicación y registrar tu ingreso</div>' +
       '<button id="asistBtnGrandeIniciar" style="width:100%;background:' + color + ';color:' + textColor + ';border:none;border-radius:16px;padding:20px;font-size:17px;font-weight:900;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,129,132,.4)">📍 INICIAR OPERACIONES</button>' +
+      '<div id="asistAyudaUbic"></div>' +
     '</div>';
   document.body.appendChild(ov);
 
@@ -8153,8 +8188,7 @@ function asistMostrarBannerGrande(minutosTarde) {
 
 function asistVerificarEstadoHoy() {
   // Consulta si ya se marcó hoy revisando localStorage (evita llamada innecesaria)
-  var hoy = new Date().toISOString().slice(0,10);
-  var marcado = localStorage.getItem('gm_asist_marcado_' + hoy + '_' + (CU?CU.id:''));
+  var marcado = localStorage.getItem('gm_asist_marcado_' + asistHoyPeruISO() + '_' + (CU?CU.id:''));
   if(marcado) {
     ASIST_YA_MARCADO_HOY = true;
     asistActualizarBotonMarcado(JSON.parse(marcado));
@@ -8191,13 +8225,15 @@ function asistIniciarOperaciones() {
       .then(function(d){
         if(d.ok) {
           ASIST_YA_MARCADO_HOY = true;
-          var hoy = new Date().toISOString().slice(0,10);
-          localStorage.setItem('gm_asist_marcado_' + hoy + '_' + CU.id, JSON.stringify(d));
+          localStorage.setItem('gm_asist_marcado_' + asistHoyPeruISO() + '_' + CU.id, JSON.stringify(d));
           asistActualizarBotonMarcado(d);
           var msg = d.estado === 'TARDE'
             ? 'Ingreso registrado con ' + d.minutosTarde + ' min de tardanza en ' + d.sede
             : 'Ingreso puntual registrado en ' + d.sede;
           showToast(msg, d.estado==='TARDE' ? 'warning' : 'success');
+        } else if(d.error && d.error.indexOf('Ya registraste') !== -1) {
+          // El servidor ya lo tiene marcado (ej. desde otro equipo): desbloquear
+          asistServidorYaMarco(function(){});
         } else {
           if(btn) { btn.disabled = false; btn.innerHTML = '📍 Iniciar operaciones'; }
           showToast(d.error || 'Error registrando ingreso', 'error');
@@ -8212,9 +8248,37 @@ function asistIniciarOperaciones() {
       if(btn) { btn.disabled = false; btn.innerHTML = '📍 Iniciar operaciones'; }
       var msg = err.code === 1 ? 'Debes permitir el acceso a tu ubicación para registrar el ingreso' : 'No se pudo obtener tu ubicación';
       showToast(msg, 'error');
+      asistMostrarAyudaUbicacion(err.code === 1);
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
+}
+
+// Si la ubicación falla, la pantalla NO puede quedar sellada sin salida:
+// se muestran los pasos para activarla y una entrada temporal de 15 min
+// que avisa al administrador (el bloqueo vuelve a pedirse después).
+function asistMostrarAyudaUbicacion(denegada) {
+  var caja = document.getElementById('asistAyudaUbic');
+  if(!caja) return;
+  caja.innerHTML =
+    '<div style="text-align:left;background:#fef3c7;border-radius:12px;padding:12px 14px;margin-top:14px;font-size:12.5px;color:#78350f;line-height:1.5">' +
+      '<b>' + (denegada ? 'La ubicación está bloqueada en este navegador.' : 'No se pudo obtener tu ubicación.') + '</b> Para activarla:<br>' +
+      '1. Toca el 🔒 (candado) junto a la dirección de la página<br>' +
+      '2. Ubicación → <b>Permitir</b><br>' +
+      '3. Recarga la página y presiona de nuevo INICIAR OPERACIONES' +
+    '</div>' +
+    '<button onclick="asistEntrarSinMarcar()" style="width:100%;background:transparent;border:1.5px solid #D9D9D9;border-radius:12px;padding:12px;margin-top:10px;font-size:13px;font-weight:700;color:#8a8a8a;cursor:pointer;font-family:inherit">Entrar y marcar después (se avisará al administrador)</button>';
+}
+
+function asistEntrarSinMarcar() {
+  GM_ASIST_SNOOZE_HASTA = Date.now() + 15*60*1000;
+  var b = document.getElementById('asistBannerGrande');
+  if(b && b.parentNode) b.parentNode.removeChild(b);
+  try {
+    crearNotificacion(uidsPorRol(['admin']), 'asistencia', '⚠ Ingreso sin marcar',
+      (CU ? CU.nombre : '?') + ' entró a la web sin poder registrar su ingreso (problema de ubicación). Se le volverá a pedir en 15 minutos.', '', true);
+  } catch(e) {}
+  showToast('Tienes 15 minutos — activa la ubicación y marca tu ingreso', 'warning');
 }
 
 // ── Modal de configuración de horario por usuario ──
