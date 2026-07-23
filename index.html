@@ -11941,16 +11941,19 @@ function invImprimirLote(items, esA4, tam) {
 // Cada unidad fisica tiene SU codigo de barras unico (TQ-60-001...) y se
 // rastrea individualmente: en stock o instalada en una placa concreta.
 
-function invSheetRecepcionUnidades(id) {
+function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
   var p = invBuscarProd(id);
   if (!p) return;
   gmModalAbrir(
-    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 Recibir unidades — ' + shEsc(p.nombre) + '</div>' +
+    '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 ' + (yaEnStock ? 'Generar códigos del stock existente' : 'Recibir unidades') + ' — ' + shEsc(p.nombre) + '</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">¿Cuántas unidades llegaron?</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="1"></div>' +
-      '<div><label class="gm-lbl">Sede que recibe</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '"></div>' +
+      '<div><label class="gm-lbl">Sede</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
     '</div>' +
+    '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px">' +
+      '<input type="checkbox" id="invRecYaStock"' + (yaEnStock ? ' checked' : '') + ' style="width:16px;height:16px;flex:none;margin-top:1px"> ' +
+      '<span>Estas unidades <b>YA están contadas</b> en el stock actual <span style="font-weight:400;color:#8a8a8a">(solo generar códigos e imprimir, SIN sumar stock — para stock cargado por cantidad antes de serializar)</span></span></label>' +
     '<label class="gm-lbl">N° de serie del fabricante (opcional, uno por línea — escanéalos con la pistola)</label>' +
     '<textarea id="invRecSeries" class="gm-inp" rows="3" placeholder="N24526523\nN24526524" style="font-family:monospace;resize:vertical"></textarea>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
@@ -11964,14 +11967,15 @@ function invRecibirUnidades(id) {
   if (n < 1) { showToast('Indica cuántas unidades llegaron', 'error'); return; }
   var sede = document.getElementById('invRecSede').value;
   var series = document.getElementById('invRecSeries').value.split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return x; });
+  var yaStock = (document.getElementById('invRecYaStock') || {}).checked ? 1 : 0;
   agendaWorkerFetch('invUnidadesCrear', {}, { method: 'POST', body: {
-    productoId: id, cantidad: n, sede: sede, series: series,
+    productoId: id, cantidad: n, sede: sede, series: series, yaEnStock: yaStock,
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
     if (d && d.ok) {
       gmModalCerrar();
       p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
-      showToast(n + ' unidad(es) registradas — imprimiendo sus etiquetas', 'success');
+      showToast(n + ' código(s) generados — imprimiendo sus etiquetas' + (yaStock ? ' (stock sin cambios)' : ''), 'success');
       invImprimirLote([{ p: p, codigos: d.codigos }], false, gmEtqTam());
       renderInventario();
     } else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
@@ -12032,10 +12036,22 @@ function invSheetUnidades(id) {
         '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Reimprimir etiqueta" onclick="invReimprimirUnidad(\'' + shEsc(id) + '\',\'' + shEsc(u.codigo) + '\')">🖨</button>' +
       '</div>';
     }
+    // Stock cargado por cantidad ANTES de serializar: ofrecer generar sus
+    // codigos correlativos sin alterar la cantidad (el caso tipico al
+    // convertir un producto existente en serializado)
+    var sinCodigo = Math.max(0, Math.round((parseFloat(p.stock) || 0) - enStock));
+    var avisoSinCodigo = sinCodigo > 0
+      ? '<div style="border:2px dashed #f59e0b;background:#fffbeb;border-radius:12px;padding:12px;margin-top:12px">' +
+          '<div style="font-size:12.5px;font-weight:800;color:#92400e">⚠ Tienes ' + sinCodigo + ' unidad(es) en stock SIN código propio</div>' +
+          '<div style="font-size:11.5px;color:#8a8a8a;margin-top:2px">Se cargaron por cantidad antes de serializar. Genera sus códigos correlativos e imprime sus etiquetas sin alterar el stock.</div>' +
+          '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetRecepcionUnidades(\'' + shEsc(id) + '\',1,' + sinCodigo + ')">📟 Generar ' + sinCodigo + ' código(s) del stock existente</button>' +
+        '</div>'
+      : '';
     gmModalAbrir(
       '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 Unidades — ' + shEsc(p.nombre) + '</div>' +
       '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">' + unidades.length + ' unidades · ' + enStock + ' en stock. Cada una con su código de barras propio.</div>' +
-      (filas || '<div style="color:#8a8a8a;text-align:center;padding:18px">Aún no hay unidades — regístralas con ⬇ Entrada</div>') +
+      (filas || '<div style="color:#8a8a8a;text-align:center;padding:18px">Aún no hay unidades con código propio</div>') +
+      avisoSinCodigo +
       '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:12px" onclick="gmModalCerrar()">Cerrar</button>', 620);
   }).catch(function () { showToast('Error de conexión', 'error'); });
 }
