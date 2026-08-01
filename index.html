@@ -11415,6 +11415,7 @@ function invEstacion() {
       invEstBotonModo('cargar', '📦', 'CARGAR', 'Llegó mercadería: dispara y suma', '#065f46', '#d1fae5') +
       invEstBotonModo('descargar', '🚗', 'DESCARGAR', 'Instalación: dispara y descuenta a una placa', '#9a3412', '#ffedd5') +
       invEstBotonModo('etiquetas', '🏷', 'ETIQUETAS', 'Crear productos e imprimir sus códigos', '#00565a', '#ccf1f0') +
+      invEstBotonModo('probar', '🔫', 'PROBAR PISTOLA', '¿La pistola lee bien? Compruébalo aquí', '#4c1d95', '#ede9fe') +
     '</div>' +
     '<div id="invEstZona"></div>';
   invEstSetModo('cargar');
@@ -11441,6 +11442,7 @@ function invEstSetModo(m) {
   if (!zona) return;
 
   if (m === 'etiquetas') { zona.innerHTML = invEstEtiquetasHTML(); return; }
+  if (m === 'probar') { zona.innerHTML = invEstProbarHTML(); invEstProbarInit(); return; }
 
   zona.innerHTML =
     '<div class="card" style="border:2px solid ' + (m === 'cargar' ? '#86efac' : '#fdba74') + '">' +
@@ -11483,7 +11485,7 @@ function invEstLog(htmlFila, error) {
 function invEstProcesar() {
   var inp = document.getElementById('invEstInput');
   if (!inp) return;
-  var codigo = inp.value.trim().toUpperCase();
+  var codigo = gmPistolaNormalizar(inp.value);
   inp.value = '';
   if (!codigo) return;
   var p = null;
@@ -11569,6 +11571,85 @@ function invEstProcesar() {
   }).catch(function () { invEstLog('⚠ Error de conexión', true); });
 }
 
+// ── Modo PROBAR: diagnostico en vivo de la pistola lectora ──
+// Muestra EXACTAMENTE que teclea la pistola, mide la velocidad (una
+// pistola real dispara las teclas a <45ms; una persona no), detecta el
+// choque de idioma de teclado y verifica que el codigo exista.
+var invPruebaT = [];
+
+function invEstProbarHTML() {
+  return '<div class="card" style="border:2px solid #c4b5fd">' +
+    '<div style="font-size:14px;font-weight:900;color:#4c1d95;margin-bottom:4px">🔫 Prueba de la pistola lectora</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:10px"><b>1.</b> Conecta la pistola (receptor USB: entra y listo · Bluetooth: emparejar). <b>2.</b> Haz clic en el recuadro. <b>3.</b> Dispara a cualquier etiqueta.</div>' +
+    '<input id="invPruebaInp" class="gm-inp" autocomplete="off" placeholder="Dispara la pistola aquí…" ' +
+      'style="font-size:22px;padding:16px;font-family:monospace;text-align:center;border-width:3px;border-color:#7c3aed" onblur="invEstProbarRefoco()">' +
+    '<div id="invPruebaRes"></div>' +
+    '<div style="font-size:11px;color:#8a8a8a;margin-top:10px">💡 Si al disparar NO aparece nada aquí: la pistola no está conectada como teclado. Pruébala primero en el Bloc de notas de Windows — si tampoco escribe ahí, reconecta el receptor USB o revisa el emparejamiento Bluetooth. Si suena el bip pero no escribe, es conexión, no la etiqueta.</div>' +
+  '</div>';
+}
+
+function invEstProbarRefoco() {
+  setTimeout(function () {
+    var i = document.getElementById('invPruebaInp');
+    var activo = document.activeElement;
+    if (i && activo && activo.tagName !== 'INPUT' && activo.tagName !== 'SELECT' && activo.tagName !== 'BUTTON') i.focus();
+  }, 120);
+}
+
+function invEstProbarInit() {
+  var inp = document.getElementById('invPruebaInp');
+  if (!inp) return;
+  invPruebaT = [];
+  inp.onkeydown = function (ev) {
+    if (ev.key === 'Enter') { ev.preventDefault(); invEstProbarEval(); return; }
+    if (ev.key && ev.key.length === 1) invPruebaT.push(Date.now());
+  };
+  setTimeout(function () { inp.focus(); }, 120);
+}
+
+function invEstProbarEval() {
+  var inp = document.getElementById('invPruebaInp');
+  var res = document.getElementById('invPruebaRes');
+  if (!inp || !res) return;
+  var crudo = inp.value;
+  inp.value = '';
+  var gaps = [];
+  for (var i = 1; i < invPruebaT.length; i++) gaps.push(invPruebaT[i] - invPruebaT[i - 1]);
+  invPruebaT = [];
+  if (!crudo) { res.innerHTML = '<div style="margin-top:10px;font-size:13px;color:#8a8a8a;text-align:center">No llegó ningún texto — revisa la conexión de la pistola</div>'; return; }
+  var suma = 0;
+  for (var g = 0; g < gaps.length; g++) suma += gaps[g];
+  var prom = gaps.length ? Math.round(suma / gaps.length) : 999;
+  var esPistola = gaps.length >= 3 && prom < 45;
+  var raro = /[’‘´'`_?¿]/.test(crudo);
+  var limpio = gmPistolaNormalizar(crudo);
+  var html =
+    '<div style="background:#f8f8f8;border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13px">' +
+      '<div>Llegó: <b style="font-family:monospace;font-size:16px">' + shEsc(crudo) + '</b> <span style="color:#8a8a8a">(' + crudo.length + ' caracteres, ' + (gaps.length ? prom + 'ms entre teclas' : 'una sola tecla') + ')</span></div>' +
+      '<div style="margin-top:6px;font-weight:800;color:' + (esPistola ? '#065f46' : '#9a3412') + '">' +
+        (esPistola ? '✅ Pistola detectada — dispara y teclea perfecto' : '⚠ Esto parece tecleo manual, no un disparo de pistola (muy lento)') + '</div>' +
+      (raro
+        ? '<div style="margin-top:8px;background:#fef3c7;border-radius:10px;padding:10px;color:#78350f;font-size:12px"><b>Choque de idioma de teclado:</b> la pistola está en INGLÉS y Windows en ESPAÑOL — el guion llega como apóstrofe. <b>Gasmotion lo corrige solo</b> (usará <b style="font-family:monospace">' + shEsc(limpio) + '</b>), pero para arreglarlo de raíz: cambia el teclado de Windows a "Inglés (Estados Unidos)" en Configuración → Hora e idioma, o escanea el código de configuración "Spanish keyboard" del manual de la pistola.</div>'
+        : '') +
+      '<div id="invPruebaBusca" style="margin-top:8px;font-size:12.5px;color:#8a8a8a">Buscando ' + shEsc(limpio) + ' en el inventario…</div>' +
+    '</div>';
+  res.innerHTML = html;
+  var pintarBusca = function (texto, okB) {
+    var b = document.getElementById('invPruebaBusca');
+    if (b) b.innerHTML = '<span style="font-weight:800;color:' + (okB ? '#065f46' : '#9a3412') + '">' + texto + '</span>';
+  };
+  var p = null;
+  for (var k = 0; k < invProductos.length; k++) {
+    if ((invProductos[k].codigo || '').toUpperCase() === limpio) { p = invProductos[k]; break; }
+  }
+  if (p) { pintarBusca('✅ Es el producto "' + shEsc(p.nombre) + '" — todo listo para CARGAR o DESCARGAR', true); return; }
+  agendaWorkerFetch('invUnidadesListar', { codigo: limpio }).then(function (du) {
+    var u = du && du.ok && du.unidades && du.unidades[0];
+    if (u) pintarBusca('✅ Es la unidad ' + shEsc(limpio) + ' (' + (u.estado === 'en_stock' ? 'en stock en ' + shEsc(u.sede || '—') : 'instalada en ' + shEsc(u.placa || '?')) + ')', true);
+    else pintarBusca('❓ La pistola lee BIEN, pero ese código no está registrado en el inventario — si es una etiqueta antigua (impresa antes del cambio a Code 128), reimprímela', false);
+  }).catch(function () { pintarBusca('La pistola lee bien — no se pudo consultar el inventario (sin conexión)', false); });
+}
+
 function invEstMostrarCrearRapido(codigo) {
   var sede = document.getElementById('invEstSede').value;
   var nv = document.getElementById('invEstNuevo');
@@ -11628,8 +11709,19 @@ document.addEventListener('keydown', function (ev) {
   if (ev.key && ev.key.length === 1) gmPistolaBuf += ev.key;
 });
 
+// La pistola lectora "es un teclado" en INGLES: si Windows esta con
+// teclado en espanol, el guion de los codigos llega como apostrofe u
+// otro simbolo ("TQ-60" entra como "TQ'60") y no coincide con nada.
+// Esta limpieza lo corrige automaticamente en todos los escaneos.
+function gmPistolaNormalizar(texto) {
+  var t = String(texto || '').trim().toUpperCase();
+  t = t.replace(/[’‘´'`_?¿]/g, '-');
+  t = t.replace(/[^A-Z0-9\-\.]/g, '');
+  return t;
+}
+
 function gmPistolaScan(codigo) {
-  codigo = String(codigo || '').trim().toUpperCase();
+  codigo = gmPistolaNormalizar(codigo);
   if (!codigo || !CU) return;
   if (!agendaWorkerListo()) return;
   var buscar = function () {
@@ -11998,7 +12090,7 @@ function invSheetInstalarUnidad(id) {
 }
 
 function invInstalarUnidad() {
-  var codigo = document.getElementById('invInstCod').value.trim().toUpperCase();
+  var codigo = gmPistolaNormalizar(document.getElementById('invInstCod').value);
   var placa = document.getElementById('invInstPlaca').value.trim().toUpperCase();
   if (!codigo) { showToast('Escanea el código de la unidad', 'error'); return; }
   if (!placa) { showToast('Escribe la placa del vehículo', 'error'); return; }
@@ -12120,6 +12212,12 @@ function invAyudaImpresora() {
       '1. En Windows pon la POS-5811 como <b>impresora predeterminada</b> (con su papel ya en 30×20mm).<br>' +
       '2. Clic derecho al acceso directo de Chrome → Propiedades → en \u201cDestino\u201d agrega al final: <b style="font-family:monospace"> --kiosk-printing</b> (con espacio antes).<br>' +
       '3. Abre Gasmotion desde ESE acceso directo: cada \u201cImprimir\u201d sale directo por la térmica, sin ventanas ni encuadres.</div>' +
+    '<div style="background:#ede9fe;border:1.5px solid #c4b5fd;border-radius:10px;padding:10px 12px;font-size:12px;color:#4c1d95;margin-bottom:10px">🔫 <b>Pistola lectora — cómo dejarla operativa:</b><br>' +
+      '1. <b>Conéctala</b>: si trae receptor USB, enchúfalo y listo (Windows la ve como un teclado, sin drivers). Si es Bluetooth, emparéjala desde Configuración → Bluetooth.<br>' +
+      '2. <b>Pruébala</b> en Inventario → ⚡ Estación de escaneo → <b>🔫 PROBAR PISTOLA</b>: dispara a una etiqueta y te dice si lee, qué leyó y si el código existe.<br>' +
+      '3. <b>Si no escribe nada</b>: prueba en el Bloc de notas — si tampoco, es la conexión (receptor/emparejamiento), no la etiqueta.<br>' +
+      '4. <b>Si escribe símbolos raros</b> (TQ’60 en vez de TQ-60): choque de idioma de teclado — Gasmotion lo corrige solo, pero puedes poner el teclado de Windows en “Inglés (Estados Unidos)” para arreglarlo de raíz.<br>' +
+      '5. <b>Solo lee las etiquetas nuevas</b>: las impresas antes del cambio a Code 128 no tienen zona de silencio y la pistola no las dispara — reimprímelas.</div>' +
     '<div style="text-align:center;margin-bottom:4px"><button class="btn btn-sm btn-outline" onclick="window.print()" style="font-size:11px">🖨 Imprimir esta guía para pegarla en la sede</button></div>' +
 
     '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:10px" onclick="invSheetGenerador()">← Volver al generador</button>'
