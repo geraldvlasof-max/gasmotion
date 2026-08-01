@@ -2692,7 +2692,7 @@ function buscarUsuario(rawUid, users) {
 // Corre UNA vez por versión al entrar: crea las tablas/columnas nuevas en la
 // base de datos sin que nadie tenga que abrir la URL de migrate a mano.
 // Subir GM_MIGRATE_VERSION cada vez que el worker traiga cambios de BD.
-var GM_MIGRATE_VERSION = 'v30-unidades-serializadas';
+var GM_MIGRATE_VERSION = 'v31-despacho-unidades';
 function gmAutoMigrate() {
   try { if (localStorage.getItem('gm_migrate_hecha') === GM_MIGRATE_VERSION) return; } catch (e) {}
   if (typeof agendaWorkerFetch !== 'function') return;
@@ -11299,6 +11299,8 @@ function invSheetNuevoDespacho() {
   }
   var opciones = '';
   for (var k = 0; k < destinos.length; k++) opciones += '<option value="' + destinos[k] + '">' + destinos[k] + '</option>';
+  invDspEscaneados = {};
+  invDspUnidades = [];
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">🚚 Nuevo despacho</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">El stock sale de ' + GM_INV_SEDE_PRINCIPAL + ' y queda “en tránsito” hasta que la sede destino confirme.</div>' +
@@ -11306,12 +11308,91 @@ function invSheetNuevoDespacho() {
       '<div><label class="gm-lbl">Desde</label><div style="border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:700;background:#f4f6f6">⭐ ' + GM_INV_SEDE_PRINCIPAL + '</div></div>' +
       '<div><label class="gm-lbl">Hacia</label><select id="invDspDestino" class="gm-inp">' + opciones + '</select></div>' +
     '</div>' +
-    '<label class="gm-lbl">Productos</label>' +
+    '<label class="gm-lbl">📡 Arma el despacho con la pistola — cada disparo suma 1 (lee productos y unidades 📟)</label>' +
+    '<input id="invDspScan" class="gm-inp" autocomplete="off" placeholder="Dispara la pistola aquí…" ' +
+      'style="margin-top:0;font-family:monospace;font-size:17px;text-align:center;border-width:2.5px;border-color:#008184" ' +
+      'onkeydown="if(event.key===\'Enter\'){event.preventDefault();invDspEscanear();}">' +
+    '<div id="invDspEscaneadosBox"></div>' +
+    '<label class="gm-lbl">O elige a mano</label>' +
     '<div id="invDspItems">' + invDspFilaItemHTML() + '</div>' +
     '<button class="btn btn-sm btn-outline" onclick="invDspAgregarItem()">+ Agregar producto</button>' +
     '<label class="gm-lbl">Notas (opcional)</label><input id="invDspNotas" class="gm-inp" placeholder="N° de guía, transportista...">' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:16px" onclick="invDspGuardar()">🚚 Enviar despacho</button>'
   );
+  setTimeout(function () { var s = document.getElementById('invDspScan'); if (s) s.focus(); }, 150);
+}
+
+// ── Armar el despacho con la pistola ──
+// Cada disparo suma 1 del producto escaneado. Las unidades serializadas
+// (codigo BASE-NNN) se validan (en stock, en el almacen principal, sin
+// repetir) y viajan con el despacho: cambian de sede al confirmarse.
+var invDspEscaneados = {};
+var invDspUnidades = [];
+
+function invDspEscanear() {
+  var inp = document.getElementById('invDspScan');
+  if (!inp) return;
+  var codigo = gmPistolaNormalizar(inp.value);
+  inp.value = '';
+  if (!codigo) return;
+  var p = null;
+  for (var i = 0; i < invProductos.length; i++) {
+    if ((invProductos[i].codigo || '').toUpperCase() === codigo) { p = invProductos[i]; break; }
+  }
+  if (p) { invDspSumar(p, ''); return; }
+  if (/-\d{3,}$/.test(codigo)) {
+    agendaWorkerFetch('invUnidadesListar', { codigo: codigo }).then(function (du) {
+      var u = du && du.ok && du.unidades && du.unidades[0];
+      if (!u) { showToast('❓ ' + codigo + ' no está registrado en inventario', 'error'); return; }
+      if (u.estado !== 'en_stock') { showToast('⚠ ' + codigo + ' ya está instalada' + (u.placa ? ' en 🚗 ' + u.placa : ''), 'error'); return; }
+      if ((u.sede || '') !== GM_INV_SEDE_PRINCIPAL) { showToast('⚠ ' + codigo + ' no está en ' + GM_INV_SEDE_PRINCIPAL + ' — está en ' + (u.sede || '—'), 'error'); return; }
+      if (invDspUnidades.indexOf(codigo) !== -1) { showToast('⚠ ' + codigo + ' ya está en este despacho', 'error'); return; }
+      var pu = invBuscarProd(u.producto_id);
+      if (!pu) { showToast('No se encontró el producto de esa unidad', 'error'); return; }
+      invDspUnidades.push(codigo);
+      invDspSumar(pu, codigo);
+    }).catch(function () { showToast('Error de conexión', 'error'); });
+    return;
+  }
+  showToast('❓ ' + codigo + ' no coincide con ningún producto', 'error');
+}
+
+function invDspSumar(p, codigoUnidad) {
+  if (!invDspEscaneados[p.id]) invDspEscaneados[p.id] = { p: p, cantidad: 0, unidades: [] };
+  invDspEscaneados[p.id].cantidad++;
+  if (codigoUnidad) invDspEscaneados[p.id].unidades.push(codigoUnidad);
+  if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
+  invDspPintarEscaneados();
+  var inp = document.getElementById('invDspScan');
+  if (inp) inp.focus();
+}
+
+function invDspQuitarEscaneado(pid) {
+  var e = invDspEscaneados[pid];
+  if (e) {
+    for (var i = 0; i < e.unidades.length; i++) {
+      var ix = invDspUnidades.indexOf(e.unidades[i]);
+      if (ix !== -1) invDspUnidades.splice(ix, 1);
+    }
+  }
+  delete invDspEscaneados[pid];
+  invDspPintarEscaneados();
+}
+
+function invDspPintarEscaneados() {
+  var box = document.getElementById('invDspEscaneadosBox');
+  if (!box) return;
+  var html = '';
+  for (var pid in invDspEscaneados) {
+    var e = invDspEscaneados[pid];
+    html += '<div style="display:flex;align-items:center;gap:8px;background:#f0fdfa;border:1.5px solid #99e5e0;border-radius:10px;padding:8px 10px;margin-top:6px;font-size:13px;flex-wrap:wrap">' +
+      '<b style="flex:1;min-width:120px">' + shEsc(e.p.nombre) + '</b>' +
+      '<span style="font-weight:900;color:#00565a;font-size:15px">× ' + e.cantidad + '</span>' +
+      (e.unidades.length ? '<span style="font-family:monospace;font-size:10.5px;color:#8a8a8a;width:100%">📟 ' + shEsc(e.unidades.join(', ')) + '</span>' : '') +
+      '<button class="btn btn-sm btn-outline" style="padding:3px 9px" title="Quitar" onclick="invDspQuitarEscaneado(\'' + shEsc(pid) + '\')">✕</button>' +
+    '</div>';
+  }
+  box.innerHTML = html;
 }
 
 function invDspAgregarItem() {
@@ -11325,15 +11406,20 @@ function invDspAgregarItem() {
 function invDspGuardar() {
   var destino = document.getElementById('invDspDestino').value;
   var filas = document.querySelectorAll('#invDspItems .inv-dsp-item');
-  var items = [];
+  // Lo escaneado con la pistola + lo elegido a mano, sumado por producto
+  var mapa = {};
+  for (var pe in invDspEscaneados) mapa[pe] = invDspEscaneados[pe].cantidad;
   for (var i = 0; i < filas.length; i++) {
     var pid = filas[i].querySelector('.inv-dsp-prod').value;
     var cant = parseFloat(filas[i].querySelector('.inv-dsp-cant').value) || 0;
-    if (pid && cant > 0) items.push({ productoId: pid, cantidad: cant });
+    if (pid && cant > 0) mapa[pid] = (mapa[pid] || 0) + cant;
   }
-  if (!items.length) { showToast('Agrega al menos un producto con cantidad', 'error'); return; }
+  var items = [];
+  for (var pm in mapa) items.push({ productoId: pm, cantidad: mapa[pm] });
+  if (!items.length) { showToast('Escanea o agrega al menos un producto', 'error'); return; }
   agendaWorkerFetch('invDespachoCrear', {}, { method: 'POST', body: {
     sedeOrigen: GM_INV_SEDE_PRINCIPAL, sedeDestino: destino, items: items,
+    unidades: invDspUnidades.slice(),
     notas: document.getElementById('invDspNotas').value.trim(),
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
