@@ -2692,7 +2692,7 @@ function buscarUsuario(rawUid, users) {
 // Corre UNA vez por versión al entrar: crea las tablas/columnas nuevas en la
 // base de datos sin que nadie tenga que abrir la URL de migrate a mano.
 // Subir GM_MIGRATE_VERSION cada vez que el worker traiga cambios de BD.
-var GM_MIGRATE_VERSION = 'v31-despacho-unidades';
+var GM_MIGRATE_VERSION = 'v32-placas-sin-guion';
 function gmAutoMigrate() {
   try { if (localStorage.getItem('gm_migrate_hecha') === GM_MIGRATE_VERSION) return; } catch (e) {}
   if (typeof agendaWorkerFetch !== 'function') return;
@@ -3017,7 +3017,7 @@ function dropSf1Nuevo(e) {
 }
 
 function grabarSf1() {
-  var placa=document.getElementById('nuevoPlaca').value.trim().toUpperCase();
+  var placa=gmPlacaNormalizar(document.getElementById('nuevoPlaca').value);
   var modelo=document.getElementById('nuevoModelo').value.trim();
   var sede=document.getElementById('nuevoSede').value;
   var vsEl=document.getElementById('nuevoVendServicio');
@@ -3214,7 +3214,7 @@ function poblarGLPVendServicio() {
 }
 
 function grabarSf1GLP() {
-  var placa = document.getElementById('glpPlaca').value.trim().toUpperCase();
+  var placa = gmPlacaNormalizar(document.getElementById('glpPlaca').value);
   var modelo = document.getElementById('glpModelo').value.trim();
   var sede = document.getElementById('glpSede').value;
   var vsEl = document.getElementById('glpVendServicio');
@@ -6981,7 +6981,7 @@ function cbetInputField(id,label,type,placeholder) {
 function cbetGetVal(id){var el=document.getElementById(id);return el?el.value.trim():'';}
 
 function cbetPreviewCredito() {
-  var placa=cbetGetVal('cbetNC_placa').toUpperCase();
+  var placa=gmPlacaNormalizar(cbetGetVal('cbetNC_placa'));
   var nombre=cbetGetVal('cbetNC_nombre');
   var importe=parseFloat(cbetGetVal('cbetNC_importe'));
   var nCuotas=parseInt(cbetGetVal('cbetNC_ncuotas'));
@@ -7014,7 +7014,7 @@ function cbetPreviewCredito() {
 }
 
 function cbetConfirmarCredito() {
-  var placa=cbetGetVal('cbetNC_placa').toUpperCase();
+  var placa=gmPlacaNormalizar(cbetGetVal('cbetNC_placa'));
   var nombre=cbetGetVal('cbetNC_nombre');
   var dni=cbetGetVal('cbetNC_dni');
   var tel=cbetGetVal('cbetNC_telefono');
@@ -7713,7 +7713,7 @@ function fiseConfirmarDatosExtraidos(expId) {
       e.dni = valores.fr_dni;
       e.direccion = valores.fr_direccion;
       e.distrito = valores.fr_distrito;
-      e.placa = valores.fr_placa.toUpperCase();
+      e.placa = gmPlacaNormalizar(valores.fr_placa);
       e.marca = valores.fr_marca;
       e.modelo = valores.fr_modelo;
       e.anio = valores.fr_anio;
@@ -11103,7 +11103,7 @@ function invSheetMov(id, tipo) {
     '</div>' +
     (esEntrada ? '' :
       '<label class="gm-lbl">Placa del vehículo que recibe el equipo *</label>' +
-      '<input id="invMovPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10">' +
+      '<input id="invMovPlaca" class="gm-inp" placeholder="ABC123" style="text-transform:uppercase" maxlength="10" oninput="gmPlacaInput(this)">' +
       '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#6b7280;margin-top:8px;cursor:pointer">' +
         '<input type="checkbox" id="invMovSinPlaca" style="width:15px;height:15px"> Salida sin vehículo (merma, uso interno, devolución)</label>') +
     '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : 'Instalación') + '">' +
@@ -11119,7 +11119,7 @@ function invGuardarMov(id, tipo) {
   var placa = '';
   if (tipo === 'salida') {
     var sinPlaca = document.getElementById('invMovSinPlaca').checked;
-    placa = document.getElementById('invMovPlaca').value.trim().toUpperCase();
+    placa = gmPlacaNormalizar(document.getElementById('invMovPlaca').value);
     if (!sinPlaca && !placa) {
       showToast('Toda salida debe destinarse a la placa del vehículo (o marca "sin vehículo")', 'error');
       return;
@@ -11534,7 +11534,7 @@ function invEstSetModo(m) {
     '<div class="card" style="border:2px solid ' + (m === 'cargar' ? '#86efac' : '#fdba74') + '">' +
       (m === 'descargar'
         ? '<label class="gm-lbl" style="font-size:13px">🚗 Placa del vehículo que recibe (escríbela UNA vez)</label>' +
-          '<input id="invEstPlaca" class="gm-inp" placeholder="ABC-123" maxlength="10" style="font-size:22px;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:3px;padding:12px">'
+          '<input id="invEstPlaca" class="gm-inp" placeholder="ABC123" maxlength="10" oninput="gmPlacaInput(this)" style="font-size:22px;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:3px;padding:12px">'
         : '') +
       '<label class="gm-lbl" style="font-size:13px">' + (m === 'cargar' ? '📦 Dispara la pistola aquí — cada disparo SUMA 1' : '📤 Dispara la pistola aquí — cada disparo DESCUENTA 1 a la placa') + '</label>' +
       '<input id="invEstInput" class="gm-inp" autocomplete="off" placeholder="Esperando escaneo…" ' +
@@ -11584,7 +11584,7 @@ function invEstProcesar() {
     if (invEstModo === 'descargar') {
       // ¿Es una UNIDAD serializada? (tanques, reductores, ECUs)
       var placaU = (document.getElementById('invEstPlaca') || {}).value || '';
-      placaU = placaU.trim().toUpperCase();
+      placaU = gmPlacaNormalizar(placaU);
       if (!placaU) {
         invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
         return;
@@ -11621,7 +11621,7 @@ function invEstProcesar() {
 
   if (invEstModo === 'descargar') {
     var placaEl = document.getElementById('invEstPlaca');
-    var placa = placaEl ? placaEl.value.trim().toUpperCase() : '';
+    var placa = placaEl ? gmPlacaNormalizar(placaEl.value) : '';
     if (!placa) {
       invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
       if (placaEl) placaEl.focus();
@@ -11805,6 +11805,11 @@ function gmPistolaNormalizar(texto) {
   t = t.replace(/[^A-Z0-9\-\.]/g, '');
   return t;
 }
+
+// Placas SIN guion: solo letras y numeros (BET646). El guion se elimina
+// solo mientras se escribe y tambien al guardar, en todos los formularios.
+function gmPlacaNormalizar(t) { return String(t || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function gmPlacaInput(el) { if (el) el.value = gmPlacaNormalizar(el.value); }
 
 function gmPistolaScan(codigo) {
   codigo = gmPistolaNormalizar(codigo);
@@ -12169,7 +12174,7 @@ function invSheetInstalarUnidad(id) {
     '<label class="gm-lbl">Código de la unidad *</label>' +
     '<input id="invInstCod" class="gm-inp" placeholder="' + shEsc(p.codigo) + '-001" style="font-family:monospace;font-size:17px;text-transform:uppercase" autocomplete="off">' +
     '<label class="gm-lbl">Placa del vehículo que la recibe *</label>' +
-    '<input id="invInstPlaca" class="gm-inp" placeholder="ABC-123" maxlength="10" style="text-transform:uppercase;font-size:17px;text-align:center;letter-spacing:2px">' +
+    '<input id="invInstPlaca" class="gm-inp" placeholder="ABC123" maxlength="10" oninput="gmPlacaInput(this)" style="text-transform:uppercase;font-size:17px;text-align:center;letter-spacing:2px">' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invInstalarUnidad()">🚗 Instalar en la placa</button>'
   );
   setTimeout(function () { var i = document.getElementById('invInstCod'); if (i) i.focus(); }, 150);
@@ -12177,7 +12182,7 @@ function invSheetInstalarUnidad(id) {
 
 function invInstalarUnidad() {
   var codigo = gmPistolaNormalizar(document.getElementById('invInstCod').value);
-  var placa = document.getElementById('invInstPlaca').value.trim().toUpperCase();
+  var placa = gmPlacaNormalizar(document.getElementById('invInstPlaca').value);
   if (!codigo) { showToast('Escanea el código de la unidad', 'error'); return; }
   if (!placa) { showToast('Escribe la placa del vehículo', 'error'); return; }
   agendaWorkerFetch('invUnidadInstalar', {}, { method: 'POST', body: {
@@ -12371,7 +12376,7 @@ function invModoEscaneo() {
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
       '<div><label class="gm-lbl">Sede</label><select id="invScanSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
-      '<div id="invScanPlacaWrap" style="display:none"><label class="gm-lbl">Placa destino *</label><input id="invScanPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10"></div>' +
+      '<div id="invScanPlacaWrap" style="display:none"><label class="gm-lbl">Placa destino *</label><input id="invScanPlaca" class="gm-inp" placeholder="ABC123" style="text-transform:uppercase" maxlength="10" oninput="gmPlacaInput(this)"></div>' +
     '</div>' +
     '<label class="gm-lbl">Dispara la pistola aquí (o escribe el código y Enter)</label>' +
     '<input id="invScanInput" class="gm-inp" autocomplete="off" placeholder="Esperando escaneo…" style="font-size:17px;padding:13px;font-family:monospace;border-color:#008184;border-width:2px" onkeydown="if(event.key===\'Enter\'){event.preventDefault();invScanProcesar();}" onblur="invScanRefoco()">' +
@@ -12449,7 +12454,7 @@ function invScanProcesar() {
 
   var placa = '';
   if (invScanModo === 'salida') {
-    placa = (document.getElementById('invScanPlaca').value || '').trim().toUpperCase();
+    placa = gmPlacaNormalizar(document.getElementById('invScanPlaca').value);
     if (!placa) {
       invScanLogAdd('⚠ Escribe primero la <b>placa destino</b> para registrar salidas', true);
       document.getElementById('invScanPlaca').focus();
@@ -12668,7 +12673,7 @@ function factSheetNuevo() {
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
       '<div><label class="gm-lbl">Sede que despacha</label><select id="factSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
-      '<div><label class="gm-lbl">Placa del vehículo</label><input id="factPlaca" class="gm-inp" placeholder="ABC-123" style="text-transform:uppercase" maxlength="10"></div>' +
+      '<div><label class="gm-lbl">Placa del vehículo</label><input id="factPlaca" class="gm-inp" placeholder="ABC123" style="text-transform:uppercase" maxlength="10" oninput="gmPlacaInput(this)"></div>' +
     '</div>' +
     '<label class="gm-lbl">Items</label><div id="factItems"></div>' +
     '<button class="btn btn-outline btn-sm" style="margin-top:6px" onclick="factItemsTmp.push({productoId:\'\',descripcion:\'\',cantidad:1,precioUnit:0});factPintarItems()">+ Agregar item</button>' +
@@ -12744,7 +12749,7 @@ function factGuardar() {
     estado: document.getElementById('factEstado').value,
     notas: document.getElementById('factNotas').value.trim(),
     sede: document.getElementById('factSede').value,
-    placa: document.getElementById('factPlaca').value.trim().toUpperCase(),
+    placa: gmPlacaNormalizar(document.getElementById('factPlaca').value),
     items: items,
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
@@ -17182,7 +17187,7 @@ function guardarDatosCliente(id){
       e.correo=(document.getElementById('dc_correo')||{value:''}).value;
       e.direccion=(document.getElementById('dc_direccion')||{value:''}).value;
       e.distrito=(document.getElementById('dc_distrito')||{value:''}).value;
-      e.placa=document.getElementById('dc_placa').value.toUpperCase();
+      e.placa=gmPlacaNormalizar(document.getElementById('dc_placa').value);
       e.marca=document.getElementById('dc_marca').value;
       e.modelo=document.getElementById('dc_modelo').value;
       e.anio=(document.getElementById('dc_anio')||{value:''}).value;
