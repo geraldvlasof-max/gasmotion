@@ -8053,6 +8053,12 @@ function fiseContinuarGeneracion(expId, fileId, checklist, btn) {
 // Botón "Iniciar operaciones" + horario por usuario + reportes
 // ═══════════════════════════════════════════════════════════
 
+// ⏸️ SUSPENSION TEMPORAL (pedida por gerencia mientras se reorganiza la web):
+// con true NO aparece el boton "Iniciar operaciones" ni el bloqueo de pantalla
+// que exige marcar ingreso. Para reactivar la asistencia: cambiar a false
+// y subir la version del Service Worker.
+var GM_ASIST_SUSPENDIDA = true;
+
 var ASIST_YA_MARCADO_HOY = false;
 var GM_ASIST_SNOOZE_HASTA = 0; // pausa temporal del bloqueo (problemas de ubicacion)
 
@@ -8087,6 +8093,7 @@ function asistServidorYaMarco(cb) {
 
 // ── Botón "Iniciar operaciones" en el topbar ──
 function insertarBotonAsistencia() {
+  if(GM_ASIST_SUSPENDIDA) return; // asistencia suspendida temporalmente
   // Admin (iki) controla todo remotamente — no necesita marcar ingreso
   if(CU && CU.role === 'admin') return;
   if(document.getElementById('btnIniciarOperaciones')) return;
@@ -8106,6 +8113,7 @@ function insertarBotonAsistencia() {
 // Muestra el banner grande de pantalla completa si el usuario está dentro
 // de su ventana de horario de entrada y aún no marcó ingreso
 function asistVerificarBannerGrande() {
+  if(GM_ASIST_SUSPENDIDA) return; // asistencia suspendida temporalmente
   if(!CU) return;
   if(CU.role === 'admin') return; // admin controla todo remotamente, sin marcar ingreso
   if(ASIST_YA_MARCADO_HOY) {
@@ -8153,6 +8161,7 @@ function iniciarChequeoAsistenciaPeriodico() {
 }
 
 function asistMostrarBannerGrande(minutosTarde) {
+  if(GM_ASIST_SUSPENDIDA) return; // asistencia suspendida temporalmente
   if(document.getElementById('asistBannerGrande')) return;
   var ov = document.createElement('div');
   ov.id = 'asistBannerGrande';
