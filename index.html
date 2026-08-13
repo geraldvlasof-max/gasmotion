@@ -941,8 +941,13 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             </div>
           </div>
 
+          <div class="search-bar">
+            <input type="text" id="glpSrch" placeholder="Buscar placa o modelo..." oninput="renderTabGLP()">
+            <select id="glpFSede" onchange="renderTabGLP()"><option value="">Todas las sedes</option><option value="Santa Anita">Santa Anita</option><option value="Chorrillos">Chorrillos</option><option value="SMP">SMP</option></select>
+            <select id="glpFEtapa" onchange="renderTabGLP()"><option value="">Todas las etapas</option><option value="1">Etapa 1</option><option value="2">Etapa 2</option><option value="3">Etapa 3</option><option value="c">Completados</option></select>
+          </div>
           <div id="glpGrid" class="bandeja-grid"></div>
-          <div id="glpEmpty" style="display:none;text-align:center;padding:40px;color:#8a8a8a"><p style="font-size:13px;color:#6b82a0">No hay expedientes GLP registrados.</p></div>
+          <div class="empty-state" id="glpEmpty" style="display:none"><div style="font-size:40px;margin-bottom:10px">≡</div><p style="font-size:14px;font-weight:600;color:#131313">Sin expedientes GLP</p><p style="font-size:13px;color:#6b82a0">No hay expedientes GLP registrados.</p></div>
         </div>
 
         <!-- EXPEDIENTES -->
@@ -3286,47 +3291,77 @@ function resetFormGLP() {
   if(f) f.style.display = 'none';
 }
 
+// Tab GLP con la misma estructura que la bandeja de Expedientes FISE GNV:
+// tarjetas sf1-card con chip de sede, comentario, datos del SCANFILE 1,
+// descarga, y buscador + filtros por sede y etapa
 function renderTabGLP() {
   var grid = document.getElementById('glpGrid');
   var empty = document.getElementById('glpEmpty');
   if(!grid) return;
   grid.innerHTML = '';
+  var srchEl = document.getElementById('glpSrch');
+  var fSedeEl = document.getElementById('glpFSede');
+  var fEtapaEl = document.getElementById('glpFEtapa');
+  var mq = srchEl ? normStr(srchEl.value) : '';
+  var fSede = fSedeEl ? fSedeEl.value : '';
+  var fEtapa = fEtapaEl ? fEtapaEl.value : '';
   var lista = [];
   for(var i = 0; i < expedientes.length; i++) {
     var e = expedientes[i];
     if(e.tipoGas !== 'GLP') continue;
     if(CU && CU.sede !== 'Todas' && CU.role !== 'admin' && CU.role !== 'asistente_fise' && e.sede !== CU.sede) continue;
+    if(mq && normStr((e.placa||'') + ' ' + (e.modeloVehiculo||'')).indexOf(mq) === -1) continue;
+    if(fSede && e.sede !== fSede) continue;
+    var eCompletado = (e.etapa||1) >= 3 && glpEtapaCompleta(e, 3);
+    if(fEtapa === 'c' && !eCompletado) continue;
+    if(fEtapa && fEtapa !== 'c' && (String(e.etapa||1) !== fEtapa || eCompletado)) continue;
     lista.push(e);
   }
-  if(!lista.length){ empty.style.display = 'block'; return; }
+  // Mas recientes primero, como la bandeja GNV
+  lista.sort(function(a,b){ return (b.timestamp||0) - (a.timestamp||0); });
+  if(!lista.length){ empty.style.display = 'block'; grid.style.display = 'none'; return; }
   empty.style.display = 'none';
-  for(var j = 0; j < lista.length; j++) {
-    var exp = lista[j];
+  grid.style.display = 'grid';
+  for(var ri = 0; ri < lista.length; ri++) {
+    var exp = lista[ri];
     var sf1meta = (exp.e1 && exp.e1.scanfile1) ? exp.e1.scanfile1 : {};
-    var card = document.createElement('div');
-    card.className = 'doc-box';
-    card.style.cssText = 'margin-bottom:10px';
     var etGlp = exp.etapa || 1;
     var completado = etGlp >= 3 && glpEtapaCompleta(exp, 3);
     var docsEt = GLP_ETAPAS[etGlp] ? GLP_ETAPAS[etGlp].docs : [];
     var subidos = 0;
     for(var d = 0; d < docsEt.length; d++) { if(glpDocsDe(exp)[docsEt[d].key]) subidos++; }
-    var progreso = completado ? '✓ Todos los documentos completos'
-      : '📎 Documentos de la etapa: ' + subidos + '/' + docsEt.length + ' — toca para adjuntar';
-    card.style.cursor = 'pointer';
-    card.title = 'Abrir expediente GLP';
-    card.onclick = (function(eid){ return function(){ abrirGlpExp(eid); }; })(exp.id);
+    var badgeColor = completado ? '#059669' : (ETAPA_COLORS[etGlp] || '#008184');
+    var badgeTxt = completado ? 'Completado ✓' : 'Etapa ' + etGlp + ' — ' + (GLP_ETAPAS[etGlp] ? GLP_ETAPAS[etGlp].titulo.split('— ')[1] : '');
+
+    var card = document.createElement('div');
+    card.className = 'sf1-card';
     card.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
-        '<div>' +
-          '<div style="font-size:14px;font-weight:700;color:#131313">' + (exp.placa||'Sin placa') + ' — ' + (exp.modeloVehiculo||'') + '</div>' +
-          '<div style="font-size:11px;color:#6b82a0;margin-top:3px">⌂ ' + (exp.sede||'-') + ' · ◯ ' + (sf1meta.subidoPor||exp.registradoPor||'-') + ' · ▦ ' + (exp.fecha||'') + ' ' + (exp.hora||'') + '</div>' +
-          (exp.comentarioVendedor ? '<div style="font-size:11px;color:#8a8a8a;margin-top:2px;font-style:italic">' + exp.comentarioVendedor + '</div>' : '') +
-          '<div style="font-size:11px;color:' + (completado ? '#059669' : '#8a8a8a') + ';margin-top:4px;font-weight:600">' + progreso + '</div>' +
-        '</div>' +
-        '<span style="background:' + (completado ? '#059669' : '#008184') + ';color:#ffffff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">' + (completado ? 'GLP — Completado ✓' : 'GLP — Etapa ' + etGlp) + '</span>' +
-      '</div>';
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">' +
+        '<div><div class="sf1-placa">' + (exp.placa||'Sin placa') + '</div><div style="font-size:12px;color:#6b82a0;margin-top:2px">' + (exp.modeloVehiculo||'') + '</div></div>' +
+        '<span class="sede-chip">' + (exp.sede||'-') + '</span>' +
+      '</div>' +
+      '<div style="margin-bottom:10px"><span style="background:' + badgeColor + ';color:#ffffff;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap">GLP · ' + badgeTxt + '</span></div>' +
+      (exp.comentarioVendedor ? '<div style="background:#fef3c7;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:10px"><strong>Comentario:</strong> ' + exp.comentarioVendedor + '</div>' : '') +
+      (sf1meta.nombre ? '<div class="meta-row"><span>∷</span><span>' + sf1meta.nombre + '</span></div>' : '') +
+      '<div class="meta-row"><span>◯</span><span>Subido por: <strong>' + (sf1meta.subidoPor||exp.registradoPor||'-') + '</strong></span></div>' +
+      '<div class="meta-row"><span>▦</span><span>' + (sf1meta.fecha||exp.fecha||'') + ' ' + (sf1meta.hora||exp.hora||'') + '</span></div>' +
+      (exp.tecnicoGLP ? '<div class="meta-row"><span>🔧</span><span>Técnico: <strong>' + exp.tecnicoGLP + '</strong></span></div>' : '') +
+      '<div class="meta-row"><span>📎</span><span>' + (completado ? '<strong style="color:#059669">Todos los documentos completos</strong>' : 'Documentos de la etapa: <strong>' + subidos + '/' + docsEt.length + '</strong>') + '</span></div>' +
+      '<div id="glpcard_actions_' + ri + '" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>';
     grid.appendChild(card);
+
+    var acts = card.querySelector('#glpcard_actions_' + ri);
+    var sf1url = getFileUrl(exp.id, 'sf1');
+    var dlA = document.createElement('a');
+    if(sf1url){ dlA.href = sf1url; dlA.download = sf1meta.nombre || 'scanfile1'; dlA.className = 'btn btn-teal btn-sm'; dlA.innerHTML = '↓ Descargar SCANFILE 1'; }
+    else { dlA.className = 'btn btn-sm'; dlA.style.cssText = 'background:#e5e7eb;color:#9ca3af;cursor:default'; dlA.textContent = 'Re-subir para descargar'; }
+    acts.appendChild(dlA);
+    var abrirBtn = document.createElement('button');
+    abrirBtn.className = 'btn btn-navy btn-sm';
+    abrirBtn.style.cssText = 'width:100%;justify-content:center';
+    abrirBtn.textContent = completado ? 'Ver expediente completado' : 'Abrir expediente →';
+    abrirBtn.onclick = (function(eid){ return function(ev){ ev.stopPropagation(); abrirGlpExp(eid); }; })(exp.id);
+    acts.appendChild(abrirBtn);
   }
 }
 
