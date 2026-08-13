@@ -3341,8 +3341,9 @@ var GLP_ETAPAS = {
        {key:'glpDniTitular',    label:'DNI del titular'},
        {key:'glpTarjetaProp',   label:'Tarjeta de propiedad'}]},
   2: { titulo:'Etapa 2 — Instalación', docs:[
-       {key:'glpFotoEquipos',   label:'Foto de los equipos instalados'},
-       {key:'glpFotoVehiculo',  label:'Foto del vehículo convertido'}]},
+       // Las fotos de la instalacion las toma y sube el TECNICO (admin tambien puede)
+       {key:'glpFotoEquipos',   label:'Foto de los equipos instalados', soloTecnico:true},
+       {key:'glpFotoVehiculo',  label:'Foto del vehículo convertido',   soloTecnico:true}]},
   3: { titulo:'Etapa 3 — Certificación', docs:[
        {key:'glpCertConversion',label:'Certificado de conversión escaneado'},
        {key:'glpGarantia',      label:'Garantía firmada'},
@@ -3356,11 +3357,27 @@ function glpEtapaCompleta(exp, num){
   return true;
 }
 
+// Quien puede subir cada documento: los marcados soloTecnico son del
+// tecnico (admin tambien); el resto lo sube cualquier usuario
+function glpPuedeSubirDoc(doc){
+  if(!doc.soloTecnico) return true;
+  return !!(CU && (CU.role === 'tecnico' || CU.role === 'admin'));
+}
+function glpDocDef(key){
+  for(var n in GLP_ETAPAS){
+    var docs = GLP_ETAPAS[n].docs;
+    for(var i=0;i<docs.length;i++){ if(docs[i].key === key) return docs[i]; }
+  }
+  return null;
+}
+
 function glpSubirDoc(id, key, input){
   var file = input.files && input.files[0];
   if(!file) return;
   var exp = glpExpPorId(id);
   if(!exp) return;
+  var def = glpDocDef(key);
+  if(def && !glpPuedeSubirDoc(def)){ showToast('Esta foto la sube el TECNICO de la instalacion', 'error'); input.value=''; return; }
   persistirArchivo(id, key, file);
   storeFile(id, key, file, function(url, name){
     glpDocsDe(exp)[key] = { nombre:name, subidoPor:CU?CU.nombre:'-', fecha:nowFecha(), hora:nowHora() };
@@ -3453,18 +3470,24 @@ function abrirGlpExp(id){
       for(var k=0;k<def.docs.length;k++){
         var doc = def.docs[k];
         var meta = glpDocsDe(exp)[doc.key];
+        var puedeSubirlo = glpPuedeSubirDoc(doc);
         if(meta){
           html += renderDocHistorialRow(doc.label, meta, getFileUrl(exp.id, doc.key), getDownloadUrl(exp.id, doc.key));
-          if(esActual){
+          if(esActual && puedeSubirlo){
             html += '<div style="text-align:right;margin:2px 0 6px"><label style="font-size:10px;color:#8a8a8a;cursor:pointer;text-decoration:underline">Reemplazar' +
               '<input type="file" accept="image/*,.pdf" style="display:none" onchange="glpSubirDoc(\''+exp.id+'\',\''+doc.key+'\',this)"></label></div>';
           }
-        } else if(esActual){
+        } else if(esActual && puedeSubirlo){
           html += '<label style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px dashed #D9D9D9;border-radius:10px;padding:10px 12px;margin:6px 0;cursor:pointer">' +
-            '<span style="font-size:12px;font-weight:700;color:#131313">' + doc.label + '</span>' +
+            '<span style="font-size:12px;font-weight:700;color:#131313">' + doc.label + (doc.soloTecnico?' <span style="font-weight:400;color:#8a8a8a">(técnico)</span>':'') + '</span>' +
             '<span style="background:#008184;color:white;border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap">📎 Adjuntar</span>' +
             '<input type="file" accept="image/*,.pdf" style="display:none" onchange="glpSubirDoc(\''+exp.id+'\',\''+doc.key+'\',this)">' +
           '</label>';
+        } else if(esActual && doc.soloTecnico){
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px dashed #E5E5E5;border-radius:10px;padding:10px 12px;margin:6px 0;background:#FAFAF7">' +
+            '<span style="font-size:12px;font-weight:700;color:#9ca3af">' + doc.label + '</span>' +
+            '<span style="font-size:11px;color:#8a8a8a;white-space:nowrap">📷 La sube el técnico</span>' +
+          '</div>';
         } else {
           html += '<div style="font-size:11px;color:#9ca3af;padding:4px 0">— ' + doc.label + ': sin adjuntar</div>';
         }
