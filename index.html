@@ -3384,7 +3384,47 @@ function glpSubirDoc(id, key, input){
     saveExp();
     abrirGlpExp(id);
     renderTabGLP();
+    // El tecnico ve el avance reflejado en su bandeja "Mis Tareas"
+    if(typeof isTecnico === 'function' && isTecnico()) renderVistaTecnico();
   });
+}
+
+// Al entrar a Etapa 2, las fotos de instalacion se vuelven TAREAS del
+// tecnico (bandeja "Mis Tareas", como en GNV): push + notificacion al
+// tecnico asignado, o a todos los tecnicos si aun no hay asignado
+function glpNotificarTecnicos(exp) {
+  var titulo = 'Instalación GLP — ' + (exp.placa || '');
+  var msg = (exp.placa || 'Un vehículo') + ' está en Etapa 2: sube la foto de los equipos instalados y del vehículo convertido';
+  var uids = [];
+  if(exp.tecnicoGLP) {
+    var users = getUsers();
+    for(var uid in users) { if(users[uid].nombre === exp.tecnicoGLP) { uids = [uid]; break; } }
+  }
+  if(!uids.length) uids = uidsPorRol(['tecnico'], null);
+  if(!uids.length) return;
+  if(GM_CONFIG.workerUrl) {
+    fetch(GM_CONFIG.workerUrl + '?key=' + GM_CONFIG.gmKey + '&action=sendPush', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ uids: uids, titulo: titulo, mensaje: msg, users: getUsers() })
+    }).catch(function(){});
+  }
+  crearNotificacion(uids, 'glpEtapa2', titulo, msg, exp.id, true);
+}
+
+// Asignar el tecnico de la instalacion GLP (sus fotos de Etapa 2
+// aparecen en su bandeja "Mis Tareas")
+function glpAsignarTecnico(id) {
+  var sel = document.getElementById('glpSelTec_' + id);
+  var exp = glpExpPorId(id);
+  if(!sel || !exp) return;
+  exp.tecnicoGLP = sel.value;
+  exp.fechaAsignacionTecnicoGLP = nowFecha() + ' ' + nowHora();
+  exp.asignadoPor = CU ? CU.nombre : '-';
+  saveExp();
+  showToast(exp.tecnicoGLP ? 'Técnico ' + exp.tecnicoGLP + ' asignado a la instalación' : 'Asignación de técnico quitada', 'success');
+  if(exp.tecnicoGLP && (exp.etapa || 1) >= 2) glpNotificarTecnicos(exp);
+  abrirGlpExp(id);
 }
 
 function glpAvanzar(id){
@@ -3394,6 +3434,7 @@ function glpAvanzar(id){
   if(et >= 3) return;
   if(!glpEtapaCompleta(exp, et)){ showToast('Adjunta todos los documentos de la Etapa ' + et + ' para avanzar', 'error'); return; }
   exp.etapa = et + 1;
+  if(exp.etapa === 2) glpNotificarTecnicos(exp);
   saveExp();
   showToast('Expediente GLP avanzado a Etapa ' + exp.etapa, 'success');
   abrirGlpExp(id);
@@ -3407,6 +3448,7 @@ function glpAvanzarAdmin(id){
   if(!exp || (exp.etapa||1) >= 3) return;
   if(!confirm('¿Avanzar este expediente GLP a Etapa ' + ((exp.etapa||1)+1) + ' sin los documentos? Esto es una accion administrativa.')) return;
   exp.etapa = (exp.etapa||1) + 1;
+  if(exp.etapa === 2) glpNotificarTecnicos(exp);
   saveExp();
   abrirGlpExp(id);
   renderTabGLP();
@@ -3453,6 +3495,30 @@ function abrirGlpExp(id){
 
   if(completado){
     html += '<div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;font-weight:700;color:#047857">✓ Expediente GLP completo — todos los documentos adjuntados</div>';
+  }
+
+  // Tecnico de la instalacion (como en GNV): sus fotos de Etapa 2 se
+  // vuelven tareas en su bandeja "Mis Tareas"
+  if(CU && CU.role !== 'tecnico'){
+    var usersT = getUsers();
+    var optsT = '<option value="">-- Sin asignar --</option>';
+    for(var uidT in usersT){
+      var uT = usersT[uidT];
+      if(uT.role !== 'tecnico') continue;
+      optsT += '<option value="'+uT.nombre+'"'+(exp.tecnicoGLP===uT.nombre?' selected':'')+'>'+uT.nombre+(uT.especialidad?' ('+uT.especialidad+')':'')+'</option>';
+    }
+    html += '<div style="background:white;border:1px solid #D9D9D9;border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
+      '<div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">🔧 Técnico de la instalación (fotos de Etapa 2)</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<select id="glpSelTec_'+exp.id+'" style="flex:1;min-width:0;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px;font-size:13px;color:#131313;background:white;font-family:inherit">'+optsT+'</select>' +
+        '<button onclick="glpAsignarTecnico(\''+exp.id+'\')" style="background:#008184;color:white;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Guardar</button>' +
+      '</div>' +
+      (exp.tecnicoGLP
+        ? '<div style="font-size:11px;color:#059669;margin-top:6px">Asignado: <strong>'+exp.tecnicoGLP+'</strong> — sus tareas aparecen en su bandeja "Mis Tareas"</div>'
+        : '<div style="font-size:11px;color:#8a8a8a;margin-top:6px">Sin técnico asignado: al llegar a Etapa 2 se avisa a todos los técnicos</div>') +
+    '</div>';
+  } else if(exp.tecnicoGLP){
+    html += '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">🔧 Técnico asignado: <strong>'+exp.tecnicoGLP+'</strong></div>';
   }
 
   // Secciones de etapas
@@ -18036,6 +18102,10 @@ function cerrarTecModal(){
 }
 
 function abrirExpedienteDesdeId(expId) {
+  // Expediente GLP: el tecnico sube sus fotos en el modal GLP
+  var expG = null;
+  for(var i=0;i<expedientes.length;i++){ if(expedientes[i].id===expId){ expG=expedientes[i]; break; } }
+  if(expG && expG.tipoGas === 'GLP') { abrirGlpExp(expId); return; }
   if(isTecnico()) {
     abrirVistaTareasTecnico(expId);
   } else {
@@ -18204,6 +18274,26 @@ function getTareasTecnico() {
   
   for(var i=0;i<expedientes.length;i++) {
     var exp = expedientes[i];
+
+    // Tareas GLP: fotos de instalacion de Etapa 2 asignadas al tecnico
+    // (aparecen al entrar el expediente a Etapa 2, como en GNV)
+    if(exp.tipoGas === 'GLP') {
+      if(exp.tecnicoGLP !== nombre) continue;
+      if((exp.etapa || 1) < 2) continue;
+      var gd = exp.glpDocs || {};
+      var compG = (gd.glpFotoEquipos ? 1 : 0) + (gd.glpFotoVehiculo ? 1 : 0);
+      placas[exp.id] = {
+        expId: exp.id, placa: exp.placa,
+        modelo: (exp.modeloVehiculo || '') + ' · GLP', sede: exp.sede,
+        tareas: [
+          { tipo:'glpFotoEquipos',  label:'Foto de los equipos instalados', icono:'📷', grupo:'Instalación GLP', completada: !!gd.glpFotoEquipos },
+          { tipo:'glpFotoVehiculo', label:'Foto del vehículo convertido',   icono:'📷', grupo:'Instalación GLP', completada: !!gd.glpFotoVehiculo }
+        ],
+        pct: Math.round(compG / 2 * 100), completadas: compG, total: 2
+      };
+      continue;
+    }
+
     if(!exp.tecnicoDelantera && !exp.tecnicoTanque) continue;
     if(exp.tecnicoDelantera !== nombre && exp.tecnicoTanque !== nombre) continue;
     
