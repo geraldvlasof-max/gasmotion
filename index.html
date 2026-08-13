@@ -3264,7 +3264,7 @@ function grabarSf1GLP() {
       glpChecklist:{ marcaEquipo:marcaEquipo, tamanoTanque:tamTanque },
       nombre:'',dni:'',direccion:'',distrito:'',celular:celularGLP,correo:correoGLP,
       marca:'',modelo:'',anio:'',color:'',cilindrada:'',categoria:'',
-      kilometraje:'',conversion:'',precio:'',vinSerie:'',partida:'',
+      kilometraje:'',conversion:'',precio:'',vinSerie:'',partida:'',nroMotor:'',
       responsable:'',kitMarca:'', tipoPrograma:'GLP',
       e1:{scanfile1:{nombre:name,subidoPor:CU?CU.nombre:'-',fecha:nowFecha(),hora:nowHora(),completado:true}},
       e2:{matrizExcel:null,condDevolucion:null,declaracionJurada:null,cronograma:null,datosGuardados:false},
@@ -3422,10 +3422,15 @@ function glpFaltantesEtapa(exp, num){
     var gd = glpDocsDe(exp);
     var docsOk = (exp.e1 && exp.e1.scanfile1) || (gd.glpDniTitular && gd.glpTarjetaProp);
     if(!docsOk) falta.push('DNI + Tarjeta de propiedad (SCANFILE 1)');
-    if(!(exp.celular||'').trim()) falta.push('número del cliente');
-    if(!(exp.correo||'').trim()) falta.push('correo del cliente');
+    // Datos del DNI y de la tarjeta de propiedad: en la Etapa 3 el
+    // certificado de conversion se llena con ellos
+    var t = function(v){ return (v||'').trim(); };
+    if(!t(exp.nombre) || !t(exp.dni) || !t(exp.direccion)) falta.push('datos del titular (DNI)');
+    if(!t(exp.marca) || !t(exp.anio) || !t(exp.color) || !t(exp.categoria) || !t(exp.vinSerie) || !t(exp.nroMotor)) falta.push('datos del vehículo (tarjeta de propiedad)');
+    if(!t(exp.celular)) falta.push('número del cliente');
+    if(!t(exp.correo)) falta.push('correo del cliente');
     var chk = exp.glpChecklist || {};
-    if(!(chk.marcaEquipo||'').trim() || !(chk.tamanoTanque||'').trim()) falta.push('checklist de equipos (marca y tanque)');
+    if(!t(chk.marcaEquipo) || !t(chk.tamanoTanque)) falta.push('checklist de equipos (marca y tanque)');
     return falta;
   }
   var docs = GLP_ETAPAS[num] ? GLP_ETAPAS[num].docs : [];
@@ -3436,21 +3441,29 @@ function glpEtapaCompleta(exp, num){
   return glpFaltantesEtapa(exp, num).length === 0;
 }
 
-// Guardar los datos del cliente y el checklist del vendedor desde el modal
+// Guardar TODOS los datos de la Etapa 1 desde el modal: titular (DNI),
+// vehiculo (tarjeta de propiedad), contacto y checklist del vendedor.
+// En la Etapa 3 el certificado de conversion se llena con estos datos.
 function glpGuardarDatosCliente(id){
   var exp = glpExpPorId(id);
   if(!exp) return;
-  var cel = document.getElementById('glpDcCel_' + id);
-  var cor = document.getElementById('glpDcCor_' + id);
-  var mar = document.getElementById('glpDcMarca_' + id);
-  var tam = document.getElementById('glpDcTanque_' + id);
-  exp.celular = cel ? cel.value.trim() : exp.celular;
-  exp.correo = cor ? cor.value.trim() : exp.correo;
+  var lee = function(idc, actual){ var el = document.getElementById(idc + '_' + id); return el ? el.value.trim() : (actual||''); };
+  exp.nombre = lee('glpDcNombre', exp.nombre);
+  exp.dni = lee('glpDcDni', exp.dni);
+  exp.direccion = lee('glpDcDir', exp.direccion);
+  exp.marca = lee('glpDcVMarca', exp.marca);
+  exp.anio = lee('glpDcAnio', exp.anio);
+  exp.color = lee('glpDcColor', exp.color);
+  exp.categoria = lee('glpDcCat', exp.categoria);
+  exp.vinSerie = lee('glpDcVin', exp.vinSerie);
+  exp.nroMotor = lee('glpDcMotor', exp.nroMotor);
+  exp.celular = lee('glpDcCel', exp.celular);
+  exp.correo = lee('glpDcCor', exp.correo);
   if(!exp.glpChecklist) exp.glpChecklist = {};
-  exp.glpChecklist.marcaEquipo = mar ? mar.value.trim() : (exp.glpChecklist.marcaEquipo||'');
-  exp.glpChecklist.tamanoTanque = tam ? tam.value.trim() : (exp.glpChecklist.tamanoTanque||'');
+  exp.glpChecklist.marcaEquipo = lee('glpDcMarca', exp.glpChecklist.marcaEquipo);
+  exp.glpChecklist.tamanoTanque = lee('glpDcTanque', exp.glpChecklist.tamanoTanque);
   saveExp();
-  showToast('Datos del cliente y checklist guardados', 'success');
+  showToast('Datos del titular, vehículo y checklist guardados', 'success');
   abrirGlpExp(id);
   renderTabGLP();
 }
@@ -3620,19 +3633,39 @@ function abrirGlpExp(id){
     html += '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">🔧 Técnico asignado: <strong>'+exp.tecnicoGLP+'</strong></div>';
   }
 
-  // Datos del cliente y checklist del vendedor (numero, correo,
-  // marca de equipo ofrecido y tamano de tanque)
+  // Datos de la Etapa 1: titular (segun DNI), vehiculo (segun tarjeta de
+  // propiedad), contacto y checklist. En la Etapa 3 el certificado de
+  // conversion se llena con estos datos.
   var chk = exp.glpChecklist || {};
   if(CU && CU.role !== 'tecnico'){
     var inpStyle = 'width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:13px;color:#131313;background:white;font-family:inherit;box-sizing:border-box';
     var lblStyle = 'display:block;font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px';
+    var secStyle = 'font-size:10px;font-weight:800;color:#008184;text-transform:uppercase;letter-spacing:.4px;margin:10px 0 6px';
+    var esc = function(v){ return (v||'').replace(/"/g,'&quot;'); };
     html += '<div style="background:white;border:1px solid #D9D9D9;border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
-      '<div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">👤 Datos del cliente y checklist del vendedor</div>' +
+      '<div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px">👤 Datos del expediente (Etapa 1)</div>' +
+      '<div style="font-size:10px;color:#8a8a8a;margin-top:2px">Con estos datos se llena el certificado de conversión en la Etapa 3</div>' +
+      '<div style="'+secStyle+'">Titular — según DNI</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div style="grid-column:1/-1"><label style="'+lblStyle+'">Nombre completo</label><input type="text" id="glpDcNombre_'+exp.id+'" value="'+esc(exp.nombre)+'" placeholder="Como figura en el DNI" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">N° DNI</label><input type="text" id="glpDcDni_'+exp.id+'" value="'+esc(exp.dni)+'" placeholder="12345678" maxlength="12" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Dirección</label><input type="text" id="glpDcDir_'+exp.id+'" value="'+esc(exp.direccion)+'" placeholder="Domicilio del DNI" style="'+inpStyle+'"></div>' +
+      '</div>' +
+      '<div style="'+secStyle+'">Vehículo — según tarjeta de propiedad</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div><label style="'+lblStyle+'">Marca</label><input type="text" id="glpDcVMarca_'+exp.id+'" value="'+esc(exp.marca)+'" placeholder="Toyota" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Año</label><input type="text" id="glpDcAnio_'+exp.id+'" value="'+esc(exp.anio)+'" placeholder="2020" maxlength="4" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Color</label><input type="text" id="glpDcColor_'+exp.id+'" value="'+esc(exp.color)+'" placeholder="Blanco" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Categoría</label><input type="text" id="glpDcCat_'+exp.id+'" value="'+esc(exp.categoria)+'" placeholder="M1" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">N° Serie / VIN</label><input type="text" id="glpDcVin_'+exp.id+'" value="'+esc(exp.vinSerie)+'" placeholder="Chasis / VIN" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">N° Motor</label><input type="text" id="glpDcMotor_'+exp.id+'" value="'+esc(exp.nroMotor)+'" placeholder="N° de motor" style="'+inpStyle+'"></div>' +
+      '</div>' +
+      '<div style="'+secStyle+'">Contacto y checklist</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
-        '<div><label style="'+lblStyle+'">Número del cliente</label><input type="tel" id="glpDcCel_'+exp.id+'" value="'+(exp.celular||'').replace(/"/g,'&quot;')+'" placeholder="999 888 777" style="'+inpStyle+'"></div>' +
-        '<div><label style="'+lblStyle+'">Correo</label><input type="email" id="glpDcCor_'+exp.id+'" value="'+(exp.correo||'').replace(/"/g,'&quot;')+'" placeholder="cliente@correo.com" style="'+inpStyle+'"></div>' +
-        '<div><label style="'+lblStyle+'">☑ Marca de equipo ofrecido</label><input type="text" id="glpDcMarca_'+exp.id+'" value="'+(chk.marcaEquipo||'').replace(/"/g,'&quot;')+'" placeholder="Lovato / BRC" style="'+inpStyle+'"></div>' +
-        '<div><label style="'+lblStyle+'">☑ Tamaño de tanque</label><input type="text" id="glpDcTanque_'+exp.id+'" value="'+(chk.tamanoTanque||'').replace(/"/g,'&quot;')+'" placeholder="60 L" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Número del cliente</label><input type="tel" id="glpDcCel_'+exp.id+'" value="'+esc(exp.celular)+'" placeholder="999 888 777" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Correo</label><input type="email" id="glpDcCor_'+exp.id+'" value="'+esc(exp.correo)+'" placeholder="cliente@correo.com" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">☑ Marca de equipo ofrecido</label><input type="text" id="glpDcMarca_'+exp.id+'" value="'+esc(chk.marcaEquipo)+'" placeholder="Lovato / BRC" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">☑ Tamaño de tanque</label><input type="text" id="glpDcTanque_'+exp.id+'" value="'+esc(chk.tamanoTanque)+'" placeholder="60 L" style="'+inpStyle+'"></div>' +
       '</div>' +
       '<button onclick="glpGuardarDatosCliente(\''+exp.id+'\')" style="background:#008184;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Guardar datos</button>' +
     '</div>';
@@ -3658,6 +3691,20 @@ function abrirGlpExp(id){
     if(esFutura){
       html += '<div style="font-size:11px;color:#9ca3af;font-style:italic">Se habilita al completar la etapa anterior.</div>';
     } else {
+      // Etapa 3: resumen con los datos registrados en la Etapa 1, listos
+      // para llenar el certificado de conversion
+      if(num === 3){
+        var rF = function(l,v){ return v ? '<div style="padding:2px 0"><span style="color:#8a8a8a">'+l+':</span> <strong>'+v+'</strong></div>' : ''; };
+        var chkC = exp.glpChecklist || {};
+        html += '<div style="background:#f0fdf4;border:1px solid #a7f3d0;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#131313">' +
+          '<div style="font-size:11px;font-weight:800;color:#047857;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">📄 Datos para el certificado de conversión (de la Etapa 1)</div>' +
+          rF('Titular', exp.nombre) + rF('DNI', exp.dni) + rF('Dirección', exp.direccion) +
+          rF('Placa', exp.placa) + rF('Marca', exp.marca) + rF('Modelo', exp.modeloVehiculo) +
+          rF('Año', exp.anio) + rF('Color', exp.color) + rF('Categoría', exp.categoria) +
+          rF('N° Serie/VIN', exp.vinSerie) + rF('N° Motor', exp.nroMotor) +
+          rF('Equipo instalado', chkC.marcaEquipo) + rF('Tanque', chkC.tamanoTanque) +
+        '</div>';
+      }
       // El SCANFILE 1 del registro trae el DNI + Tarjeta de propiedad
       // escaneados: se muestra aqui y completa la Etapa 1 por si solo
       if(num === 1 && exp.e1 && exp.e1.scanfile1){
