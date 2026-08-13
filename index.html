@@ -896,17 +896,28 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
           <!-- Formulario nuevo GLP -->
           <div id="formNuevoGLP" style="display:none">
             <div class="card" style="border-color:#008184;border-width:2px">
-              <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="card-title">Subir SCANFILE 1 — GLP</div><div class="card-sub">PDF con TIV + DNI (ambas caras) + Checklist en un solo archivo</div></div></div>
+              <div class="card-header"><div class="card-icon ci-teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="card-title">Subir SCANFILE 1 — GLP</div><div class="card-sub">DNI del titular + Tarjeta de propiedad escaneados en un solo PDF</div></div></div>
               <div class="drop-zone" id="sf1GLPDrop" ondragover="dragOverSf1GLP(event)" ondragleave="dragLeaveSf1GLP(event)" ondrop="dropSf1GLP(event)" style="margin-bottom:16px">
                 <input type="file" id="sf1GLPInput" accept="image/*,.pdf" onchange="onSf1GLPChange(this)">
                 <div style="margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                 <div style="font-size:14px;font-weight:700;color:#131313;margin-bottom:4px">Haz clic o arrastra el SCANFILE 1</div>
-                <div style="font-size:12px;color:#6b82a0">PDF unico con: TIV + DNI ambas caras + Checklist de taller</div>
+                <div style="font-size:12px;color:#6b82a0">PDF unico con: DNI del titular (ambas caras) + Tarjeta de propiedad escaneados</div>
                 <div class="loaded-msg" id="sf1GLPMsg"></div>
               </div>
               <div class="grid2" style="margin-bottom:14px">
                 <div class="field"><label>Placa del Vehiculo <span class="required">*</span></label><input type="text" id="glpPlaca" placeholder="Ej: CUD478" style="text-transform:uppercase"></div>
                 <div class="field"><label>Modelo del Vehiculo <span class="required">*</span></label><input type="text" id="glpModelo" placeholder="Ej: Toyota Avanza 2026"></div>
+              </div>
+              <div class="grid2" style="margin-bottom:14px">
+                <div class="field"><label>Numero del cliente</label><input type="tel" id="glpCelular" placeholder="Ej: 999 888 777"></div>
+                <div class="field"><label>Correo del cliente</label><input type="email" id="glpCorreo" placeholder="cliente@correo.com"></div>
+              </div>
+              <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+                <div style="font-weight:700;color:#1d4ed8;font-size:12px;margin-bottom:8px">☑ Checklist del vendedor</div>
+                <div class="grid2">
+                  <div class="field"><label>Marca de equipo ofrecido</label><input type="text" id="glpMarcaEquipo" placeholder="Ej: Lovato / BRC / Tomasetto"></div>
+                  <div class="field"><label>Tamano de tanque</label><input type="text" id="glpTamTanque" placeholder="Ej: 60 L"></div>
+                </div>
               </div>
               <div class="grid2" style="margin-bottom:14px">
                 <div class="field">
@@ -3225,7 +3236,15 @@ function grabarSf1GLP() {
   var vsEl = document.getElementById('glpVendServicio');
   var vendServicio = vsEl ? vsEl.value : '';
   var comentario = document.getElementById('glpComentario').value.trim();
-  if(!sf1FileGLP){showAlert('alertGLP','Adjunta el SCANFILE 1.','error');return;}
+  var celularEl = document.getElementById('glpCelular');
+  var correoEl = document.getElementById('glpCorreo');
+  var marcaEqEl = document.getElementById('glpMarcaEquipo');
+  var tamTanEl = document.getElementById('glpTamTanque');
+  var celularGLP = celularEl ? celularEl.value.trim() : '';
+  var correoGLP = correoEl ? correoEl.value.trim() : '';
+  var marcaEquipo = marcaEqEl ? marcaEqEl.value.trim() : '';
+  var tamTanque = tamTanEl ? tamTanEl.value.trim() : '';
+  if(!sf1FileGLP){showAlert('alertGLP','Adjunta el SCANFILE 1 (DNI + Tarjeta de propiedad escaneados).','error');return;}
   if(!placa){showAlert('alertGLP','La placa es obligatoria.','error');return;}
   if(!modelo){showAlert('alertGLP','El modelo es obligatorio.','error');return;}
   if(!sede){showAlert('alertGLP','La sede es obligatoria.','error');return;}
@@ -3239,7 +3258,8 @@ function grabarSf1GLP() {
       registradoPor:CU?CU.nombre:'-',
       fecha:nowFecha(), hora:nowHora(), timestamp:Date.now(),
       etapa:1, tipoGas:'GLP',
-      nombre:'',dni:'',direccion:'',distrito:'',celular:'',correo:'',
+      glpChecklist:{ marcaEquipo:marcaEquipo, tamanoTanque:tamTanque },
+      nombre:'',dni:'',direccion:'',distrito:'',celular:celularGLP,correo:correoGLP,
       marca:'',modelo:'',anio:'',color:'',cilindrada:'',categoria:'',
       kilometraje:'',conversion:'',precio:'',vinSerie:'',partida:'',
       responsable:'',kitMarca:'', tipoPrograma:'GLP',
@@ -3283,6 +3303,8 @@ function resetFormGLP() {
   document.getElementById('glpModelo').value = '';
   document.getElementById('glpSede').value = '';
   document.getElementById('glpComentario').value = '';
+  var extras = ['glpCelular','glpCorreo','glpMarcaEquipo','glpTamTanque'];
+  for(var x=0;x<extras.length;x++){ var el=document.getElementById(extras[x]); if(el) el.value=''; }
   var drop = document.getElementById('sf1GLPDrop');
   drop.classList.remove('loaded','dragover');
   var msg = document.getElementById('sf1GLPMsg');
@@ -3346,7 +3368,9 @@ function renderTabGLP() {
       '<div class="meta-row"><span>◯</span><span>Subido por: <strong>' + (sf1meta.subidoPor||exp.registradoPor||'-') + '</strong></span></div>' +
       '<div class="meta-row"><span>▦</span><span>' + (sf1meta.fecha||exp.fecha||'') + ' ' + (sf1meta.hora||exp.hora||'') + '</span></div>' +
       (exp.tecnicoGLP ? '<div class="meta-row"><span>🔧</span><span>Técnico: <strong>' + exp.tecnicoGLP + '</strong></span></div>' : '') +
-      '<div class="meta-row"><span>📎</span><span>' + (completado ? '<strong style="color:#059669">Todos los documentos completos</strong>' : 'Documentos de la etapa: <strong>' + subidos + '/' + docsEt.length + '</strong>') + '</span></div>' +
+      ((exp.glpChecklist && (exp.glpChecklist.marcaEquipo || exp.glpChecklist.tamanoTanque)) ? '<div class="meta-row"><span>☑</span><span>' + (exp.glpChecklist.marcaEquipo||'') + (exp.glpChecklist.marcaEquipo && exp.glpChecklist.tamanoTanque ? ' · ' : '') + (exp.glpChecklist.tamanoTanque ? 'Tanque ' + exp.glpChecklist.tamanoTanque : '') + '</span></div>' : '') +
+      (exp.celular ? '<div class="meta-row"><span>📞</span><span>' + exp.celular + '</span></div>' : '') +
+      '<div class="meta-row"><span>📎</span><span>' + (completado ? '<strong style="color:#059669">Todos los documentos completos</strong>' : (glpEtapaCompleta(exp, etGlp) ? '<strong style="color:#059669">Documentos de la etapa completos ✓</strong>' : 'Documentos de la etapa: <strong>' + subidos + '/' + docsEt.length + '</strong>')) + '</span></div>' +
       '<div id="glpcard_actions_' + ri + '" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>';
     grid.appendChild(card);
 
@@ -3387,9 +3411,31 @@ var GLP_ETAPAS = {
 function glpExpPorId(id){ for(var i=0;i<expedientes.length;i++){ if(expedientes[i].id===id) return expedientes[i]; } return null; }
 function glpDocsDe(exp){ if(!exp.glpDocs) exp.glpDocs = {}; return exp.glpDocs; }
 function glpEtapaCompleta(exp, num){
+  // El SCANFILE 1 del registro ya trae el DNI del titular y la tarjeta
+  // de propiedad escaneados, asi que completa la Etapa 1 por si solo
+  if(num === 1 && exp.e1 && exp.e1.scanfile1) return true;
   var docs = GLP_ETAPAS[num] ? GLP_ETAPAS[num].docs : [];
   for(var i=0;i<docs.length;i++){ if(!glpDocsDe(exp)[docs[i].key]) return false; }
   return true;
+}
+
+// Guardar los datos del cliente y el checklist del vendedor desde el modal
+function glpGuardarDatosCliente(id){
+  var exp = glpExpPorId(id);
+  if(!exp) return;
+  var cel = document.getElementById('glpDcCel_' + id);
+  var cor = document.getElementById('glpDcCor_' + id);
+  var mar = document.getElementById('glpDcMarca_' + id);
+  var tam = document.getElementById('glpDcTanque_' + id);
+  exp.celular = cel ? cel.value.trim() : exp.celular;
+  exp.correo = cor ? cor.value.trim() : exp.correo;
+  if(!exp.glpChecklist) exp.glpChecklist = {};
+  exp.glpChecklist.marcaEquipo = mar ? mar.value.trim() : (exp.glpChecklist.marcaEquipo||'');
+  exp.glpChecklist.tamanoTanque = tam ? tam.value.trim() : (exp.glpChecklist.tamanoTanque||'');
+  saveExp();
+  showToast('Datos del cliente y checklist guardados', 'success');
+  abrirGlpExp(id);
+  renderTabGLP();
 }
 
 // Quien puede subir cada documento: los marcados soloTecnico son del
@@ -3556,6 +3602,32 @@ function abrirGlpExp(id){
     html += '<div style="font-size:11px;color:#6b82a0;margin-bottom:10px">🔧 Técnico asignado: <strong>'+exp.tecnicoGLP+'</strong></div>';
   }
 
+  // Datos del cliente y checklist del vendedor (numero, correo,
+  // marca de equipo ofrecido y tamano de tanque)
+  var chk = exp.glpChecklist || {};
+  if(CU && CU.role !== 'tecnico'){
+    var inpStyle = 'width:100%;border:1.5px solid #D9D9D9;border-radius:8px;padding:8px 10px;font-size:13px;color:#131313;background:white;font-family:inherit;box-sizing:border-box';
+    var lblStyle = 'display:block;font-size:10px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px';
+    html += '<div style="background:white;border:1px solid #D9D9D9;border-radius:12px;padding:12px 14px;margin-bottom:10px">' +
+      '<div style="font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px">👤 Datos del cliente y checklist del vendedor</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+        '<div><label style="'+lblStyle+'">Número del cliente</label><input type="tel" id="glpDcCel_'+exp.id+'" value="'+(exp.celular||'').replace(/"/g,'&quot;')+'" placeholder="999 888 777" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">Correo</label><input type="email" id="glpDcCor_'+exp.id+'" value="'+(exp.correo||'').replace(/"/g,'&quot;')+'" placeholder="cliente@correo.com" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">☑ Marca de equipo ofrecido</label><input type="text" id="glpDcMarca_'+exp.id+'" value="'+(chk.marcaEquipo||'').replace(/"/g,'&quot;')+'" placeholder="Lovato / BRC" style="'+inpStyle+'"></div>' +
+        '<div><label style="'+lblStyle+'">☑ Tamaño de tanque</label><input type="text" id="glpDcTanque_'+exp.id+'" value="'+(chk.tamanoTanque||'').replace(/"/g,'&quot;')+'" placeholder="60 L" style="'+inpStyle+'"></div>' +
+      '</div>' +
+      '<button onclick="glpGuardarDatosCliente(\''+exp.id+'\')" style="background:#008184;color:white;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Guardar datos</button>' +
+    '</div>';
+  } else if(exp.celular || exp.correo || chk.marcaEquipo || chk.tamanoTanque){
+    html += '<div style="background:white;border:1px solid #D9D9D9;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#374151">' +
+      '<div style="font-size:11px;font-weight:700;color:#8a8a8a;text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px">👤 Cliente y equipo</div>' +
+      (exp.celular ? '<div style="padding:2px 0">📞 ' + exp.celular + '</div>' : '') +
+      (exp.correo ? '<div style="padding:2px 0">✉ ' + exp.correo + '</div>' : '') +
+      (chk.marcaEquipo ? '<div style="padding:2px 0">☑ Equipo: <strong>' + chk.marcaEquipo + '</strong></div>' : '') +
+      (chk.tamanoTanque ? '<div style="padding:2px 0">☑ Tanque: <strong>' + chk.tamanoTanque + '</strong></div>' : '') +
+    '</div>';
+  }
+
   // Secciones de etapas
   for(var num=1;num<=3;num++){
     var def = GLP_ETAPAS[num];
@@ -3568,6 +3640,12 @@ function abrirGlpExp(id){
     if(esFutura){
       html += '<div style="font-size:11px;color:#9ca3af;font-style:italic">Se habilita al completar la etapa anterior.</div>';
     } else {
+      // El SCANFILE 1 del registro trae el DNI + Tarjeta de propiedad
+      // escaneados: se muestra aqui y completa la Etapa 1 por si solo
+      if(num === 1 && exp.e1 && exp.e1.scanfile1){
+        html += renderDocHistorialRow('SCANFILE 1 — DNI + Tarjeta de propiedad', exp.e1.scanfile1, getFileUrl(exp.id, 'sf1'), getDownloadUrl(exp.id, 'sf1'));
+        html += '<div style="font-size:10px;color:#059669;margin:4px 0 6px">✓ El SCANFILE 1 ya incluye el DNI del titular y la tarjeta de propiedad; los adjuntos de abajo son opcionales.</div>';
+      }
       for(var k=0;k<def.docs.length;k++){
         var doc = def.docs[k];
         var meta = glpDocsDe(exp)[doc.key];
