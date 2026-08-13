@@ -4023,6 +4023,25 @@ function retrocederEtapa(id, etapaDestino) {
   abrirExpediente(id);
 }
 
+// Avanzar un expediente DIRECTO a una etapa posterior sin cumplir los
+// requisitos intermedios (solo admin) — pareja del "Retroceder aqui".
+// Se dispara solo el efecto de la etapa destino (codigo del portal,
+// notificacion de etapa 4 o agenda de etapa 5), no los intermedios.
+function avanzarEtapaAdmin(id, etapaDestino) {
+  if(!CU || CU.role !== 'admin') { showToast('Solo el admin puede avanzar etapas directamente', 'error'); return; }
+  var exp = null;
+  for(var i=0;i<expedientes.length;i++){ if(expedientes[i].id===id){ exp=expedientes[i]; break; } }
+  if(!exp || etapaDestino <= exp.etapa) return;
+  if(!confirm('¿Avanzar este expediente directo a Etapa ' + etapaDestino + '? Se saltan los requisitos de las etapas intermedias. Esto es una accion administrativa.')) return;
+  exp.etapa = etapaDestino;
+  if(etapaDestino >= 3) ensureCodigoAcceso(exp);
+  if(etapaDestino === 4) pushAvanceEtapa4(exp);
+  if(etapaDestino === 5) agendaTriggerEtapa5(exp);
+  saveExp();
+  showToast('Expediente avanzado a Etapa ' + etapaDestino, 'success');
+  abrirExpediente(id);
+}
+
 // ==================
 // PANEL FISE
 // ==================
@@ -14376,9 +14395,27 @@ function renderModalExpContent(cont, exp) {
     if(i<6)step.innerHTML+='<div style="position:absolute;top:13px;left:50%;width:100%;height:2px;background:'+(i<exp.etapa?'#10b981':'#e5e7eb')+';z-index:0"></div>';
     step.innerHTML+='<div style="width:26px;height:26px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin:0 auto;position:relative;z-index:1">'+(i<exp.etapa?'&#10003;':String(i))+'</div>';
     step.innerHTML+='<div style="font-size:9px;color:'+color+';margin-top:3px;font-weight:'+(i===exp.etapa?'700':'500')+'">E'+i+'</div>';
+    // Admin: click en una etapa futura para avanzar el expediente hasta ahi
+    if(CU && CU.role==='admin' && i>exp.etapa){
+      step.style.cursor='pointer';
+      step.title='Avanzar aqui (admin)';
+      step.onclick=(function(eid,num){return function(){avanzarEtapaAdmin(eid,num);};})(exp.id,i);
+    }
     pipe.appendChild(step);
   }
   cont.appendChild(pipe);
+
+  // Boton admin: avanzar directo hasta Etapa 5 (Certificacion) saltando requisitos
+  if(CU && CU.role==='admin' && exp.etapa < 5){
+    var ffRow=document.createElement('div');
+    ffRow.style.cssText='display:flex;justify-content:flex-end;margin:-8px 0 16px';
+    var ffBtn=document.createElement('button');
+    ffBtn.style.cssText='background:none;border:1px solid #D9D9D9;border-radius:6px;padding:4px 10px;font-size:11px;color:#8a8a8a;cursor:pointer;font-family:inherit';
+    ffBtn.textContent='⏩ Avanzar hasta Etapa 5 (admin)';
+    ffBtn.onclick=(function(eid){return function(){avanzarEtapaAdmin(eid,5);};})(exp.id);
+    ffRow.appendChild(ffBtn);
+    cont.appendChild(ffRow);
+  }
 
   // Contenedor del contenido de etapas
   var contInner = document.createElement('div');
@@ -14426,10 +14463,27 @@ function renderModalExp(exp) {
     if(i<5)step.innerHTML+='<div style="position:absolute;top:13px;left:50%;width:100%;height:2px;background:'+(i<exp.etapa?'#10b981':'#e5e7eb')+';z-index:0"></div>';
     step.innerHTML+='<div style="width:26px;height:26px;border-radius:50%;background:'+color+';color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin:0 auto;position:relative;z-index:1">'+(i<exp.etapa?'&#10003;':String(i))+'</div>';
     step.innerHTML+='<div style="font-size:9px;color:'+color+';margin-top:3px;font-weight:'+(i===exp.etapa?'700':'500')+'">E'+i+'</div>';
+    // Admin: click en una etapa futura para avanzar el expediente hasta ahi
+    if(CU && CU.role==='admin' && i>exp.etapa){
+      step.style.cursor='pointer';
+      step.title='Avanzar aqui (admin)';
+      step.onclick=(function(eid,num){return function(){avanzarEtapaAdmin(eid,num);};})(exp.id,i);
+    }
     pipe.appendChild(step);
   }
   var content=document.getElementById('emContent');
   content.innerHTML='';
+  // Boton admin: avanzar directo hasta Etapa 5 (Certificacion) saltando requisitos
+  if(CU && CU.role==='admin' && exp.etapa < 5){
+    var ffRow=document.createElement('div');
+    ffRow.style.cssText='display:flex;justify-content:flex-end;margin:0 0 12px';
+    var ffBtn=document.createElement('button');
+    ffBtn.style.cssText='background:none;border:1px solid #D9D9D9;border-radius:6px;padding:4px 10px;font-size:11px;color:#8a8a8a;cursor:pointer;font-family:inherit';
+    ffBtn.textContent='⏩ Avanzar hasta Etapa 5 (admin)';
+    ffBtn.onclick=(function(eid){return function(){avanzarEtapaAdmin(eid,5);};})(exp.id);
+    ffRow.appendChild(ffBtn);
+    content.appendChild(ffRow);
+  }
   renderBloquePortal(exp, content);
 
   // Roles que pueden ver etapas anteriores para descargar
