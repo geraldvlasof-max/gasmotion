@@ -3248,6 +3248,9 @@ function grabarSf1GLP() {
   if(!placa){showAlert('alertGLP','La placa es obligatoria.','error');return;}
   if(!modelo){showAlert('alertGLP','El modelo es obligatorio.','error');return;}
   if(!sede){showAlert('alertGLP','La sede es obligatoria.','error');return;}
+  if(!celularGLP){showAlert('alertGLP','El número del cliente es obligatorio.','error');return;}
+  if(!correoGLP || correoGLP.indexOf('@') === -1){showAlert('alertGLP','El correo del cliente es obligatorio y debe ser válido.','error');return;}
+  if(!marcaEquipo || !tamTanque){showAlert('alertGLP','Completa el checklist: marca de equipo ofrecido y tamaño de tanque.','error');return;}
   var id = String(Date.now());
   persistirArchivo(id,'sf1',sf1FileGLP);
   storeFile(id,'sf1',sf1FileGLP,function(url,name){
@@ -3370,7 +3373,7 @@ function renderTabGLP() {
       (exp.tecnicoGLP ? '<div class="meta-row"><span>🔧</span><span>Técnico: <strong>' + exp.tecnicoGLP + '</strong></span></div>' : '') +
       ((exp.glpChecklist && (exp.glpChecklist.marcaEquipo || exp.glpChecklist.tamanoTanque)) ? '<div class="meta-row"><span>☑</span><span>' + (exp.glpChecklist.marcaEquipo||'') + (exp.glpChecklist.marcaEquipo && exp.glpChecklist.tamanoTanque ? ' · ' : '') + (exp.glpChecklist.tamanoTanque ? 'Tanque ' + exp.glpChecklist.tamanoTanque : '') + '</span></div>' : '') +
       (exp.celular ? '<div class="meta-row"><span>📞</span><span>' + exp.celular + '</span></div>' : '') +
-      '<div class="meta-row"><span>📎</span><span>' + (completado ? '<strong style="color:#059669">Todos los documentos completos</strong>' : (glpEtapaCompleta(exp, etGlp) ? '<strong style="color:#059669">Documentos de la etapa completos ✓</strong>' : 'Documentos de la etapa: <strong>' + subidos + '/' + docsEt.length + '</strong>')) + '</span></div>' +
+      '<div class="meta-row"><span>📎</span><span>' + (completado ? '<strong style="color:#059669">Todos los documentos completos</strong>' : (glpEtapaCompleta(exp, etGlp) ? '<strong style="color:#059669">Etapa al día ✓ — lista para avanzar</strong>' : (etGlp === 1 ? 'Falta: <strong>' + glpFaltantesEtapa(exp, 1).join(' · ') + '</strong>' : 'Documentos de la etapa: <strong>' + subidos + '/' + docsEt.length + '</strong>'))) + '</span></div>' +
       '<div id="glpcard_actions_' + ri + '" style="display:flex;flex-direction:column;gap:8px;margin-top:12px"></div>';
     grid.appendChild(card);
 
@@ -3396,7 +3399,7 @@ function renderTabGLP() {
 // Etapa 3: Certificado de conversion + Garantia firmada + Boleta o factura
 // ═══════════════════════════════════════════════════════════
 var GLP_ETAPAS = {
-  1: { titulo:'Etapa 1 — Documentos del titular', docs:[
+  1: { titulo:'Etapa 1 — Documentos y datos del cliente', docs:[
        {key:'glpDniTitular',    label:'DNI del titular'},
        {key:'glpTarjetaProp',   label:'Tarjeta de propiedad'}]},
   2: { titulo:'Etapa 2 — Instalación', docs:[
@@ -3410,13 +3413,27 @@ var GLP_ETAPAS = {
 };
 function glpExpPorId(id){ for(var i=0;i<expedientes.length;i++){ if(expedientes[i].id===id) return expedientes[i]; } return null; }
 function glpDocsDe(exp){ if(!exp.glpDocs) exp.glpDocs = {}; return exp.glpDocs; }
-function glpEtapaCompleta(exp, num){
-  // El SCANFILE 1 del registro ya trae el DNI del titular y la tarjeta
-  // de propiedad escaneados, asi que completa la Etapa 1 por si solo
-  if(num === 1 && exp.e1 && exp.e1.scanfile1) return true;
+// Que falta para completar una etapa GLP. La Etapa 1 pide TODO junto:
+// DNI + tarjeta de propiedad (el SCANFILE 1 los cubre), datos del
+// cliente (celular y correo) y el checklist de equipos a instalar.
+function glpFaltantesEtapa(exp, num){
+  var falta = [];
+  if(num === 1){
+    var gd = glpDocsDe(exp);
+    var docsOk = (exp.e1 && exp.e1.scanfile1) || (gd.glpDniTitular && gd.glpTarjetaProp);
+    if(!docsOk) falta.push('DNI + Tarjeta de propiedad (SCANFILE 1)');
+    if(!(exp.celular||'').trim()) falta.push('número del cliente');
+    if(!(exp.correo||'').trim()) falta.push('correo del cliente');
+    var chk = exp.glpChecklist || {};
+    if(!(chk.marcaEquipo||'').trim() || !(chk.tamanoTanque||'').trim()) falta.push('checklist de equipos (marca y tanque)');
+    return falta;
+  }
   var docs = GLP_ETAPAS[num] ? GLP_ETAPAS[num].docs : [];
-  for(var i=0;i<docs.length;i++){ if(!glpDocsDe(exp)[docs[i].key]) return false; }
-  return true;
+  for(var i=0;i<docs.length;i++){ if(!glpDocsDe(exp)[docs[i].key]) falta.push(docs[i].label); }
+  return falta;
+}
+function glpEtapaCompleta(exp, num){
+  return glpFaltantesEtapa(exp, num).length === 0;
 }
 
 // Guardar los datos del cliente y el checklist del vendedor desde el modal
@@ -3513,7 +3530,8 @@ function glpAvanzar(id){
   if(!exp) return;
   var et = exp.etapa || 1;
   if(et >= 3) return;
-  if(!glpEtapaCompleta(exp, et)){ showToast('Adjunta todos los documentos de la Etapa ' + et + ' para avanzar', 'error'); return; }
+  var faltanAv = glpFaltantesEtapa(exp, et);
+  if(faltanAv.length){ showToast('Para avanzar falta: ' + faltanAv.join(', '), 'error'); return; }
   exp.etapa = et + 1;
   if(exp.etapa === 2) glpNotificarTecnicos(exp);
   saveExp();
@@ -3672,9 +3690,10 @@ function abrirGlpExp(id){
         }
       }
       if(esActual && num < 3){
-        var listo = glpEtapaCompleta(exp, num);
+        var faltan = glpFaltantesEtapa(exp, num);
+        var listo = faltan.length === 0;
         html += '<button onclick="glpAvanzar(\''+exp.id+'\')" '+(listo?'':'disabled')+' style="width:100%;margin-top:8px;background:'+(listo?'#131313':'#E5E5E5')+';color:'+(listo?'#fff':'#9ca3af')+';border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:800;cursor:'+(listo?'pointer':'not-allowed')+';font-family:inherit">Avanzar a Etapa '+(num+1)+' →</button>';
-        if(!listo) html += '<div style="font-size:10px;color:#8a8a8a;text-align:center;margin-top:4px">Adjunta todos los documentos para avanzar</div>';
+        if(!listo) html += '<div style="font-size:10px;color:#b45309;text-align:center;margin-top:4px">Falta: '+faltan.join(' · ')+'</div>';
       }
     }
     html += '</div>';
