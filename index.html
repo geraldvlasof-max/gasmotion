@@ -3354,7 +3354,7 @@ function renderTabGLP() {
     var completado = etGlp >= 3 && glpEtapaCompleta(exp, 3);
     var docsEt = GLP_ETAPAS[etGlp] ? GLP_ETAPAS[etGlp].docs : [];
     var subidos = 0;
-    for(var d = 0; d < docsEt.length; d++) { if(glpDocsDe(exp)[docsEt[d].key]) subidos++; }
+    for(var d = 0; d < docsEt.length; d++) { if(glpDocMeta(exp, docsEt[d])) subidos++; }
     var badgeColor = completado ? '#059669' : (ETAPA_COLORS[etGlp] || '#008184');
     var badgeTxt = completado ? 'Completado ✓' : 'Etapa ' + etGlp + ' — ' + (GLP_ETAPAS[etGlp] ? GLP_ETAPAS[etGlp].titulo.split('— ')[1] : '');
 
@@ -3403,9 +3403,13 @@ var GLP_ETAPAS = {
        {key:'glpDniTitular',    label:'DNI del titular'},
        {key:'glpTarjetaProp',   label:'Tarjeta de propiedad'}]},
   2: { titulo:'Etapa 2 — Instalación', docs:[
-       // Las fotos de la instalacion las toma y sube el TECNICO (admin tambien puede)
-       {key:'glpFotoEquipos',   label:'Foto de los equipos instalados', soloTecnico:true},
-       {key:'glpFotoVehiculo',  label:'Foto del vehículo convertido',   soloTecnico:true}]},
+       // Las fotos de la instalacion las toma y sube el TECNICO (admin tambien
+       // puede). Primero registra los equipos a instalar (tanque y reductor);
+       // la foto del vehiculo convertido se habilita recien con ambas.
+       // legacyKey: expedientes antiguos tenian una sola 'foto de equipos'.
+       {key:'glpFotoTanque',    label:'Foto del tanque instalado',     soloTecnico:true, legacyKey:'glpFotoEquipos'},
+       {key:'glpFotoReductor',  label:'Foto del reductor instalado',   soloTecnico:true, legacyKey:'glpFotoEquipos'},
+       {key:'glpFotoVehiculo',  label:'Foto del vehículo convertido',  soloTecnico:true, requiereEquipos:true}]},
   3: { titulo:'Etapa 3 — Certificación', docs:[
        {key:'glpCertConversion',label:'Certificado de conversión escaneado'},
        {key:'glpGarantia',      label:'Garantía firmada'},
@@ -3434,8 +3438,26 @@ function glpFaltantesEtapa(exp, num){
     return falta;
   }
   var docs = GLP_ETAPAS[num] ? GLP_ETAPAS[num].docs : [];
-  for(var i=0;i<docs.length;i++){ if(!glpDocsDe(exp)[docs[i].key]) falta.push(docs[i].label); }
+  for(var i=0;i<docs.length;i++){ if(!glpDocMeta(exp, docs[i])) falta.push(docs[i].label); }
   return falta;
+}
+
+// Metadata de un documento GLP, aceptando la clave antigua (legacyKey)
+// de expedientes que ya tenian la 'foto de equipos instalados' unica
+function glpDocMeta(exp, doc){
+  var gd = glpDocsDe(exp);
+  if(gd[doc.key]) return gd[doc.key];
+  if(doc.legacyKey && gd[doc.legacyKey]) return gd[doc.legacyKey];
+  return null;
+}
+
+// La foto del vehiculo convertido se habilita recien cuando el tecnico
+// registro los equipos instalados (tanque y reductor)
+function glpEquiposRegistrados(exp){
+  var gd = glpDocsDe(exp);
+  var tanque = gd.glpFotoTanque || gd.glpFotoEquipos;
+  var reductor = gd.glpFotoReductor || gd.glpFotoEquipos;
+  return !!(tanque && reductor);
 }
 function glpEtapaCompleta(exp, num){
   return glpFaltantesEtapa(exp, num).length === 0;
@@ -3489,6 +3511,7 @@ function glpSubirDoc(id, key, input){
   if(!exp) return;
   var def = glpDocDef(key);
   if(def && !glpPuedeSubirDoc(def)){ showToast('Esta foto la sube el TECNICO de la instalacion', 'error'); input.value=''; return; }
+  if(def && def.requiereEquipos && !glpEquiposRegistrados(exp)){ showToast('Primero registra la foto del tanque y del reductor instalados', 'error'); input.value=''; return; }
   persistirArchivo(id, key, file);
   storeFile(id, key, file, function(url, name){
     glpDocsDe(exp)[key] = { nombre:name, subidoPor:CU?CU.nombre:'-', fecha:nowFecha(), hora:nowHora() };
@@ -3505,7 +3528,7 @@ function glpSubirDoc(id, key, input){
 // tecnico asignado, o a todos los tecnicos si aun no hay asignado
 function glpNotificarTecnicos(exp) {
   var titulo = 'Instalación GLP — ' + (exp.placa || '');
-  var msg = (exp.placa || 'Un vehículo') + ' está en Etapa 2: sube la foto de los equipos instalados y del vehículo convertido';
+  var msg = (exp.placa || 'Un vehículo') + ' está en Etapa 2: registra la foto del tanque y del reductor, y al instalar, la del vehículo convertido';
   var uids = [];
   if(exp.tecnicoGLP) {
     var users = getUsers();
@@ -3713,14 +3736,22 @@ function abrirGlpExp(id){
       }
       for(var k=0;k<def.docs.length;k++){
         var doc = def.docs[k];
-        var meta = glpDocsDe(exp)[doc.key];
+        var meta = glpDocMeta(exp, doc);
+        // clave efectiva para Ver/Descargar (puede ser la legacy)
+        var keyEf = glpDocsDe(exp)[doc.key] ? doc.key : (doc.legacyKey && glpDocsDe(exp)[doc.legacyKey] ? doc.legacyKey : doc.key);
         var puedeSubirlo = glpPuedeSubirDoc(doc);
+        var esperaEquipos = doc.requiereEquipos && !glpEquiposRegistrados(exp);
         if(meta){
-          html += renderDocHistorialRow(doc.label, meta, getFileUrl(exp.id, doc.key), getDownloadUrl(exp.id, doc.key));
+          html += renderDocHistorialRow(doc.label, meta, getFileUrl(exp.id, keyEf), getDownloadUrl(exp.id, keyEf));
           if(esActual && puedeSubirlo){
             html += '<div style="text-align:right;margin:2px 0 6px"><label style="font-size:10px;color:#8a8a8a;cursor:pointer;text-decoration:underline">Reemplazar' +
               '<input type="file" accept="image/*,.pdf" style="display:none" onchange="glpSubirDoc(\''+exp.id+'\',\''+doc.key+'\',this)"></label></div>';
           }
+        } else if(esActual && esperaEquipos){
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px dashed #E5E5E5;border-radius:10px;padding:10px 12px;margin:6px 0;background:#FAFAF7">' +
+            '<span style="font-size:12px;font-weight:700;color:#9ca3af">' + doc.label + '</span>' +
+            '<span style="font-size:11px;color:#8a8a8a;white-space:nowrap">🔒 Primero el tanque y el reductor</span>' +
+          '</div>';
         } else if(esActual && puedeSubirlo){
           html += '<label style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px dashed #D9D9D9;border-radius:10px;padding:10px 12px;margin:6px 0;cursor:pointer">' +
             '<span style="font-size:12px;font-weight:700;color:#131313">' + doc.label + (doc.soloTecnico?' <span style="font-weight:400;color:#8a8a8a">(técnico)</span>':'') + '</span>' +
@@ -18460,15 +18491,19 @@ function getTareasTecnico() {
       if(exp.tecnicoGLP !== nombre) continue;
       if((exp.etapa || 1) < 2) continue;
       var gd = exp.glpDocs || {};
-      var compG = (gd.glpFotoEquipos ? 1 : 0) + (gd.glpFotoVehiculo ? 1 : 0);
+      var tanqueOk = !!(gd.glpFotoTanque || gd.glpFotoEquipos);
+      var reductorOk = !!(gd.glpFotoReductor || gd.glpFotoEquipos);
+      var vehiculoOk = !!gd.glpFotoVehiculo;
+      var compG = (tanqueOk?1:0) + (reductorOk?1:0) + (vehiculoOk?1:0);
       placas[exp.id] = {
         expId: exp.id, placa: exp.placa,
         modelo: (exp.modeloVehiculo || '') + ' · GLP', sede: exp.sede,
         tareas: [
-          { tipo:'glpFotoEquipos',  label:'Foto de los equipos instalados', icono:'📷', grupo:'Instalación GLP', completada: !!gd.glpFotoEquipos },
-          { tipo:'glpFotoVehiculo', label:'Foto del vehículo convertido',   icono:'📷', grupo:'Instalación GLP', completada: !!gd.glpFotoVehiculo }
+          { tipo:'glpFotoTanque',   label:'Foto del tanque instalado',    icono:'📷', grupo:'Equipos a instalar', completada: tanqueOk },
+          { tipo:'glpFotoReductor', label:'Foto del reductor instalado',  icono:'📷', grupo:'Equipos a instalar', completada: reductorOk },
+          { tipo:'glpFotoVehiculo', label:'Foto del vehículo convertido' + ((tanqueOk && reductorOk) ? '' : ' (al terminar los equipos)'), icono:'📷', grupo:'Vehículo convertido', completada: vehiculoOk }
         ],
-        pct: Math.round(compG / 2 * 100), completadas: compG, total: 2
+        pct: Math.round(compG / 3 * 100), completadas: compG, total: 3
       };
       continue;
     }
