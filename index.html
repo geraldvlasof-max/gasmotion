@@ -12088,6 +12088,13 @@ function invDspAnular(id) {
 // una placa y crear productos con su etiqueta en segundos. Pensada para
 // que cualquier persona de la sede la use sin capacitación.
 // ═══════════════════════════════════════════════════════════
+// ⏸️ TEMPORAL — ORDENAMIENTO DE STOCK (pedido por gerencia): con true la
+// estacion permite DESCARGAR sin placa. Cada salida sin placa se registra
+// con motivo 'Ordenamiento de stock (estacion)' y queda en la lista de
+// revision del panel de faltantes, asi que nada se pierde de vista.
+// Para volver a EXIGIR placa: cambiar a false y subir la version del SW.
+var GM_DESCARGA_SIN_PLACA = true;
+
 var invEstModo = '';
 var invEstNum = { cargas: 0, descargas: 0 };
 
@@ -12139,7 +12146,10 @@ function invEstSetModo(m) {
   zona.innerHTML =
     '<div class="card" style="border:2px solid ' + (m === 'cargar' ? '#86efac' : '#fdba74') + '">' +
       (m === 'descargar'
-        ? '<label class="gm-lbl" style="font-size:13px">🚗 Placa del vehículo que recibe (escríbela UNA vez)</label>' +
+        ? (GM_DESCARGA_SIN_PLACA
+            ? '<div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12.5px;color:#92400e"><b>⚠ Ordenamiento de stock activo:</b> puedes descargar SIN placa. Cada salida sin placa queda registrada como "Ordenamiento de stock" para revisión.</div>' +
+              '<label class="gm-lbl" style="font-size:13px">🚗 Placa del vehículo (OPCIONAL durante el ordenamiento)</label>'
+            : '<label class="gm-lbl" style="font-size:13px">🚗 Placa del vehículo que recibe (escríbela UNA vez)</label>') +
           '<input id="invEstPlaca" class="gm-inp" placeholder="ABC123" maxlength="10" oninput="gmPlacaInput(this)" style="font-size:22px;font-weight:900;text-transform:uppercase;text-align:center;letter-spacing:3px;padding:12px">'
         : '') +
       '<label class="gm-lbl" style="font-size:13px">' + (m === 'cargar' ? '📦 Dispara la pistola aquí — cada disparo SUMA 1' : '📤 Dispara la pistola aquí — cada disparo DESCUENTA 1 a la placa') + '</label>' +
@@ -12192,7 +12202,11 @@ function invEstProcesar() {
       var placaU = (document.getElementById('invEstPlaca') || {}).value || '';
       placaU = gmPlacaNormalizar(placaU);
       if (!placaU) {
-        invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
+        // Las unidades serializadas SIEMPRE necesitan placa: se instalan
+        // a un vehiculo concreto (no aplica el modo ordenamiento)
+        invEstLog(GM_DESCARGA_SIN_PLACA
+          ? '⚠ Las unidades con código propio (tanques, reductores) sí necesitan <b>placa</b>: se instalan a un vehículo'
+          : '⚠ Escribe primero la <b>placa</b> arriba', true);
         return;
       }
       agendaWorkerFetch('invUnidadesListar', { codigo: codigo }).then(function (du) {
@@ -12228,20 +12242,23 @@ function invEstProcesar() {
   if (invEstModo === 'descargar') {
     var placaEl = document.getElementById('invEstPlaca');
     var placa = placaEl ? gmPlacaNormalizar(placaEl.value) : '';
-    if (!placa) {
+    if (!placa && !GM_DESCARGA_SIN_PLACA) {
       invEstLog('⚠ Escribe primero la <b>placa</b> arriba', true);
       if (placaEl) placaEl.focus();
       return;
     }
     agendaWorkerFetch('invMovimiento', {}, { method: 'POST', body: {
       productoId: p.id, tipo: 'salida', cantidad: 1, sede: sede, placa: placa,
-      motivo: 'Instalación (estación)', uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
+      motivo: placa ? 'Instalación (estación)' : 'Ordenamiento de stock (estación)',
+      uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
     }}).then(function (d) {
       if (d && d.ok) {
         p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
         invEstNum.descargas++;
         var nd = document.getElementById('invEstNumD'); if (nd) nd.textContent = invEstNum.descargas;
-        invEstLog('🚗 −1 <b>' + shEsc(p.nombre) + '</b> → placa <b>' + shEsc(placa) + '</b> · quedan ' + d.stock + ' en ' + shEsc(sede));
+        invEstLog(placa
+          ? '🚗 −1 <b>' + shEsc(p.nombre) + '</b> → placa <b>' + shEsc(placa) + '</b> · quedan ' + d.stock + ' en ' + shEsc(sede)
+          : '📋 −1 <b>' + shEsc(p.nombre) + '</b> · ordenamiento de stock · quedan ' + d.stock + ' en ' + shEsc(sede));
         if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
       } else invEstLog('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo descargar'), true);
     }).catch(function () { invEstLog('⚠ Error de conexión', true); });
