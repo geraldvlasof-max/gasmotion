@@ -11708,11 +11708,14 @@ function invSheetMov(id, tipo) {
       '<div><label class="gm-lbl">Cantidad</label><input id="invMovCant" class="gm-inp" type="number" step="1" min="1" value="1"></div>' +
     '</div>' +
     (esEntrada ? '' :
-      '<label class="gm-lbl">Placa del vehículo que recibe el equipo *</label>' +
+      (GM_DESCARGA_SIN_PLACA
+        ? '<div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:9px 12px;margin-top:8px;font-size:12px;color:#92400e"><b>⚠ Ordenamiento de stock activo (temporal):</b> la placa es opcional; sin placa la salida queda registrada como "Ordenamiento de stock".</div>' +
+          '<label class="gm-lbl">Placa del vehículo (OPCIONAL durante el ordenamiento)</label>'
+        : '<label class="gm-lbl">Placa del vehículo que recibe el equipo *</label>') +
       '<input id="invMovPlaca" class="gm-inp" placeholder="ABC123" style="text-transform:uppercase" maxlength="10" oninput="gmPlacaInput(this)">' +
       '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#6b7280;margin-top:8px;cursor:pointer">' +
         '<input type="checkbox" id="invMovSinPlaca" style="width:15px;height:15px"> Salida sin vehículo (merma, uso interno, devolución)</label>') +
-    '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : 'Instalación') + '">' +
+    '<label class="gm-lbl">Motivo</label><input id="invMovMot" class="gm-inp" placeholder="' + (esEntrada ? 'Compra a proveedor' : (GM_DESCARGA_SIN_PLACA ? 'Ordenamiento de stock' : 'Instalación')) + '">' +
     '<button class="btn ' + (esEntrada ? 'btn-teal' : 'btn-navy') + '" style="width:100%;justify-content:center;margin-top:16px" onclick="invGuardarMov(\'' + shEsc(id) + '\',\'' + tipo + '\')">Registrar ' + tipo + '</button>'
   );
 }
@@ -11727,8 +11730,14 @@ function invGuardarMov(id, tipo) {
     var sinPlaca = document.getElementById('invMovSinPlaca').checked;
     placa = gmPlacaNormalizar(document.getElementById('invMovPlaca').value);
     if (!sinPlaca && !placa) {
-      showToast('Toda salida debe destinarse a la placa del vehículo (o marca "sin vehículo")', 'error');
-      return;
+      // TEMPORAL ordenamiento de stock: la salida sin placa procede con
+      // motivo automatico y queda en la lista de revision del worker
+      if (GM_DESCARGA_SIN_PLACA) {
+        if (!motivoMov) motivoMov = 'Ordenamiento de stock';
+      } else {
+        showToast('Toda salida debe destinarse a la placa del vehículo (o marca "sin vehículo")', 'error');
+        return;
+      }
     }
     if (sinPlaca) {
       placa = '';
