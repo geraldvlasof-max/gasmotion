@@ -5617,7 +5617,7 @@ function renderEtapa6(cont, exp) {
   var asuntoInp = document.createElement('input');
   asuntoInp.type = 'text';
   asuntoInp.id = 'e6_asunto_' + exp.id;
-  asuntoInp.value = 'Expediente de Conversión GLP — Placa ' + (exp.placa||'') + ' — ' + (exp.nombre||'');
+  asuntoInp.value = 'Expediente de Conversión ' + (exp.tipoGas === 'GLP' ? 'GLP' : 'GNV') + ' — Placa ' + (exp.placa||'') + ' — ' + (exp.nombre||'');
   asuntoInp.style.cssText = 'border:2px solid #D9D9D9;border-radius:8px;padding:10px 12px;font-size:14px;width:100%;box-sizing:border-box';
   asuntoDiv.appendChild(asuntoInp);
   mailBody.appendChild(asuntoDiv);
@@ -6229,6 +6229,10 @@ function responsablePorDocumento(exp, tipoDoc) {
     'sf2':         { nombre: vendedorSede, nota: '' },
     'scanfile2':   { nombre: vendedorSede, nota: '' },
     'asignacion':  { nombre: vendedorSede + ' / ' + asistente, nota: '' },
+    // Etapa 5 — SCANFILES para la plataforma FISE
+    'sf3':         { nombre: asistente, nota: '' },
+    'sf4':         { nombre: asistente, nota: '' },
+    'sf5':         { nombre: asistente, nota: '' },
     // Etapa 4
     'videoComp':   { nombre: vendedorSede, nota: 'Pronto migrará a técnicos' },
     'videoCompresiones': { nombre: vendedorSede, nota: 'Pronto migrará a técnicos' },
@@ -16841,13 +16845,44 @@ function renderEtapa5(cont, exp) {
 
   sec.appendChild(g1);
 
-  // ── GRUPO 2: ARCHIVOS PARA FISE (pendiente) ──
+  // ── GRUPO 2: ARCHIVOS PARA FISE — SCANFILE 3, 4 y 5 ──
+  // Se suben en orden a la plataforma FISE (cada uno se habilita al
+  // completar el anterior, igual que el resto del flujo)
+  var e5 = exp.e5 || {};
   var g2 = document.createElement('div');
-  g2.style.cssText = 'margin-top:20px;background:#F7F7F2;border:1.5px dashed #D9D9D9;border-radius:12px;padding:20px;text-align:center';
-  g2.innerHTML = '<div style="font-size:14px;font-weight:800;color:#a8a8a8;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px">' +
-    '<span style="background:#D9D9D9;color:#a8a8a8;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 2</span>' +
-    'ARCHIVOS PARA FISE</div>' +
-    '<div style="font-size:12px;color:#a8a8a8">Pendiente de desarrollo</div>';
+  g2.style.cssText = 'margin-top:20px';
+  g2.innerHTML = '<div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:4px;display:flex;align-items:center;gap:8px">' +
+    '<span style="background:#065f46;color:white;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 2</span>' +
+    'ARCHIVOS PARA FISE — SCANFILE 3, 4 y 5</div>' +
+    '<div style="font-size:12px;color:#047857;margin-bottom:14px">Sube en orden los paquetes escaneados para la plataforma FISE. Cada SCANFILE se habilita al grabar el anterior.</div>';
+
+  var sfsFise = [
+    { key:'sf3', metaKey:'scanfile3', store:'e5sf3', label:'SCANFILE 3 — Certificado de conversión y documentos del taller' },
+    { key:'sf4', metaKey:'scanfile4', store:'e5sf4', label:'SCANFILE 4 — Comprobantes de venta (boleta/factura + boleta informativa)' },
+    { key:'sf5', metaKey:'scanfile5', store:'e5sf5', label:'SCANFILE 5 — Constancia de cierre del expediente FISE' }
+  ];
+  var anteriorListo = true;
+  for(var sfi = 0; sfi < sfsFise.length; sfi++){
+    var sfDef = sfsFise[sfi];
+    var sfMeta = e5[sfDef.metaKey] || null;
+    if(anteriorListo){
+      g2.appendChild(crearDocCard(exp.id, sfDef.key, sfDef.label, sfMeta, canManage, sfDef.store, '.pdf'));
+    } else {
+      var lockCard = document.createElement('div');
+      lockCard.className = 'doc-box';
+      lockCard.style.cssText = 'margin-top:10px;opacity:.55';
+      lockCard.innerHTML = '<div class="doc-box-title">🔒 ' + sfDef.label + '</div>' +
+        '<div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:4px">Se habilita al grabar el SCANFILE anterior.</div>';
+      g2.appendChild(lockCard);
+    }
+    anteriorListo = !!(sfMeta && sfMeta.completado);
+  }
+  if(e5.scanfile5 && e5.scanfile5.completado){
+    var fiseOk = document.createElement('div');
+    fiseOk.style.cssText = 'background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;font-weight:700;color:#047857';
+    fiseOk.textContent = '✓ Expediente FISE completo — SCANFILE 1 al 5 grabados';
+    g2.appendChild(fiseOk);
+  }
   sec.appendChild(g2);
 
   cont.appendChild(sec);
@@ -17429,6 +17464,15 @@ function grabarArchivoEnExp(expId, tipoKey, name, etapaKey) {
       } else if(etapaKey==='e3sf2'){
         if(!e.e3)e.e3={};
         e.e3.scanfile2=meta;
+      } else if(etapaKey==='e5sf3'){
+        if(!e.e5)e.e5={};
+        e.e5.scanfile3=meta;
+      } else if(etapaKey==='e5sf4'){
+        if(!e.e5)e.e5={};
+        e.e5.scanfile4=meta;
+      } else if(etapaKey==='e5sf5'){
+        if(!e.e5)e.e5={};
+        e.e5.scanfile5=meta;
       } else if(etapaKey==='e4vc'){
         if(!e.e4)e.e4={};
         e.e4.videoCompresiones=meta;
