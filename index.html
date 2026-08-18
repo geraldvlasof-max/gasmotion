@@ -11495,10 +11495,13 @@ function invPintar() {
     var p = lista[j];
     var bajo = (p.stock || 0) <= (p.stock_min || 0);
     var stockVisible = invSedeFiltro ? ((p.sedes || {})[invSedeFiltro] || 0) : p.stock;
+    // AMBAR: a este producto aun no se le genera/imprime su etiqueta
+    var faltaEtq = !p.etiqueta_impresa;
     filas +=
-      '<tr>' +
+      '<tr' + (faltaEtq ? ' style="background:#fffbeb;border-left:4px solid #f59e0b"' : '') + '>' +
         '<td style="font-family:monospace;font-size:12px">' + shEsc(p.codigo || '—') + '</td>' +
-        '<td><b>' + shEsc(p.nombre) + '</b>' + (p.notas ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(p.notas) + '</div>' : '') + '</td>' +
+        '<td><b>' + shEsc(p.nombre) + '</b>' + (p.notas ? '<div style="font-size:11px;color:#8a8a8a">' + shEsc(p.notas) + '</div>' : '') +
+          (faltaEtq ? '<div style="display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;padding:1px 8px;font-size:10.5px;font-weight:800;margin-top:3px">🏷 ' + (p.codigo ? 'FALTA IMPRIMIR ETIQUETA' : 'SIN CÓDIGO — CREAR ETIQUETA') + '</div>' : '') + '</td>' +
         '<td>' + shEsc(p.categoria || '—') + '</td>' +
         '<td><span style="background:' + (bajo ? '#fee2e2' : '#d1fae5') + ';color:' + (bajo ? '#dc2626' : '#065f46') + ';font-weight:800;border-radius:12px;padding:3px 10px;font-size:12px">' + stockVisible + ' ' + shEsc(p.unidad || 'und') + (invSedeFiltro ? ' aquí' : '') + '</span>' +
           (bajo ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">mín: ' + p.stock_min + '</div>' : '') +
@@ -11510,7 +11513,7 @@ function invPintar() {
           '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Registrar salida" onclick="invSheetMov(\'' + shEsc(p.id) + '\',\'salida\')">⬆ Salida</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Editar" onclick="invSheetProducto(\'' + shEsc(p.id) + '\')">✎</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Transferir entre sedes" onclick="invSheetTransfer(\'' + shEsc(p.id) + '\')">↔</button> ' +
-          '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Imprimir etiquetas de código de barras" onclick="invSheetEtiquetas(\'' + shEsc(p.id) + '\')">🏷</button> ' +
+          '<button class="btn btn-sm btn-outline" style="padding:5px 8px' + (faltaEtq ? ';background:#f59e0b;border-color:#f59e0b;color:white' : '') + '" title="' + (faltaEtq ? 'FALTA generar etiqueta — imprímela aquí' : 'Imprimir etiquetas de código de barras') + '" onclick="invSheetEtiquetas(\'' + shEsc(p.id) + '\')">🏷</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px" title="Historial de movimientos" onclick="invVerHistorial(\'' + shEsc(p.id) + '\')">🕓</button> ' +
           '<button class="btn btn-sm btn-outline" style="padding:5px 8px;color:#dc2626" title="Eliminar" onclick="invEliminar(\'' + shEsc(p.id) + '\',\'' + shEsc(p.nombre) + '\')">🗑</button>' +
         '</td>' +
@@ -12653,6 +12656,16 @@ function gmImprimirVentana(htmlCompleto) {
 function invImprimirLote(items, esA4, tam) {
   tam = String(tam || gmEtqTam());
   try { localStorage.setItem('gm_etq_tam', tam); } catch (e) {}
+  // Marcar los productos como "etiqueta ya impresa": el inventario pinta
+  // en AMBAR los que aun no tienen etiqueta generada, y aqui se apaga
+  for (var mi = 0; mi < items.length; mi++) {
+    var pM = items[mi].p;
+    if (!pM || !pM.id || !pM.codigo) continue;
+    if (!pM.etiqueta_impresa) {
+      pM.etiqueta_impresa = new Date().toISOString();
+      agendaWorkerFetch('invEtiquetaImpresa', {}, { method: 'POST', body: { productoId: pM.id } }).catch(function () {});
+    }
+  }
   var wh = tam.split('x');
   var W = parseInt(wh[0], 10) || 30;
   var H = parseInt(wh[1], 10) || 20;
