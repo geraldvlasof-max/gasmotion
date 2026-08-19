@@ -11699,10 +11699,18 @@ function invSheetMov(id, tipo) {
     invSheetInstalarUnidad(id);
     return;
   }
+  invSheetMovCantidad(id, tipo);
+}
+
+// Modal de movimiento por CANTIDAD (el flujo normal de productos no
+// serializados; durante el ordenamiento tambien sirve para serializados)
+function invSheetMovCantidad(id, tipo) {
+  var p = invBuscarProd(id);
+  if (!p) return;
   var esEntrada = tipo === 'entrada';
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">' + (esEntrada ? '⬇ Entrada de stock' : '⬆ Salida de stock') + '</div>' +
-    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + ' — stock total: <b>' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</b></div>' +
+    '<div style="font-size:13px;color:#8a8a8a;margin-bottom:14px">' + shEsc(p.nombre) + ' — stock total: <b>' + p.stock + ' ' + shEsc(p.unidad || 'und') + '</b>' + invDesgloseSedes(p) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
       '<div><label class="gm-lbl">Sede</label><select id="invMovSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
       '<div><label class="gm-lbl">Cantidad</label><input id="invMovCant" class="gm-inp" type="number" step="1" min="1" value="1"></div>' +
@@ -12817,7 +12825,14 @@ function invSheetInstalarUnidad(id) {
     '<input id="invInstCod" class="gm-inp" placeholder="' + shEsc(p.codigo) + '-001" style="font-family:monospace;font-size:17px;text-transform:uppercase" autocomplete="off">' +
     '<label class="gm-lbl">Placa del vehículo que la recibe *</label>' +
     '<input id="invInstPlaca" class="gm-inp" placeholder="ABC123" maxlength="10" oninput="gmPlacaInput(this)" style="text-transform:uppercase;font-size:17px;text-align:center;letter-spacing:2px">' +
-    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invInstalarUnidad()">🚗 Instalar en la placa</button>'
+    '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invInstalarUnidad()">🚗 Instalar en la placa</button>' +
+    // TEMPORAL ordenamiento de stock: permite retirar VARIAS unidades por
+    // cantidad sin escanear codigos ni placa. Desaparece al apagar el
+    // interruptor GM_DESCARGA_SIN_PLACA.
+    (GM_DESCARGA_SIN_PLACA
+      ? '<div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:10px;padding:9px 12px;margin-top:14px;font-size:12px;color:#92400e"><b>⚠ Ordenamiento de stock activo (temporal):</b> si necesitas retirar varias unidades de una vez, sin escanear códigos ni placa, usa la salida por cantidad.</div>' +
+        '<button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;border-color:#f59e0b;color:#92400e" onclick="invSheetMovCantidad(\'' + shEsc(id) + '\',\'salida\')">📦 Salida por cantidad (ordenamiento)</button>'
+      : '')
   );
   setTimeout(function () { var i = document.getElementById('invInstCod'); if (i) i.focus(); }, 150);
 }
