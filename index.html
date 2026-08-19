@@ -12106,11 +12106,11 @@ function invDspAnular(id) {
 // que cualquier persona de la sede la use sin capacitación.
 // ═══════════════════════════════════════════════════════════
 // ⏸️ TEMPORAL — ORDENAMIENTO DE STOCK (pedido por gerencia): con true la
-// estacion permite DESCARGAR sin placa. Cada salida sin placa se registra
-// con motivo 'Ordenamiento de stock (estacion)' y queda en la lista de
-// revision del panel de faltantes, asi que nada se pierde de vista.
-// Para volver a EXIGIR placa: cambiar a false y subir la version del SW.
-var GM_DESCARGA_SIN_PLACA = true;
+// estacion y la web permiten DESCARGAR sin placa (y los serializados por
+// cantidad). Cada salida sin placa se registra con motivo 'Ordenamiento de
+// stock' y queda en la lista de revision del panel de faltantes.
+// Con false (estado normal) toda salida vuelve a EXIGIR placa.
+var GM_DESCARGA_SIN_PLACA = false;
 
 var invEstModo = '';
 var invEstNum = { cargas: 0, descargas: 0 };
