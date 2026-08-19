@@ -967,10 +967,10 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
           <div class="search-bar">
             <input type="text" id="expSrch" placeholder="Buscar placa o cliente..." oninput="renderExpedientes()">
             <select id="expFSede" onchange="renderExpedientes()"><option value="">Todas las sedes</option><option value="Santa Anita">Santa Anita</option><option value="Chorrillos">Chorrillos</option><option value="SMP">SMP</option></select>
-            <select id="expFEtapa" onchange="renderExpedientes()"><option value="">Todas las etapas</option><option value="1">Etapa 1</option><option value="2">Etapa 2</option><option value="3">Etapa 3</option><option value="4">Etapa 4</option><option value="5">Etapa 5</option></select>
+            <select id="expFEtapa" onchange="renderExpedientes()"><option value="">Todas las etapas</option><option value="1">Etapa 1</option><option value="2">Etapa 2</option><option value="3">Etapa 3</option><option value="4">Etapa 4</option><option value="5">Etapa 5</option><option value="6">Etapa 6</option><option value="c">✓ FISE completo (SF 1–5)</option><option value="p">SCANFILEs pendientes</option></select>
           </div>
           <div class="table-wrap">
-            <table><thead><tr><th>#</th><th>Placa</th><th>Cliente</th><th>Modelo</th><th>Sede</th><th>Etapa</th><th>Registrado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <table><thead><tr><th>#</th><th>Placa</th><th>Cliente</th><th>Modelo</th><th>Sede</th><th>Etapa</th><th>SCANFILEs</th><th>Registrado</th><th>Fecha</th><th>Acciones</th></tr></thead>
             <tbody id="expBody"></tbody></table>
             <div class="empty-state" id="expEmpty" style="display:none"><p style="font-size:14px;font-weight:600;color:#131313">Sin expedientes</p></div>
           </div>
@@ -4653,8 +4653,40 @@ function renderPanelFise() {
 // ==================
 // EXPEDIENTES
 // ==================
-var ETAPA_LABELS={1:'Etapa 1 — SCANFILE 1',2:'Etapa 2 — Matriz FISE',3:'Etapa 3 — Emision',4:'Etapa 4 — Documentos',5:'Etapa 5 — Certificacion',6:'Etapa 6 — Certificación'};
+var ETAPA_LABELS={1:'Etapa 1 — SCANFILE 1',2:'Etapa 2 — Matriz FISE',3:'Etapa 3 — Emision',4:'Etapa 4 — Documentos',5:'Etapa 5 — Certificacion',6:'Etapa 6 — Correo certificadora'};
 var ETAPA_COLORS={1:'#f59e0b',2:'#eab308',3:'#3b82f6',4:'#008184',5:'#8b5cf6',6:'#10b981'};
+
+// Estado de los 5 SCANFILE del expediente FISE GNV:
+// SF1 (registro), SF2 (contratos firmados), SF3/SF4/SF5 (plataforma FISE)
+function expScanfilesEstado(exp){
+  var e5=exp.e5||{};
+  return [
+    !!(exp.e1&&exp.e1.scanfile1&&exp.e1.scanfile1.completado),
+    !!(exp.e3&&exp.e3.scanfile2&&exp.e3.scanfile2.completado),
+    !!(e5.scanfile3&&e5.scanfile3.completado),
+    !!(e5.scanfile4&&e5.scanfile4.completado),
+    !!(e5.scanfile5&&e5.scanfile5.completado)
+  ];
+}
+function expFiseCompleto(exp){
+  var s=expScanfilesEstado(exp);
+  return s[0]&&s[1]&&s[2]&&s[3]&&s[4];
+}
+function scanfileChips(exp){
+  var div=document.createElement('div');
+  div.style.cssText='display:flex;gap:3px;align-items:center;flex-wrap:wrap';
+  if(expFiseCompleto(exp)){
+    div.innerHTML='<span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:800;background:#ecfdf5;color:#047857;border:1px solid #6ee7b7;white-space:nowrap">✓ FISE completo — SF 5/5</span>';
+    return div;
+  }
+  var s=expScanfilesEstado(exp), html='';
+  for(var i=0;i<5;i++){
+    html+='<span title="SCANFILE '+(i+1)+(s[i]?' grabado':' pendiente')+'" style="font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px;'+
+      (s[i]?'background:#d1fae5;color:#047857;border:1px solid #6ee7b7':'background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb')+'">'+(s[i]?'✓':'')+'SF'+(i+1)+'</span>';
+  }
+  div.innerHTML=html;
+  return div;
+}
 
 function etapaBadge(etapa) {
   var color=ETAPA_COLORS[etapa]||'#6b7280';
@@ -4674,9 +4706,14 @@ function renderExpedientes() {
   var lista=[];
   for(var i=0;i<expedientes.length;i++){
     var e=expedientes[i];
+    if(e.tipoGas==='GLP') continue; // los GLP viven en su propio tab
     if(CU&&CU.sede!=='Todas'&&CU.role!=='admin'&&CU.role!=='asistente_fise'&&e.sede!==CU.sede) continue;
     var mq=!q||(e.placa||'').toLowerCase().indexOf(q)>=0||(e.nombre||'').toLowerCase().indexOf(q)>=0||(e.modeloVehiculo||'').toLowerCase().indexOf(q)>=0;
-    if(mq&&(!fe||String(e.etapa)===fe)&&(!fs||e.sede===fs)) lista.push(e);
+    var me;
+    if(fe==='c') me=expFiseCompleto(e);
+    else if(fe==='p') me=!expFiseCompleto(e);
+    else me=!fe||String(e.etapa)===fe;
+    if(mq&&me&&(!fs||e.sede===fs)) lista.push(e);
   }
   if(!lista.length){empty.style.display='block';return;}
   empty.style.display='none';
@@ -4689,12 +4726,14 @@ function renderExpedientes() {
       '<td style="font-size:11px;color:#6b82a0">'+(exp.modeloVehiculo||'-')+'</td>'+
       '<td style="font-size:11px;color:#6b82a0">'+(exp.sede||'-')+'</td>'+
       '<td id="eet_'+ri+'"></td>'+
+      '<td id="esf_'+ri+'"></td>'+
       '<td style="font-size:11px;color:#6b82a0">'+(exp.registradoPor||'-')+'</td>'+
       '<td style="font-size:11px;color:#6b82a0;white-space:nowrap">'+(exp.fecha||'-')+'</td>'+
       '<td id="eac_'+ri+'"></td>';
     tbody.appendChild(tr);
     tr.querySelector('#epl_'+ri).appendChild(mkSpan('td-placa','abrirExpediente',exp.id,exp.placa||'(sin placa)'));
     tr.querySelector('#eet_'+ri).appendChild(etapaBadge(exp.etapa));
+    tr.querySelector('#esf_'+ri).appendChild(scanfileChips(exp));
     var atd=tr.querySelector('#eac_'+ri);
     atd.appendChild(mkBtn('btn btn-sm','background:#dbeafe;color:#1e40af;font-size:10px;padding:4px 8px','abrirExpediente',exp.id,'Ver'));
     if(CU&&CU.role==='admin'){
@@ -5288,9 +5327,10 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
     1: 'ETAPA 1 — SCANFILE 1',
     2: 'ETAPA 2 — DOCUMENTOS FISE',
     3: 'ETAPA 3 — ESCANEO VEHÍCULO',
-    4: 'ETAPA 4 — FOTOS TÉCNICAS'
+    4: 'ETAPA 4 — FOTOS TÉCNICAS',
+    5: 'ETAPA 5 — CERTIFICACIÓN + SCANFILE 3-5'
   };
-  var etapaColors = { 1:'#6b82a0', 2:'#eab308', 3:'#f97316', 4:'#8b5cf6' };
+  var etapaColors = { 1:'#6b82a0', 2:'#eab308', 3:'#f97316', 4:'#8b5cf6', 5:'#8b5cf6' };
   var color = etapaColors[numEtapa] || '#6b82a0';
   var label = etapaLabels[numEtapa] || ('ETAPA ' + numEtapa);
   var sectionId = 'historialEtapa' + numEtapa + '_' + exp.id;
@@ -5443,6 +5483,33 @@ function renderEtapaHistorial(cont, exp, numEtapa) {
       var bonoUrl = getFileUrl(exp.id, 'informeBono');
       var bonoDl  = getDownloadUrl(exp.id, 'informeBono');
       if(e4.informeBono) docsHtml += renderDocHistorialRow('Informe Bono GLP', e4.informeBono, bonoUrl, bonoDl);
+    }
+  }
+
+  if(numEtapa === 5) {
+    // Registro de los SCANFILE de la plataforma FISE (se siguen manejando
+    // desde la seccion "ARCHIVOS PARA FISE" de la etapa actual)
+    var e5h = exp.e5 || {};
+    var sfsHist = [
+      { metaKey:'scanfile3', fileKey:'sf3', label:'SCANFILE 3 — Certificado de conversión y documentos del taller' },
+      { metaKey:'scanfile4', fileKey:'sf4', label:'SCANFILE 4 — Comprobantes de venta' },
+      { metaKey:'scanfile5', fileKey:'sf5', label:'SCANFILE 5 — Constancia de cierre FISE' }
+    ];
+    for(var sfh = 0; sfh < sfsHist.length; sfh++) {
+      var defH = sfsHist[sfh];
+      var metaH = e5h[defH.metaKey];
+      if(metaH && metaH.completado) {
+        var urlH = getFileUrl(exp.id, defH.fileKey);
+        var dlH  = getDownloadUrl(exp.id, defH.fileKey);
+        var dfH = exp.driveFiles && exp.driveFiles[defH.fileKey];
+        if(dfH) { urlH = dfH.viewUrl || urlH; dlH = dfH.downloadUrl || dlH; }
+        docsHtml += renderDocHistorialRow(defH.label, metaH, urlH, dlH);
+      } else {
+        docsHtml += '<div style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin:6px 0">⏳ ' + defH.label + ' — pendiente (se graba en la sección "ARCHIVOS PARA FISE" de arriba)</div>';
+      }
+    }
+    if(expFiseCompleto(exp)) {
+      docsHtml += '<div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:12.5px;font-weight:700;color:#047857">✓ Expediente FISE completo — SCANFILE 1 al 5 grabados</div>';
     }
   }
 
@@ -5689,6 +5756,10 @@ function renderEtapa6(cont, exp) {
 
   mailSec.appendChild(mailBody);
   sec.appendChild(mailSec);
+
+  // SCANFILE 3, 4 y 5 siguen manejables desde aqui: la constancia de
+  // cierre (SCANFILE 5) suele grabarse cuando el correo ya fue enviado
+  sec.appendChild(renderGrupoScanfilesFise(exp, canManage));
   cont.appendChild(sec);
 }
 
@@ -16900,14 +16971,25 @@ function renderEtapa5(cont, exp) {
   sec.appendChild(g1);
 
   // ── GRUPO 2: ARCHIVOS PARA FISE — SCANFILE 3, 4 y 5 ──
-  // Se suben en orden a la plataforma FISE (cada uno se habilita al
-  // completar el anterior, igual que el resto del flujo)
+  sec.appendChild(renderGrupoScanfilesFise(exp, canManage));
+
+  cont.appendChild(sec);
+
+  // Cargar páginas después de renderizar
+  setTimeout(function(){ cargarPaginasEtapa5(exp); }, 100);
+}
+
+// GRUPO de SCANFILE 3, 4 y 5 para la plataforma FISE. Se suben en orden
+// (cada uno se habilita al grabar el anterior). Se muestra en Etapa 5 y
+// tambien en Etapa 6, porque la constancia de cierre (SCANFILE 5) suele
+// llegar cuando el expediente ya esta con la certificadora.
+function renderGrupoScanfilesFise(exp, canManage) {
   var e5 = exp.e5 || {};
   var g2 = document.createElement('div');
   g2.style.cssText = 'margin-top:20px';
   g2.innerHTML = '<div style="font-size:14px;font-weight:800;color:#065f46;margin-bottom:4px;display:flex;align-items:center;gap:8px">' +
-    '<span style="background:#065f46;color:white;border-radius:6px;padding:2px 10px;font-size:12px">GRUPO 2</span>' +
-    'ARCHIVOS PARA FISE — SCANFILE 3, 4 y 5</div>' +
+    '<span style="background:#065f46;color:white;border-radius:6px;padding:2px 10px;font-size:12px">ARCHIVOS PARA FISE</span>' +
+    'SCANFILE 3, 4 y 5</div>' +
     '<div style="font-size:12px;color:#047857;margin-bottom:14px">Sube en orden los paquetes escaneados para la plataforma FISE. Cada SCANFILE se habilita al grabar el anterior.</div>';
 
   var sfsFise = [
@@ -16931,18 +17013,13 @@ function renderEtapa5(cont, exp) {
     }
     anteriorListo = !!(sfMeta && sfMeta.completado);
   }
-  if(e5.scanfile5 && e5.scanfile5.completado){
+  if(expFiseCompleto(exp)){
     var fiseOk = document.createElement('div');
     fiseOk.style.cssText = 'background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px;padding:12px 14px;margin-top:12px;font-size:13px;font-weight:700;color:#047857';
     fiseOk.textContent = '✓ Expediente FISE completo — SCANFILE 1 al 5 grabados';
     g2.appendChild(fiseOk);
   }
-  sec.appendChild(g2);
-
-  cont.appendChild(sec);
-
-  // Cargar páginas después de renderizar
-  setTimeout(function(){ cargarPaginasEtapa5(exp); }, 100);
+  return g2;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -17527,6 +17604,7 @@ function grabarArchivoEnExp(expId, tipoKey, name, etapaKey) {
       } else if(etapaKey==='e5sf5'){
         if(!e.e5)e.e5={};
         e.e5.scanfile5=meta;
+        if(expFiseCompleto(e)) setTimeout(function(){ showToast('🎉 Expediente FISE completo — SCANFILE 1 al 5 grabados', 'success'); }, 400);
       } else if(etapaKey==='e4vc'){
         if(!e.e4)e.e4={};
         e.e4.videoCompresiones=meta;
