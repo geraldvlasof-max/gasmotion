@@ -12779,6 +12779,7 @@ function invImprimirLote(items, esA4, tam) {
   var altoBarra = Math.max(6, Math.round(H * 0.44));
   var fNom = H >= 25 ? '7pt' : '5.5pt';
   var fCod = H >= 25 ? '8pt' : '6.5pt';
+  var fSer = H >= 25 ? '5.5pt' : '4.5pt'; // linea de serie + PRODUCE
   // margen lateral minimo: cada decima de mm de barra cuenta para que la
   // pistola lea a 30mm (la zona de silencio ya viene dentro del SVG)
   var pad = H >= 25 ? '1.5mm 1mm' : '1mm 0.5mm';
@@ -12787,15 +12788,27 @@ function invImprimirLote(items, esA4, tam) {
   for (var k = 0; k < items.length; k++) {
     var p = items[k].p;
     if (!p || !p.codigo) continue;
-    // Unidades serializadas: una etiqueta por codigo, con BARRAS PROPIAS
-    if (items[k].codigos && items[k].codigos.length) {
-      for (var cu = 0; cu < items[k].codigos.length; cu++) {
-        var codU = items[k].codigos[cu];
+    // Unidades serializadas: una etiqueta por codigo, con BARRAS PROPIAS.
+    // items[k].unidades = [{codigo, serie, produce}] imprime ademas la
+    // serie del fabricante y el registro PRODUCE de cada unidad;
+    // items[k].codigos (solo strings) sigue funcionando igual que antes.
+    var unidadesEtq = items[k].unidades || null;
+    if (!unidadesEtq && items[k].codigos && items[k].codigos.length) {
+      unidadesEtq = [];
+      for (var cc = 0; cc < items[k].codigos.length; cc++) unidadesEtq.push({ codigo: items[k].codigos[cc] });
+    }
+    if (unidadesEtq && unidadesEtq.length) {
+      for (var cu = 0; cu < unidadesEtq.length; cu++) {
+        var uEtq = unidadesEtq[cu];
+        var extraEtq = [];
+        if (uEtq.serie) extraEtq.push('S/N ' + uEtq.serie);
+        if (uEtq.produce) extraEtq.push('PRODUCE ' + uEtq.produce);
         cuerpo +=
           '<div class="lbl">' +
             '<div class="lbl-n">' + shEsc(p.nombre) + '</div>' +
-            '<div class="lbl-b">' + gmCodigoBarrasSVG(codU, 30) + '</div>' +
-            '<div class="lbl-c">' + shEsc(codU) + '</div>' +
+            '<div class="lbl-b">' + gmCodigoBarrasSVG(uEtq.codigo, 30) + '</div>' +
+            '<div class="lbl-c">' + shEsc(uEtq.codigo) + '</div>' +
+            (extraEtq.length ? '<div class="lbl-s">' + shEsc(extraEtq.join(' · ')) + '</div>' : '') +
           '</div>';
         total++;
       }
@@ -12820,7 +12833,7 @@ function invImprimirLote(items, esA4, tam) {
   var estilos = esA4
     ? ('@page{size:A4;margin:10mm 7mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start}' +
        '.lbl{width:48mm;height:27mm;box-sizing:border-box;padding:1.5mm 2mm;text-align:center;overflow:hidden;font-family:Arial,sans-serif;border:.3mm dashed #999}' +
-       '.lbl-n{font-size:7pt}.lbl-b{height:11mm}.lbl-c{font-size:8pt}')
+       '.lbl-n{font-size:7pt}.lbl-b{height:11mm}.lbl-c{font-size:8pt}.lbl-s{font-size:6pt}')
     : ('@page{size:' + W + 'mm ' + H + 'mm;margin:0}' +
        '*{margin:0;padding:0;box-sizing:border-box}' +
        // html/body clavados al ancho fisico + scale(1): Chrome no tiene
@@ -12830,7 +12843,7 @@ function invImprimirLote(items, esA4, tam) {
        // su propio alto fijo y overflow:hidden.
        'html,body{width:' + W + 'mm;transform:scale(1);transform-origin:top left}' +
        '.lbl{width:' + W + 'mm;height:' + H + 'mm;box-sizing:border-box;padding:' + pad + ';text-align:center;page-break-after:always;overflow:hidden;font-family:Arial,sans-serif;transform:scale(1);transform-origin:top left}' +
-       '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}');
+       '.lbl-n{font-size:' + fNom + '}.lbl-b{height:' + altoBarra + 'mm}.lbl-c{font-size:' + fCod + '}.lbl-s{font-size:' + fSer + '}');
   for (var s2 = 0; s2 < items.length; s2++) {
     if (items[s2].ultimoSerie) invSerieGuardar(items[s2].p.id, items[s2].ultimoSerie);
   }
@@ -12838,6 +12851,7 @@ function invImprimirLote(items, esA4, tam) {
     '.lbl-n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '.lbl-b{margin:.6mm 0}.lbl-b svg{width:100%;height:100%}' +
     '.lbl-c{font-family:monospace;font-weight:700;letter-spacing:.08em}' +
+    '.lbl-s{font-family:monospace;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
     '</style></head><body>' + cuerpo + '</body></html>');
   showToast('Enviando ' + total + ' etiquetas a la impresora...', 'success');
 }
@@ -12853,18 +12867,46 @@ function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 ' + (yaEnStock ? 'Generar códigos del stock existente' : 'Recibir unidades') + ' — ' + shEsc(p.nombre) + '</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '"></div>' +
+      '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '" oninput="invRecFilasRender()"></div>' +
       '<div><label class="gm-lbl">Sede</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
     '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px">' +
       '<input type="checkbox" id="invRecYaStock"' + (yaEnStock ? ' checked' : '') + ' style="width:16px;height:16px;flex:none;margin-top:1px"> ' +
       '<span>Estas unidades <b>YA están contadas</b> en el stock actual <span style="font-weight:400;color:#8a8a8a">(solo generar códigos e imprimir, SIN sumar stock — para stock cargado por cantidad antes de serializar)</span></span></label>' +
-    '<label class="gm-lbl">N° de serie del fabricante (opcional, uno por línea — escanéalos con la pistola)</label>' +
-    '<textarea id="invRecSeries" class="gm-inp" rows="3" placeholder="N24526523\nN24526524" style="font-family:monospace;resize:vertical"></textarea>' +
-    '<label class="gm-lbl">Registro PRODUCE (opcional, uno por línea, en el MISMO orden que las series — equipos GNV: reductores, cilindros)</label>' +
-    '<textarea id="invRecProduce" class="gm-inp" rows="3" placeholder="PRD-77821\nPRD-77822" style="font-family:monospace;resize:vertical"></textarea>' +
+    '<div style="margin-top:12px">' +
+      '<div style="font-size:12.5px;font-weight:800;color:#131313">Serie y registro PRODUCE de cada unidad</div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin:2px 0 8px">Cada unidad tiene su propia fila — no todas las series llevan el mismo PRODUCE. Los dos datos salen impresos en su etiqueta de código de barras. Deja en blanco lo que no aplique.</div>' +
+      '<div id="invRecFilas" style="max-height:240px;overflow-y:auto"></div>' +
+    '</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
   );
+  invRecFilasRender();
+}
+
+// Celdas de la recepcion: una fila por unidad con SU serie y SU PRODUCE.
+// Al cambiar la cantidad se re-dibujan conservando lo ya escrito.
+function invRecFilasRender() {
+  var cont = document.getElementById('invRecFilas');
+  if (!cont) return;
+  var n = Math.min(parseInt((document.getElementById('invRecN') || {}).value, 10) || 0, 200);
+  var prev = [];
+  var viejas = cont.querySelectorAll('.inv-rec-fila');
+  for (var i = 0; i < viejas.length; i++) {
+    var vs = viejas[i].querySelector('.inv-rec-ser');
+    var vp = viejas[i].querySelector('.inv-rec-prd');
+    prev.push({ s: vs ? vs.value : '', p: vp ? vp.value : '' });
+  }
+  if (n < 1) { cont.innerHTML = ''; return; }
+  var html = '<div style="display:grid;grid-template-columns:24px 1fr 1fr;gap:6px;font-size:10px;font-weight:800;color:#8a8a8a;letter-spacing:.03em;margin-bottom:3px"><span>#</span><span>N° DE SERIE</span><span>REGISTRO PRODUCE</span></div>';
+  for (var f = 0; f < n; f++) {
+    var v = prev[f] || { s: '', p: '' };
+    html += '<div class="inv-rec-fila" style="display:grid;grid-template-columns:24px 1fr 1fr;gap:6px;align-items:center;margin-bottom:4px">' +
+      '<span style="font-size:11px;font-weight:700;color:#8a8a8a">' + (f + 1) + '</span>' +
+      '<input class="gm-inp inv-rec-ser" value="' + shEsc(v.s) + '" placeholder="N24526523" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
+      '<input class="gm-inp inv-rec-prd" value="' + shEsc(v.p) + '" placeholder="PRD-77821" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
+    '</div>';
+  }
+  cont.innerHTML = html;
 }
 
 function invRecibirUnidades(id) {
@@ -12873,11 +12915,15 @@ function invRecibirUnidades(id) {
   var n = Math.min(parseInt(document.getElementById('invRecN').value, 10) || 0, 200);
   if (n < 1) { showToast('Indica cuántas unidades llegaron', 'error'); return; }
   var sede = document.getElementById('invRecSede').value;
-  var series = document.getElementById('invRecSeries').value.split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return x; });
-  // El PRODUCE va linea por linea en el MISMO orden que las series (no se
-  // filtran vacios para no desalinear unidades sin registro)
-  var produces = document.getElementById('invRecProduce').value.split('\n').map(function (x) { return x.trim(); });
-  while (produces.length && !produces[produces.length - 1]) produces.pop();
+  // Serie y PRODUCE salen de las celdas: una fila por unidad, ya alineadas
+  var series = [], produces = [];
+  var filasU = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  for (var fi = 0; fi < filasU.length; fi++) {
+    var elS = filasU[fi].querySelector('.inv-rec-ser');
+    var elP = filasU[fi].querySelector('.inv-rec-prd');
+    series.push(elS ? elS.value.trim() : '');
+    produces.push(elP ? elP.value.trim() : '');
+  }
   var yaStock = (document.getElementById('invRecYaStock') || {}).checked ? 1 : 0;
   agendaWorkerFetch('invUnidadesCrear', {}, { method: 'POST', body: {
     productoId: id, cantidad: n, sede: sede, series: series, produces: produces, yaEnStock: yaStock,
@@ -12887,7 +12933,12 @@ function invRecibirUnidades(id) {
       gmModalCerrar();
       p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
       showToast(n + ' código(s) generados — imprimiendo sus etiquetas' + (yaStock ? ' (stock sin cambios)' : ''), 'success');
-      invImprimirLote([{ p: p, codigos: d.codigos }], false, gmEtqTam());
+      // Etiquetas con el codigo de barras + serie y PRODUCE de cada unidad
+      var unidadesEtq = [];
+      for (var ci = 0; ci < (d.codigos || []).length; ci++) {
+        unidadesEtq.push({ codigo: d.codigos[ci], serie: series[ci] || '', produce: produces[ci] || '' });
+      }
+      invImprimirLote([{ p: p, unidades: unidadesEtq }], false, gmEtqTam());
       renderInventario();
     } else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
   }).catch(function () { showToast('Error de conexión', 'error'); });
@@ -12977,7 +13028,13 @@ function invSheetUnidades(id) {
 function invReimprimirUnidad(pid, codigo) {
   var p = invBuscarProd(pid);
   if (!p) return;
-  invImprimirLote([{ p: p, codigos: [codigo] }], false, gmEtqTam());
+  // Buscar la unidad para reimprimir su etiqueta CON serie y PRODUCE
+  agendaWorkerFetch('invUnidadesListar', { codigo: codigo }).then(function (d) {
+    var u = d && d.ok && d.unidades && d.unidades[0] ? d.unidades[0] : null;
+    invImprimirLote([{ p: p, unidades: [{ codigo: codigo, serie: u ? (u.serie_fab || '') : '', produce: u ? (u.produce || '') : '' }] }], false, gmEtqTam());
+  }).catch(function () {
+    invImprimirLote([{ p: p, codigos: [codigo] }], false, gmEtqTam());
+  });
 }
 
 // ── Generador masivo: codigos para todo el catalogo + impresion en lote ──
