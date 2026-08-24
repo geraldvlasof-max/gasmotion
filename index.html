@@ -12888,6 +12888,10 @@ function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
       '<div style="font-size:12.5px;font-weight:800;color:#131313">Serie y registro PRODUCE de cada unidad</div>' +
       '<div style="font-size:11px;color:#8a8a8a;margin:2px 0 8px">Cada unidad tiene su propia fila — no todas las series llevan el mismo PRODUCE. Los dos datos salen impresos en su etiqueta de código de barras. Deja en blanco lo que no aplique. Lo que escribas se guarda solo: si la página se recarga, al reabrir este cuadro lo recuperas.</div>' +
       '<div id="invRecDraftAviso"></div>' +
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">' +
+        '<button class="btn btn-sm btn-outline" style="padding:5px 10px;font-size:11.5px" title="Escribe la primera serie y este botón llena las demás sumando 1 (E038401 → E038402, E038403…)" onclick="invRecSerieAuto()">⬇ Continuar series (correlativo)</button>' +
+        '<button class="btn btn-sm btn-outline" style="padding:5px 10px;font-size:11.5px" title="Llena cada PRODUCE vacío repitiendo el de la fila de arriba" onclick="invRecProduceAuto()">⬇ Repetir PRODUCE hacia abajo</button>' +
+      '</div>' +
       '<div id="invRecFilas" style="max-height:240px;overflow-y:auto"></div>' +
     '</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
@@ -12987,6 +12991,51 @@ function invRecFilasVaciar() {
     if (elS) elS.value = '';
     if (elP) elP.value = '';
   }
+}
+
+// ── Autollenado de la recepcion ──
+// "Continuar series": cada celda de serie VACIA se llena sumando 1 a la
+// serie de la fila anterior, conservando ceros a la izquierda
+// (E038401 -> E038402...). Las celdas ya escritas se respetan.
+function invRecSerieAuto() {
+  var filas = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  var previa = '';
+  var llenadas = 0;
+  for (var i = 0; i < filas.length; i++) {
+    var el = filas[i].querySelector('.inv-rec-ser');
+    if (!el) continue;
+    var v = el.value.trim();
+    if (v) { previa = v; continue; }
+    if (!previa) continue;
+    var m = previa.match(/^(.*?)(\d+)$/);
+    if (!m) continue; // la serie previa no termina en numero: no se inventa
+    var num = String(parseInt(m[2], 10) + 1);
+    while (num.length < m[2].length) num = '0' + num;
+    el.value = m[1] + num;
+    previa = el.value;
+    llenadas++;
+  }
+  if (llenadas) { invRecDraftGuardar(); showToast(llenadas + ' serie(s) completadas en correlativo', 'success'); }
+  else showToast('Escribe la primera serie (que termine en número) y vuelve a intentar', 'error');
+}
+
+// "Repetir PRODUCE": cada celda de PRODUCE vacia repite la de la fila de
+// arriba (util cuando un lote comparte registro y solo algunas difieren)
+function invRecProduceAuto() {
+  var filas = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  var previa = '';
+  var llenadas = 0;
+  for (var i = 0; i < filas.length; i++) {
+    var el = filas[i].querySelector('.inv-rec-prd');
+    if (!el) continue;
+    var v = el.value.trim();
+    if (v) { previa = v; continue; }
+    if (!previa) continue;
+    el.value = previa;
+    llenadas++;
+  }
+  if (llenadas) { invRecDraftGuardar(); showToast(llenadas + ' PRODUCE repetidos hacia abajo', 'success'); }
+  else showToast('Escribe el PRODUCE de la primera fila y vuelve a intentar', 'error');
 }
 
 function invRecibirUnidades(id) {
