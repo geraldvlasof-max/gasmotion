@@ -12553,7 +12553,8 @@ function gmPistolaFicha(p, u, codigo) {
       '<div style="text-align:center;margin-top:10px">' + (u.estado === 'en_stock'
         ? '<span style="background:#d1fae5;color:#065f46;padding:5px 14px;border-radius:99px;font-weight:800;font-size:13px">EN STOCK · ' + shEsc(u.sede || '—') + '</span>'
         : '<span style="background:#ffedd5;color:#9a3412;padding:5px 14px;border-radius:99px;font-weight:800;font-size:13px">🚗 Instalada en ' + shEsc(u.placa || '?') + '</span>') + '</div>' +
-      (u.serie_fab ? '<div style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:6px">Serie fábrica: ' + shEsc(u.serie_fab) + '</div>' : '');
+      (u.serie_fab ? '<div style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:6px">Serie fábrica: ' + shEsc(u.serie_fab) + '</div>' : '') +
+      (u.produce ? '<div style="text-align:center;font-size:12px;color:#8a8a8a;margin-top:2px">Registro PRODUCE: ' + shEsc(u.produce) + '</div>' : '');
   } else if (p) {
     html += '<div style="text-align:center;font-weight:800;font-size:16px;margin-top:6px">' + shEsc(p.nombre) + '</div>';
     var sedes = p.sedes || {};
@@ -12860,6 +12861,8 @@ function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
       '<span>Estas unidades <b>YA están contadas</b> en el stock actual <span style="font-weight:400;color:#8a8a8a">(solo generar códigos e imprimir, SIN sumar stock — para stock cargado por cantidad antes de serializar)</span></span></label>' +
     '<label class="gm-lbl">N° de serie del fabricante (opcional, uno por línea — escanéalos con la pistola)</label>' +
     '<textarea id="invRecSeries" class="gm-inp" rows="3" placeholder="N24526523\nN24526524" style="font-family:monospace;resize:vertical"></textarea>' +
+    '<label class="gm-lbl">Registro PRODUCE (opcional, uno por línea, en el MISMO orden que las series — equipos GNV: reductores, cilindros)</label>' +
+    '<textarea id="invRecProduce" class="gm-inp" rows="3" placeholder="PRD-77821\nPRD-77822" style="font-family:monospace;resize:vertical"></textarea>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
   );
 }
@@ -12871,9 +12874,13 @@ function invRecibirUnidades(id) {
   if (n < 1) { showToast('Indica cuántas unidades llegaron', 'error'); return; }
   var sede = document.getElementById('invRecSede').value;
   var series = document.getElementById('invRecSeries').value.split('\n').map(function (x) { return x.trim(); }).filter(function (x) { return x; });
+  // El PRODUCE va linea por linea en el MISMO orden que las series (no se
+  // filtran vacios para no desalinear unidades sin registro)
+  var produces = document.getElementById('invRecProduce').value.split('\n').map(function (x) { return x.trim(); });
+  while (produces.length && !produces[produces.length - 1]) produces.pop();
   var yaStock = (document.getElementById('invRecYaStock') || {}).checked ? 1 : 0;
   agendaWorkerFetch('invUnidadesCrear', {}, { method: 'POST', body: {
-    productoId: id, cantidad: n, sede: sede, series: series, yaEnStock: yaStock,
+    productoId: id, cantidad: n, sede: sede, series: series, produces: produces, yaEnStock: yaStock,
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
     if (d && d.ok) {
@@ -12943,7 +12950,7 @@ function invSheetUnidades(id) {
         (u.estado === 'en_stock'
           ? '<span style="background:#d1fae5;color:#065f46;font-weight:800;border-radius:10px;padding:2px 8px;font-size:10.5px">EN STOCK · ' + shEsc(u.sede || '—') + '</span>'
           : '<span style="background:#dbeafe;color:#1d4ed8;font-weight:800;border-radius:10px;padding:2px 8px;font-size:10.5px">🚗 ' + shEsc(u.placa || '?') + '</span>') +
-        '<span style="flex:1;color:#8a8a8a;font-size:11px">' + (u.serie_fab ? 'Serie fab: ' + shEsc(u.serie_fab) : '') + '</span>' +
+        '<span style="flex:1;color:#8a8a8a;font-size:11px">' + (u.serie_fab ? 'Serie fab: ' + shEsc(u.serie_fab) : '') + (u.produce ? (u.serie_fab ? ' · ' : '') + 'PRODUCE: ' + shEsc(u.produce) : '') + '</span>' +
         '<button class="btn btn-sm btn-outline" style="padding:5px 9px" title="Reimprimir etiqueta" onclick="invReimprimirUnidad(\'' + shEsc(id) + '\',\'' + shEsc(u.codigo) + '\')">🖨</button>' +
       '</div>';
     }
