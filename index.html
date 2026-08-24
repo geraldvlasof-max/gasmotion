@@ -12878,7 +12878,7 @@ function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 ' + (yaEnStock ? 'Generar códigos del stock existente' : 'Recibir unidades') + ' — ' + shEsc(p.nombre) + '</div>' +
     '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.' + invDesgloseSedes(p) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '" oninput="invRecFilasRender()"></div>' +
+      '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '" oninput="invRecFilasRender();invRecDraftGuardar()"></div>' +
       '<div><label class="gm-lbl">Sede' + (yaEnStock ? ' (donde está contado el stock)' : '') + '</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(sedeIni) + '</select></div>' +
     '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px">' +
@@ -12886,12 +12886,15 @@ function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
       '<span>Estas unidades <b>YA están contadas</b> en el stock actual <span style="font-weight:400;color:#8a8a8a">(solo generar códigos e imprimir, SIN sumar stock — para stock cargado por cantidad antes de serializar)</span></span></label>' +
     '<div style="margin-top:12px">' +
       '<div style="font-size:12.5px;font-weight:800;color:#131313">Serie y registro PRODUCE de cada unidad</div>' +
-      '<div style="font-size:11px;color:#8a8a8a;margin:2px 0 8px">Cada unidad tiene su propia fila — no todas las series llevan el mismo PRODUCE. Los dos datos salen impresos en su etiqueta de código de barras. Deja en blanco lo que no aplique.</div>' +
+      '<div style="font-size:11px;color:#8a8a8a;margin:2px 0 8px">Cada unidad tiene su propia fila — no todas las series llevan el mismo PRODUCE. Los dos datos salen impresos en su etiqueta de código de barras. Deja en blanco lo que no aplique. Lo que escribas se guarda solo: si la página se recarga, al reabrir este cuadro lo recuperas.</div>' +
+      '<div id="invRecDraftAviso"></div>' +
       '<div id="invRecFilas" style="max-height:240px;overflow-y:auto"></div>' +
     '</div>' +
     '<button class="btn btn-teal" style="width:100%;justify-content:center;margin-top:14px" onclick="invRecibirUnidades(\'' + shEsc(id) + '\')">📟 Registrar e imprimir etiquetas</button>'
   );
+  invRecProdActual = id;
   invRecFilasRender();
+  invRecDraftRestaurar();
 }
 
 // Celdas de la recepcion: una fila por unidad con SU serie y SU PRODUCE.
@@ -12913,11 +12916,77 @@ function invRecFilasRender() {
     var v = prev[f] || { s: '', p: '' };
     html += '<div class="inv-rec-fila" style="display:grid;grid-template-columns:24px 1fr 1fr;gap:6px;align-items:center;margin-bottom:4px">' +
       '<span style="font-size:11px;font-weight:700;color:#8a8a8a">' + (f + 1) + '</span>' +
-      '<input class="gm-inp inv-rec-ser" value="' + shEsc(v.s) + '" placeholder="N24526523" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
-      '<input class="gm-inp inv-rec-prd" value="' + shEsc(v.p) + '" placeholder="PRD-77821" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
+      '<input class="gm-inp inv-rec-ser" value="' + shEsc(v.s) + '" placeholder="N24526523" oninput="invRecDraftGuardar()" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
+      '<input class="gm-inp inv-rec-prd" value="' + shEsc(v.p) + '" placeholder="PRD-77821" oninput="invRecDraftGuardar()" style="margin-top:0;font-family:monospace;font-size:12.5px;padding:7px 8px">' +
     '</div>';
   }
   cont.innerHTML = html;
+}
+
+// ── BORRADOR AUTOMATICO de la recepcion ──
+// Cada tecla se guarda en localStorage: si la pagina se recarga (p.ej. por
+// una actualizacion automatica de version), al reabrir la recepcion del
+// mismo producto las series y PRODUCE escritos se restauran solos.
+var invRecProdActual = '';
+
+function invRecDraftGuardar() {
+  if (!invRecProdActual) return;
+  var filas = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  var series = [], produces = [], hayAlgo = false;
+  for (var i = 0; i < filas.length; i++) {
+    var s = (filas[i].querySelector('.inv-rec-ser') || {}).value || '';
+    var pr = (filas[i].querySelector('.inv-rec-prd') || {}).value || '';
+    series.push(s); produces.push(pr);
+    if (s || pr) hayAlgo = true;
+  }
+  try {
+    if (hayAlgo) localStorage.setItem('gm_rec_draft_' + invRecProdActual, JSON.stringify({ series: series, produces: produces, ts: Date.now() }));
+    else localStorage.removeItem('gm_rec_draft_' + invRecProdActual);
+  } catch (e) {}
+}
+
+function invRecDraftLimpiar(id) {
+  try { localStorage.removeItem('gm_rec_draft_' + id); } catch (e) {}
+  var av = document.getElementById('invRecDraftAviso');
+  if (av) av.innerHTML = '';
+}
+
+function invRecDraftRestaurar() {
+  if (!invRecProdActual) return;
+  var d = null;
+  try { d = JSON.parse(localStorage.getItem('gm_rec_draft_' + invRecProdActual) || 'null'); } catch (e) {}
+  // borradores de mas de 24h se descartan (son de otra jornada)
+  if (!d || !d.series || !d.series.length || (Date.now() - (d.ts || 0)) > 86400000) return;
+  var hayAlgo = false;
+  for (var c = 0; c < d.series.length; c++) { if (d.series[c] || (d.produces || [])[c]) { hayAlgo = true; break; } }
+  if (!hayAlgo) return;
+  var nInp = document.getElementById('invRecN');
+  if (nInp && (parseInt(nInp.value, 10) || 0) < d.series.length) nInp.value = d.series.length;
+  invRecFilasRender();
+  var filas = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  for (var i = 0; i < filas.length && i < d.series.length; i++) {
+    var elS = filas[i].querySelector('.inv-rec-ser');
+    var elP = filas[i].querySelector('.inv-rec-prd');
+    if (elS) elS.value = d.series[i] || '';
+    if (elP) elP.value = (d.produces || [])[i] || '';
+  }
+  var av = document.getElementById('invRecDraftAviso');
+  if (av) {
+    av.innerHTML = '<div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;padding:7px 10px;margin-bottom:6px;font-size:11.5px;color:#047857;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+      '<span>📝 Se restauraron las series y PRODUCE que habías escrito (guardado automático)</span>' +
+      '<button onclick="invRecDraftLimpiar(\'' + shEsc(invRecProdActual) + '\');invRecFilasVaciar()" style="background:none;border:1px solid #6ee7b7;border-radius:6px;padding:2px 8px;font-size:10.5px;color:#047857;cursor:pointer;font-family:inherit;white-space:nowrap">Descartar</button></div>';
+  }
+  invRecDraftGuardar();
+}
+
+function invRecFilasVaciar() {
+  var filas = document.querySelectorAll('#invRecFilas .inv-rec-fila');
+  for (var i = 0; i < filas.length; i++) {
+    var elS = filas[i].querySelector('.inv-rec-ser');
+    var elP = filas[i].querySelector('.inv-rec-prd');
+    if (elS) elS.value = '';
+    if (elP) elP.value = '';
+  }
 }
 
 function invRecibirUnidades(id) {
@@ -12941,6 +13010,7 @@ function invRecibirUnidades(id) {
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
     if (d && d.ok) {
+      invRecDraftLimpiar(id); // registrado: el borrador automatico ya cumplio
       gmModalCerrar();
       p.sedes = p.sedes || {}; p.sedes[sede] = d.stock; p.stock = d.total;
       showToast(n + ' código(s) generados — imprimiendo sus etiquetas' + (yaStock ? ' (stock sin cambios)' : ''), 'success');
