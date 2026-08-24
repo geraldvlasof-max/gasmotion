@@ -12863,12 +12863,23 @@ function invImprimirLote(items, esA4, tam) {
 function invSheetRecepcionUnidades(id, yaEnStock, cantSugerida) {
   var p = invBuscarProd(id);
   if (!p) return;
+  // Al generar codigos de stock EXISTENTE la sede debe ser donde ese stock
+  // esta contado: se preselecciona la de mayor stock (evita el error
+  // "en X hay 0 en stock" cuando todo vive en el Almacén general)
+  var sedeIni = gmSedeDefecto();
+  if (yaEnStock) {
+    var sedesP = p.sedes || {};
+    var mayorStock = 0;
+    for (var sk in sedesP) {
+      if ((sedesP[sk] || 0) > mayorStock) { mayorStock = sedesP[sk]; sedeIni = sk; }
+    }
+  }
   gmModalAbrir(
     '<div style="font-size:16px;font-weight:800;color:#131313;margin-bottom:4px">📟 ' + (yaEnStock ? 'Generar códigos del stock existente' : 'Recibir unidades') + ' — ' + shEsc(p.nombre) + '</div>' +
-    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.</div>' +
+    '<div style="font-size:12px;color:#8a8a8a;margin-bottom:12px">Cada unidad recibirá su propio código de barras (' + shEsc(p.codigo) + '-001, 002…) y sus etiquetas saldrán a la impresora de inmediato.' + invDesgloseSedes(p) + '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
       '<div><label class="gm-lbl">' + (yaEnStock ? '¿Cuántos códigos generar?' : '¿Cuántas unidades llegaron?') + '</label><input id="invRecN" class="gm-inp" type="number" min="1" max="200" value="' + (cantSugerida || 1) + '" oninput="invRecFilasRender()"></div>' +
-      '<div><label class="gm-lbl">Sede</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<div><label class="gm-lbl">Sede' + (yaEnStock ? ' (donde está contado el stock)' : '') + '</label><select id="invRecSede" class="gm-inp">' + gmSedesOptions(sedeIni) + '</select></div>' +
     '</div>' +
     '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;font-weight:700;background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:10px 12px">' +
       '<input type="checkbox" id="invRecYaStock"' + (yaEnStock ? ' checked' : '') + ' style="width:16px;height:16px;flex:none;margin-top:1px"> ' +
