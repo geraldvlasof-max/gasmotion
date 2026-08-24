@@ -1,5 +1,5 @@
-// Gasmotion Service Worker v5.42
-const CACHE_NAME = 'gasmotion-v542';
+// Gasmotion Service Worker v5.43
+const CACHE_NAME = 'gasmotion-v543';
 // Los DOS workers (sync y agenda/sales hub) van SIEMPRE a la red, sin caché:
 // cachear respuestas de API muestra datos viejos y llena el almacenamiento.
 const WORKER_DOMAINS = ['gasmotion-sync.geraldvlasof.workers.dev', 'gasmotion-worker.geraldvlasof.workers.dev'];
