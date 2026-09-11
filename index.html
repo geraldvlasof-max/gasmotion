@@ -11842,7 +11842,20 @@ function invGuardarMov(id, tipo) {
     uid: CU ? CU.id : '', nombre: CU ? CU.nombre : ''
   }}).then(function (d) {
     if (d && d.ok) { gmModalCerrar(); showToast('Registrado — ' + sede + ': ' + d.stock + (placa ? ' · 🚗 ' + placa : ''), 'success'); renderInventario(); }
-    else showToast(d && d.error ? d.error : 'No se pudo registrar', 'error');
+    else {
+      var errMov = d && d.error ? d.error : 'No se pudo registrar';
+      // Falta de stock en la sede elegida: decir donde SI hay
+      if (String(errMov).indexOf('Stock insuficiente') === 0) {
+        var pMov = invBuscarProd(id);
+        var otrasMov = [];
+        var sedesMov = (pMov && pMov.sedes) || {};
+        for (var sm in sedesMov) {
+          if (sm !== sede && (sedesMov[sm] || 0) > 0) otrasMov.push(sm.replace('Almacén general', 'Almacén') + ' ' + sedesMov[sm]);
+        }
+        if (otrasMov.length) errMov += ' — el stock está en: ' + otrasMov.join(' · ') + ' (usa ↔ Transferir o 🚚 Despachos)';
+      }
+      showToast(errMov, 'error');
+    }
   }).catch(function () { showToast('Error de conexión', 'error'); });
 }
 
@@ -12209,7 +12222,7 @@ function invEstacion() {
       '<button class="btn btn-outline" onclick="renderInventario()">← Volver al inventario</button>' +
       '<div style="flex:1"></div>' +
       '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:12px;font-weight:800;color:#8a8a8a">SEDE:</span>' +
-      '<select id="invEstSede" class="gm-inp" style="margin-top:0;font-size:15px;font-weight:800;padding:10px 14px">' + gmSedesOptions(gmSedeDefecto()) + '</select></div>' +
+      '<select id="invEstSede" class="gm-inp" style="margin-top:0;font-size:15px;font-weight:800;padding:10px 14px" onchange="invEstSedeCambio()">' + gmSedesOptions(invEstSedeInicial()) + '</select></div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px" id="invEstModos">' +
       invEstBotonModo('cargar', '📦', 'CARGAR', 'Llegó mercadería: dispara y suma', '#065f46', '#d1fae5') +
@@ -12221,8 +12234,36 @@ function invEstacion() {
   invEstSetModo('cargar');
 }
 
-function invEstBotonModo(m, emoji, titulo, sub, color, fondo) {
-  return '<button data-m="' + m + '" onclick="invEstSetModo(\'' + m + '\')" style="border:2.5px solid #D9D9D9;background:white;border-radius:16px;padding:18px 14px;cursor:pointer;text-align:center;font-family:inherit" class="inv-est-btn">' +
+// La computadora de cada sede recuerda su sede en la estacion: el jefe
+// la elige UNA vez y los siguientes pistoleos ya salen a la sede correcta.
+function invEstSedeInicial() {
+  var guardada = '';
+  try { guardada = localStorage.getItem('gm_est_sede') || ''; } catch (e) {}
+  if (guardada && GM_INV_SEDES.indexOf(guardada) !== -1) return guardada;
+  return gmSedeDefecto();
+}
+
+function invEstSedeCambio() {
+  var sel = document.getElementById('invEstSede');
+  if (!sel) return;
+  try { localStorage.setItem('gm_est_sede', sel.value); } catch (e) {}
+  invEstRefoco();
+}
+
+// Cuando la descarga falla por falta de stock en la sede elegida, decir
+// DONDE esta el stock y como moverlo (despacho/transferencia)
+function invEstAyudaStock(p, sede, errMsg) {
+  if (String(errMsg || '').indexOf('Stock insuficiente') !== 0) return '';
+  var otras = [];
+  var sedesP = (p && p.sedes) || {};
+  for (var so in sedesP) {
+    if (so !== sede && (sedesP[so] || 0) > 0) otras.push(shEsc(so.replace('Almacén general', 'Almacén')) + ': <b>' + sedesP[so] + '</b>');
+  }
+  if (!otras.length) return '';
+  return '<div style="margin-top:4px;font-size:12px">📍 El stock está en → ' + otras.join(' · ') + '. Mándalo con 🚚 Despachos (o ↔ Transferir) y vuelve a disparar.</div>';
+}
+
+function invEstBotonModo(m, emoji, titulo, sub, color, fondo) {  return '<button data-m="' + m + '" onclick="invEstSetModo(\'' + m + '\')" style="border:2.5px solid #D9D9D9;background:white;border-radius:16px;padding:18px 14px;cursor:pointer;text-align:center;font-family:inherit" class="inv-est-btn">' +
     '<div style="font-size:34px;line-height:1">' + emoji + '</div>' +
     '<div style="font-size:16px;font-weight:900;margin-top:6px;color:' + color + '">' + titulo + '</div>' +
     '<div style="font-size:11px;color:#8a8a8a;margin-top:2px">' + sub + '</div>' +
@@ -12361,7 +12402,10 @@ function invEstProcesar() {
           ? '🚗 −1 <b>' + shEsc(p.nombre) + '</b> → placa <b>' + shEsc(placa) + '</b> · quedan ' + d.stock + ' en ' + shEsc(sede)
           : '📋 −1 <b>' + shEsc(p.nombre) + '</b> · ordenamiento de stock · quedan ' + d.stock + ' en ' + shEsc(sede));
         if (typeof shSonidoNuevoMensaje === 'function') shSonidoNuevoMensaje();
-      } else invEstLog('⚠ ' + shEsc(d && d.error ? d.error : 'No se pudo descargar'), true);
+      } else {
+        var errDesc = d && d.error ? d.error : 'No se pudo descargar';
+        invEstLog('⚠ ' + shEsc(errDesc) + invEstAyudaStock(p, sede, errDesc), true);
+      }
     }).catch(function () { invEstLog('⚠ Error de conexión', true); });
     return;
   }
