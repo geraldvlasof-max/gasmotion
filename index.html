@@ -11591,6 +11591,11 @@ function invPintar() {
       '</tr>';
   }
 
+  // El repintado destruye el cuadro de busqueda: si el usuario estaba
+  // escribiendo en el, se restaura el foco y el cursor al final para que
+  // pueda seguir tecleando sin interrupcion.
+  var buscaTeniaFoco = document.activeElement && document.activeElement.id === 'invBuscaInp';
+
   cont.innerHTML =
     invTarjetasSedes() +
     '<div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">' +
@@ -11602,7 +11607,7 @@ function invPintar() {
     '</div>' +
     '<div class="card">' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">' +
-        '<input type="text" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;gmDebounce(\'inv\',invPintar)" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
+        '<input type="text" id="invBuscaInp" placeholder="Buscar producto, código o categoría..." value="' + shEsc(invBusca) + '" oninput="invBusca=this.value;gmDebounce(\'inv\',invPintar)" style="flex:1;min-width:200px;border:1.5px solid #D9D9D9;border-radius:8px;padding:9px 12px;font-size:13px">' +
         '<button class="btn" style="background:#131313;color:#ffffff;font-weight:800" onclick="invEstacion()">⚡ Estación de escaneo</button>' +
         '<button class="btn btn-teal" onclick="invSheetProducto()">+ Producto</button>' +
         '<button class="btn btn-navy" onclick="invModoEscaneo()">📷 Modo escaneo</button>' +
@@ -11614,6 +11619,14 @@ function invPintar() {
       '<div class="table-wrap"><table><thead><tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock</th>' + (invVeMontos() ? '<th>Precio</th>' : '') + '<th>Acciones</th></tr></thead>' +
       '<tbody>' + (filas || '<tr><td colspan="6" style="text-align:center;color:#8a8a8a;padding:26px">' + (invBusca ? 'Sin resultados' : (invSedeFiltro ? 'No hay stock disponible en ' + shEsc(invSedeFiltro) : 'Aún no hay productos. Crea el primero con “+ Producto”.')) + '</td></tr>') + '</tbody></table></div>' +
     '</div>';
+
+  if (buscaTeniaFoco) {
+    var buscaInp = document.getElementById('invBuscaInp');
+    if (buscaInp) {
+      buscaInp.focus();
+      try { buscaInp.setSelectionRange(buscaInp.value.length, buscaInp.value.length); } catch (eFoco) {}
+    }
+  }
 }
 
 function invBuscarProd(id) {
