@@ -1263,6 +1263,24 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-img-full{position:fixed;inset:0;background:#000;z-index:2500;display:flex;align-items:center;justify-content:center}
             .sh-img-full img{max-width:96%;max-height:92%;border-radius:6px}
             .sh-img-cerrar{position:absolute;top:14px;right:16px;background:#233138;color:#e9edef;border:none;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer}
+            /* adjuntos de WhatsApp (fotos, stickers, videos, audios, documentos) */
+            .sh-sticker{display:block;max-width:140px;max-height:140px;margin:2px 0 4px}
+            .sh-video{display:block;max-width:260px;max-height:260px;border-radius:10px;margin:2px 0 4px;background:#000}
+            .sh-audio{display:block;width:250px;max-width:100%;margin:4px 0 2px}
+            .sh-audio-lbl{font-size:12px;color:#8696a0;margin-bottom:2px}
+            .sh-doc{display:flex;align-items:center;gap:10px;background:rgba(11,20,26,.28);border-radius:8px;padding:9px 10px;margin:2px 0 4px;min-width:200px;max-width:280px}
+            .sh-doc-ico{font-size:26px;line-height:1}
+            .sh-doc-info{flex:1;min-width:0}
+            .sh-doc-nom{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-doc-met{font-size:11.5px;color:#8696a0}
+            .sh-doc-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:1.5px solid #8696a0;color:#e9edef;text-decoration:none;font-size:15px;flex-shrink:0}
+            .sh-doc-btn:hover{background:#2a3942}
+            .sh-media-ph{display:flex;align-items:center;gap:8px;background:rgba(11,20,26,.28);border-radius:8px;padding:10px 12px;margin:2px 0 4px;font-size:13px;color:#aebac1;min-width:180px}
+            .sh-media-ph.err{color:#f5b7b1}
+            .sh-media-ph.off{color:#8696a0;font-style:italic}
+            .sh-media-ph button{background:#00a884;color:#111b21;border:none;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto}
+            .sh-spin{width:16px;height:16px;border:2px solid #8696a0;border-top-color:#00a884;border-radius:50%;animation:shSpin .9s linear infinite;flex-shrink:0}
+            @keyframes shSpin{to{transform:rotate(360deg)}}
             /* busqueda dentro de la conversacion */
             .sh-chat-search{display:none;align-items:center;gap:6px;padding:7px 10px;background:#233138}
             .sh-chat-search.on{display:flex}
@@ -9792,7 +9810,7 @@ function shRenderLista() {
     var l = lista[i];
     var noLeidos = parseInt(l.no_leidos, 10) || 0;
     var info = shEstadoInfo(l.estado);
-    var prev = l.ultimo_mensaje_texto || '';
+    var prev = shPreviewLegado(l.ultimo_mensaje_texto || '');
     var pq = shSepararCita(prev);
     if (pq.cita) prev = pq.resto || prev;
     prev = prev.split('\n').join(' ');
@@ -10162,15 +10180,95 @@ function shSepararCita(raw) {
 }
 
 // Cuerpo completo de una burbuja: imagen, o cita + texto con links
-function shCuerpoBurbuja(contenido) {
+function shCuerpoBurbuja(contenido, m) {
   if (shEsUrlImagen(contenido)) {
     return '<img class="sh-img-thumb" src="' + shEsc(String(contenido).trim()) + '" loading="lazy" onclick="shAbrirImagenFull(this)">';
   }
-  var q = shSepararCita(contenido);
   var out = '';
+  if (m && shEsMensajeConMedia(m)) {
+    out += shMediaHtml(m);
+    // filas viejas guardaban "[image]" como texto: no repetirlo
+    if (!contenido || /^\[\w+\]$/.test(String(contenido).trim())) return out;
+  }
+  var q = shSepararCita(contenido);
   if (q.cita) out += '<div class="sh-quote">' + shTextoBurbuja(q.cita) + '</div>';
   out += '<div class="sh-b-txt">' + shTextoBurbuja(q.resto) + '</div>';
   return out;
+}
+
+// ── Adjuntos de WhatsApp (fase 1: entrantes) ─────────────────
+var SH_TIPOS_MEDIA = { image: 1, sticker: 1, video: 1, audio: 1, voice: 1, document: 1 };
+
+function shEsMensajeConMedia(m) {
+  return !!(m && (SH_TIPOS_MEDIA[m.tipo] || m.media_id));
+}
+
+function shBytesBonito(n) {
+  n = parseInt(n, 10) || 0;
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+  if (n >= 1024) return Math.round(n / 1024) + ' KB';
+  return n ? n + ' B' : '';
+}
+
+function shExtDeNombre(nombre) {
+  var n = String(nombre || '');
+  var p = n.lastIndexOf('.');
+  return p === -1 ? '' : n.slice(p + 1).toUpperCase();
+}
+
+// Vista previa de la lista para filas anteriores a la fase 1 ("[image]")
+function shPreviewLegado(txt) {
+  var mapa = { '[image]': '📷 Foto', '[sticker]': '🧩 Sticker', '[video]': '🎬 Video', '[audio]': '🎤 Nota de voz',
+    '[voice]': '🎤 Nota de voz', '[document]': '📄 Documento', '[location]': '📍 Ubicación', '[contacts]': '👤 Contacto' };
+  var t = String(txt || '').trim();
+  return mapa[t] || txt;
+}
+
+function shMediaHtml(m) {
+  var estado = m.media_estado || (m.media_url ? 'listo' : 'pendiente');
+  var tipo = m.tipo === 'voice' ? 'audio' : (m.tipo || 'document');
+  var mid = shEsc(m.id);
+  if (estado === 'listo' && m.media_url) {
+    var url = shEsc(m.media_url);
+    if (tipo === 'image') return '<img class="sh-img-thumb" src="' + url + '" loading="lazy" alt="Foto" onclick="shAbrirImagenFull(this)">';
+    if (tipo === 'sticker') return '<img class="sh-sticker" src="' + url + '" loading="lazy" alt="Sticker">';
+    if (tipo === 'video') return '<video class="sh-video" controls preload="metadata" src="' + url + '"></video>';
+    if (tipo === 'audio') {
+      return '<div class="sh-audio-lbl">' + (m.es_voz ? '🎤 Nota de voz' : '🎵 Audio') + '</div>' +
+             '<audio class="sh-audio" controls preload="none" src="' + url + '"></audio>';
+    }
+    var nombre = m.media_nombre || 'Documento';
+    var met = [shExtDeNombre(nombre), shBytesBonito(m.media_bytes)].filter(function (x) { return !!x; }).join(' · ');
+    return '<div class="sh-doc"><span class="sh-doc-ico">📄</span>' +
+             '<div class="sh-doc-info"><div class="sh-doc-nom" title="' + shEsc(nombre) + '">' + shEsc(nombre) + '</div>' +
+             '<div class="sh-doc-met">' + shEsc(met) + '</div></div>' +
+             '<a class="sh-doc-btn" href="' + url + '" target="_blank" rel="noopener" title="Abrir">👁</a>' +
+             '<a class="sh-doc-btn" href="' + url + '&dl=1" download="' + shEsc(nombre) + '" title="Descargar">⬇</a></div>';
+  }
+  var etiqueta = tipo === 'image' ? 'Foto' : tipo === 'sticker' ? 'Sticker' : tipo === 'video' ? 'Video' : tipo === 'audio' ? 'Audio' : 'Documento';
+  if (estado === 'pendiente') {
+    return '<div class="sh-media-ph" data-mediaph="' + mid + '"><span class="sh-spin"></span>Descargando ' + etiqueta.toLowerCase() + '…</div>';
+  }
+  if (estado === 'error') {
+    return '<div class="sh-media-ph err" title="' + shEsc(m.media_error || '') + '">⚠️ ' + etiqueta + ': no se pudo descargar' +
+           '<button onclick="shMediaReintentar(\'' + mid + '\', this)">Reintentar</button></div>';
+  }
+  if (estado === 'purgado') return '<div class="sh-media-ph off">🗑 ' + etiqueta + ' eliminado por la política de retención (12 meses)</div>';
+  return '<div class="sh-media-ph off">⌛ ' + etiqueta + ' ya no disponible en WhatsApp</div>';
+}
+
+function shMediaReintentar(mid, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Reintentando…'; }
+  agendaWorkerFetch('shMediaReintentar', {}, { method: 'POST', body: { id: mid } }).then(function (d) {
+    var r = d && d.resultado ? d.resultado : null;
+    if (!d || !d.ok || !r || !r.ok) {
+      shToast('No se pudo descargar' + (r && r.error ? ': ' + r.error : ''));
+    }
+    shCargarMensajes(false);
+  }).catch(function () {
+    shToast('Sin conexión con el servidor');
+    if (btn) { btn.disabled = false; btn.textContent = 'Reintentar'; }
+  });
 }
 
 // ── Menu contextual del mensaje (hover en desktop, long-press en movil) ──
@@ -10281,7 +10379,9 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
     return;
   }
 
-  var ids = mensajes.map(function (m) { return m.id; }).join('|');
+  // La firma incluye el estado del adjunto: cuando una descarga termina
+  // (pendiente -> listo) hay que repintar la burbuja, no solo los ticks.
+  var ids = mensajes.map(function (m) { return m.id + (m.media_estado ? ':' + m.media_estado : ''); }).join('|');
 
   // Camino rapido: mismos mensajes, solo cambiaron los estados de entrega.
   // Se actualizan los ticks EN SITIO para que la transicion CSS de 300ms
@@ -10341,7 +10441,7 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
     html +=
       '<div class="sh-burbuja ' + dir + cola + '" data-mid="' + shEsc(m.id) + '" ontouchstart="shMsgTouchIni(event,\'' + shEsc(m.id) + '\')" ontouchend="shMsgTouchFin()" ontouchmove="shMsgTouchFin()">' +
         '<button class="sh-b-menu" onclick="shMenuMensaje(event,\'' + shEsc(m.id) + '\')" title="Opciones">⌄</button>' +
-        shCuerpoBurbuja(m.contenido) +
+        shCuerpoBurbuja(m.contenido, m) +
         '<div class="sh-b-meta">' + hh + ':' + mm + ' ' + shTicks(m) + '</div>' +
       '</div>';
   }
