@@ -36,6 +36,7 @@
   </script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="vendor/opus/recorder.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -1281,6 +1282,43 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-media-ph button{background:#00a884;color:#111b21;border:none;border-radius:14px;padding:4px 11px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto}
             .sh-spin{width:16px;height:16px;border:2px solid #8696a0;border-top-color:#00a884;border-radius:50%;animation:shSpin .9s linear infinite;flex-shrink:0}
             @keyframes shSpin{to{transform:rotate(360deg)}}
+            /* reproductor de notas de voz */
+            .sh-ap{display:flex;align-items:center;gap:8px;min-width:230px;max-width:300px;padding:4px 0 2px;user-select:none;-webkit-user-select:none}
+            .sh-ap-btn{width:38px;height:38px;min-width:38px;border-radius:50%;border:none;background:#00a884;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+            .sh-burbuja.in .sh-ap-btn{background:#8696a0;color:#111b21}
+            .sh-ap-playing .sh-ap-btn{background:#00a884;color:#fff}
+            .sh-ap-mid{flex:1;min-width:0}
+            .sh-ap-wave{position:relative;display:flex;align-items:center;gap:2px;height:30px;cursor:pointer;touch-action:none}
+            .sh-ap-wave i{flex:1;min-width:2px;max-width:4px;border-radius:2px;background:rgba(233,237,239,.35);display:block}
+            .sh-ap-wave i.on{background:#e9edef}
+            .sh-burbuja.out .sh-ap-wave i.on{background:#e9edef}
+            .sh-ap-cursor{position:absolute;top:50%;width:12px;height:12px;margin-left:-6px;margin-top:-6px;border-radius:50%;background:#00a884;box-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:none}
+            .sh-ap-time{font-size:11px;color:#8696a0;margin-top:1px;font-variant-numeric:tabular-nums}
+            .sh-ap-speed{min-width:36px;height:24px;border-radius:12px;border:none;background:rgba(233,237,239,.2);color:#e9edef;font-size:11.5px;font-weight:700;cursor:pointer;padding:0 8px}
+            .sh-ap-error .sh-ap-btn{background:#f87171}
+            body:not(.dark-mode) .sh-ap-wave i{background:rgba(17,27,33,.25)}
+            body:not(.dark-mode) .sh-ap-wave i.on{background:#54656f}
+            body:not(.dark-mode) .sh-ap-time{color:#667781}
+            body:not(.dark-mode) .sh-ap-speed{background:rgba(17,27,33,.1);color:#111b21}
+            body:not(.dark-mode) .sh-burbuja.in .sh-ap-btn{background:#54656f;color:#fff}
+            /* grabadora: panel que cubre el composer mientras se graba / previsualiza */
+            .sh-composer{position:relative}
+            .sh-send{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+            .sh-send.sh-mic.sh-rec-on{background:#ef4444;color:#fff;transform:scale(1.15)}
+            .sh-rec{position:absolute;left:8px;right:60px;top:6px;bottom:6px;display:flex;align-items:center;gap:10px;background:#202c33;border-radius:24px;padding:0 12px;z-index:3}
+            .sh-rec-dot{width:12px;height:12px;border-radius:50%;background:#ef4444;animation:shRecBlink 1s infinite;flex-shrink:0}
+            @keyframes shRecBlink{50%{opacity:.25}}
+            .sh-rec-tiempo{color:#e9edef;font-size:15px;font-variant-numeric:tabular-nums;min-width:40px}
+            .sh-rec-hint{flex:1;text-align:center;color:#8696a0;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-rec-x,.sh-rec-stop{background:none;border:none;color:#8696a0;font-size:20px;cursor:pointer;padding:6px}
+            .sh-rec-stop{color:#ef4444;font-size:18px}
+            .sh-rec-prev{flex:1;min-width:0}
+            .sh-rec-prev .sh-ap{max-width:none;min-width:0}
+            .sh-rec-send{width:44px;height:44px;min-width:44px;border:none;border-radius:50%;background:#00a884;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+            .sh-rec-send:disabled,.sh-rec-x:disabled{opacity:.6;cursor:default}
+            body:not(.dark-mode) .sh-rec{background:#ffffff;box-shadow:0 1px 3px rgba(11,20,26,.15)}
+            body:not(.dark-mode) .sh-rec-tiempo{color:#111b21}
+            body:not(.dark-mode) .sh-rec-hint,body:not(.dark-mode) .sh-rec-x{color:#54656f}
             /* busqueda dentro de la conversacion */
             .sh-chat-search{display:none;align-items:center;gap:6px;padding:7px 10px;background:#233138}
             .sh-chat-search.on{display:flex}
@@ -9999,7 +10037,7 @@ function shRenderChatPane() {
       '<div class="sh-input-wrap">' +
         '<textarea class="sh-input" id="shInput" rows="1" placeholder="Escribe un mensaje" autocomplete="off" oninput="shInputCambio(this)" onkeydown="shInputKeydown(event)"></textarea>' +
       '</div>' +
-      '<button class="sh-send sh-mic" id="shSend" onclick="shSendClick()" title="Enviar"></button>' +
+      '<button class="sh-send sh-mic" id="shSend" onclick="shSendClick()" onpointerdown="shMicDown(event)" onpointermove="shMicMove(event)" onpointerup="shMicUp(event)" onpointercancel="shMicUp(event)" oncontextmenu="return false" title="Enviar"></button>' +
     '</div>';
   shPintarSend('');
   shCargarProgramados();
@@ -10010,9 +10048,11 @@ function shPintarSend(valor) {
   if (!btn) return;
   if (String(valor || '').trim()) {
     btn.classList.remove('sh-mic');
+    btn.setAttribute('title', 'Enviar');
     btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
   } else {
     btn.classList.add('sh-mic');
+    btn.setAttribute('title', 'Mantén pulsado para grabar una nota de voz');
     btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>';
   }
 }
@@ -10086,7 +10126,7 @@ function shEnviarNota(texto) {
 function shSendClick() {
   var inp = document.getElementById('shInput');
   var v = inp ? inp.value.trim() : '';
-  if (!v) { shToast('Notas de voz: próximamente'); return; }
+  if (!v) return; // sin texto el boton es el microfono: lo manejan los eventos de puntero
   shEnviarMensaje();
 }
 
@@ -10099,21 +10139,30 @@ function shCargarMensajes(scrollAlFinal) {
 }
 
 function shTickGlifo(e) {
-  if (e === 'read' || e === 'delivered') return '✓✓';
+  if (e === 'read' || e === 'delivered' || e === 'played') return '✓✓';
   if (e === 'failed') return '!';
   return '✓';
 }
 
 function shTickClase(e) {
-  if (e === 'read') return ' leido';
+  if (e === 'read' || e === 'played') return ' leido';
   if (e === 'failed') return ' fail';
   return '';
+}
+
+// 'played' existe para notas de voz desde marzo 2026: escuchada por el cliente
+function shTickTitulo(e) {
+  if (e === 'played') return 'Escuchado';
+  if (e === 'read') return 'Leído';
+  if (e === 'delivered') return 'Entregado';
+  if (e === 'failed') return 'No se pudo entregar';
+  return 'Enviado';
 }
 
 function shTicks(m) {
   if (m.direccion !== 'out') return '';
   var e = m.estado_entrega || '';
-  return '<span class="sh-ticks' + shTickClase(e) + '" data-tickmid="' + shEsc(m.id) + '">' + shTickGlifo(e) + '</span>';
+  return '<span class="sh-ticks' + shTickClase(e) + '" data-tickmid="' + shEsc(m.id) + '" title="' + shTickTitulo(e) + '">' + shTickGlifo(e) + '</span>';
 }
 
 // true si el texto es exactamente una URL de imagen
@@ -10233,10 +10282,7 @@ function shMediaHtml(m) {
     if (tipo === 'image') return '<img class="sh-img-thumb" src="' + url + '" loading="lazy" alt="Foto" onclick="shAbrirImagenFull(this)">';
     if (tipo === 'sticker') return '<img class="sh-sticker" src="' + url + '" loading="lazy" alt="Sticker">';
     if (tipo === 'video') return '<video class="sh-video" controls preload="metadata" src="' + url + '"></video>';
-    if (tipo === 'audio') {
-      return '<div class="sh-audio-lbl">' + (m.es_voz ? '🎤 Nota de voz' : '🎵 Audio') + '</div>' +
-             '<audio class="sh-audio" controls preload="none" src="' + url + '"></audio>';
-    }
+    if (tipo === 'audio') return shAudioPlayerHtml(m);
     var nombre = m.media_nombre || 'Documento';
     var met = [shExtDeNombre(nombre), shBytesBonito(m.media_bytes)].filter(function (x) { return !!x; }).join(' · ');
     return '<div class="sh-doc"><span class="sh-doc-ico">📄</span>' +
@@ -10255,6 +10301,449 @@ function shMediaHtml(m) {
   }
   if (estado === 'purgado') return '<div class="sh-media-ph off">🗑 ' + etiqueta + ' eliminado por la política de retención (12 meses)</div>';
   return '<div class="sh-media-ph off">⌛ ' + etiqueta + ' ya no disponible en WhatsApp</div>';
+}
+
+// ── Reproductor de notas de voz (fase 2) ─────────────────────
+// Un <audio> por mensaje vive en shAp (no en el DOM): el chat se repinta
+// cada 12s y el estado (reproduciendo, posicion, velocidad) debe sobrevivir.
+var shAp = {};
+var SH_AP_BARRAS = 34;
+var shApVel = (function () { try { return parseFloat(localStorage.getItem('gm_sh_ap_vel')) || 1; } catch (e) { return 1; } })();
+var shApSeekActivo = null; // {id} mientras se arrastra el cursor
+var shApOggOk = null;
+
+function shApSoportaOgg() {
+  if (shApOggOk === null) {
+    var a = document.createElement('audio');
+    shApOggOk = !!(a.canPlayType && a.canPlayType('audio/ogg; codecs=opus') !== '');
+  }
+  return shApOggOk;
+}
+
+function shApFmt(seg) {
+  if (!isFinite(seg) || seg < 0) return '–:––';
+  seg = Math.round(seg);
+  var m = Math.floor(seg / 60), s = seg % 60;
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
+// Barras deterministas por id (mientras no se decodifica el audio real)
+function shApPseudoBarras(id) {
+  var h = 2166136261, out = [], s = String(id || 'x');
+  for (var i = 0; i < SH_AP_BARRAS; i++) {
+    h ^= s.charCodeAt(i % s.length); h = (h * 16777619) >>> 0;
+    out.push(0.25 + ((h >>> 8) % 1000) / 1000 * 0.75);
+  }
+  return out;
+}
+
+function shApBuscarDom(id) {
+  var nodos = document.querySelectorAll('.sh-ap');
+  for (var i = 0; i < nodos.length; i++) if (nodos[i].getAttribute('data-apid') === id) return nodos[i];
+  return null;
+}
+
+function shApEstado(id, src) {
+  var st = shAp[id];
+  if (st) { if (src && st.src !== src) { st.src = src; st.audio.src = src; } return st; }
+  var a = new Audio();
+  a.preload = 'metadata';
+  a.src = src;
+  a.playbackRate = shApVel;
+  st = shAp[id] = { audio: a, src: src, dur: 0, bars: null, ondaCargando: false };
+  a.addEventListener('loadedmetadata', function () {
+    if (isFinite(a.duration)) st.dur = a.duration;
+    if (st.seekPendiente !== undefined && st.dur) { try { a.currentTime = st.seekPendiente * st.dur; } catch (e) {} delete st.seekPendiente; }
+    shApPintar(id);
+  });
+  a.addEventListener('durationchange', function () { if (isFinite(a.duration)) st.dur = a.duration; shApPintar(id); });
+  a.addEventListener('timeupdate', function () { shApPintar(id); });
+  a.addEventListener('play', function () { shApPintar(id); });
+  a.addEventListener('pause', function () { shApPintar(id); });
+  a.addEventListener('ended', function () { a.currentTime = 0; shApPintar(id); });
+  a.addEventListener('error', function () { st.error = true; shApPintar(id); });
+  return st;
+}
+
+function shApToggle(id) {
+  var dom = shApBuscarDom(id);
+  if (!dom) return;
+  var st = shApEstado(id, dom.getAttribute('data-src'));
+  if (st.audio.paused) {
+    for (var k in shAp) if (k !== id && !shAp[k].audio.paused) shAp[k].audio.pause();
+    st.audio.playbackRate = shApVel;
+    var p = st.audio.play();
+    if (p && p.catch) p.catch(function () { st.error = true; shApPintar(id); });
+    if (!st.bars && !st.ondaCargando) shApCargarOnda(id);
+  } else {
+    st.audio.pause();
+  }
+}
+
+// Forma de onda real: se decodifica el audio (WebAudio) a SH_AP_BARRAS niveles RMS
+function shApCargarOnda(id) {
+  var st = shAp[id];
+  if (!st || !st.src || !window.AudioContext) return;
+  st.ondaCargando = true;
+  fetch(st.src).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+    var ctx = new AudioContext();
+    return ctx.decodeAudioData(buf).then(function (audio) {
+      try { ctx.close(); } catch (e) {}
+      var data = audio.getChannelData(0), n = data.length, paso = Math.max(1, Math.floor(n / SH_AP_BARRAS));
+      var bars = [], max = 0;
+      for (var i = 0; i < SH_AP_BARRAS; i++) {
+        var sum = 0, ini = i * paso, fin = Math.min(n, ini + paso);
+        for (var j = ini; j < fin; j += 4) sum += data[j] * data[j];
+        var rms = Math.sqrt(sum / Math.max(1, (fin - ini) / 4));
+        bars.push(rms); if (rms > max) max = rms;
+      }
+      st.bars = bars.map(function (v) { return max ? Math.max(0.12, v / max) : 0.3; });
+      if (isFinite(audio.duration) && audio.duration > 0) st.dur = audio.duration;
+      shApPintar(id);
+    });
+  }).catch(function () { /* se queda con las barras deterministas */ }).then(function () { st.ondaCargando = false; });
+}
+
+function shApVelocidad(id) {
+  shApVel = shApVel === 1 ? 1.5 : (shApVel === 1.5 ? 2 : 1);
+  try { localStorage.setItem('gm_sh_ap_vel', String(shApVel)); } catch (e) {}
+  for (var k in shAp) shAp[k].audio.playbackRate = shApVel;
+  shApSincronizar();
+}
+
+function shApVelTxt() { return (shApVel === 1 ? '1' : String(shApVel)) + 'x'; }
+
+function shApFraccionDesdeEvento(ev, dom) {
+  var wave = dom.querySelector('.sh-ap-wave');
+  var r = wave.getBoundingClientRect();
+  return Math.max(0, Math.min(1, (ev.clientX - r.left) / Math.max(1, r.width)));
+}
+
+function shApSeekIni(ev, id) {
+  ev.preventDefault();
+  var dom = shApBuscarDom(id);
+  if (!dom) return;
+  var st = shApEstado(id, dom.getAttribute('data-src'));
+  shApSeekActivo = { id: id };
+  shApSeekA(ev, dom, st);
+  var mover = function (e2) { if (shApSeekActivo) shApSeekA(e2, dom, st); };
+  var soltar = function () {
+    shApSeekActivo = null;
+    document.removeEventListener('pointermove', mover);
+    document.removeEventListener('pointerup', soltar);
+    document.removeEventListener('pointercancel', soltar);
+  };
+  document.addEventListener('pointermove', mover);
+  document.addEventListener('pointerup', soltar);
+  document.addEventListener('pointercancel', soltar);
+}
+
+function shApSeekA(ev, dom, st) {
+  var f = shApFraccionDesdeEvento(ev, dom);
+  var dur = st.dur || (isFinite(st.audio.duration) ? st.audio.duration : 0);
+  if (!dur) {
+    // Aun sin metadatos (primer toque antes de reproducir): se aplica en
+    // cuanto el navegador sepa la duracion
+    st.seekPendiente = f;
+    try { st.audio.load(); } catch (e) {}
+    return;
+  }
+  try { st.audio.currentTime = f * dur; } catch (e2) {}
+  shApPintar(dom.getAttribute('data-apid'));
+}
+
+function shApBarrasHtml(bars, frac) {
+  var h = '';
+  for (var i = 0; i < bars.length; i++) {
+    var alto = Math.round(4 + bars[i] * 20);
+    h += '<i class="' + (i / bars.length < frac ? 'on' : '') + '" style="height:' + alto + 'px"></i>';
+  }
+  return h;
+}
+
+function shApPintar(id) {
+  var dom = shApBuscarDom(id);
+  var st = shAp[id];
+  if (!dom || !st) return;
+  var a = st.audio;
+  var dur = st.dur || (isFinite(a.duration) ? a.duration : 0);
+  var cur = a.currentTime || 0;
+  var frac = dur ? Math.min(1, cur / dur) : 0;
+  var btn = dom.querySelector('.sh-ap-btn');
+  if (btn) {
+    btn.innerHTML = a.paused ? SH_AP_ICONO_PLAY : SH_AP_ICONO_PAUSA;
+    btn.setAttribute('title', a.paused ? 'Reproducir' : 'Pausar');
+  }
+  var wave = dom.querySelector('.sh-ap-wave');
+  if (wave) {
+    var bars = st.bars || shApPseudoBarras(id);
+    wave.innerHTML = shApBarrasHtml(bars, frac) + '<b class="sh-ap-cursor" style="left:' + (frac * 100).toFixed(2) + '%"></b>';
+  }
+  var t = dom.querySelector('.sh-ap-time');
+  if (t) t.textContent = (a.paused && !cur ? shApFmt(dur) : shApFmt(cur) + ' / ' + shApFmt(dur));
+  var v = dom.querySelector('.sh-ap-speed');
+  if (v) v.textContent = shApVelTxt();
+  dom.classList.toggle('sh-ap-playing', !a.paused);
+  dom.classList.toggle('sh-ap-error', !!st.error);
+}
+
+// Tras cada repintado del chat: volver a reflejar el estado de los audios
+function shApSincronizar() {
+  var nodos = document.querySelectorAll('.sh-ap');
+  for (var i = 0; i < nodos.length; i++) {
+    var id = nodos[i].getAttribute('data-apid');
+    if (shAp[id]) shApPintar(id);
+  }
+}
+
+var SH_AP_ICONO_PLAY = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+var SH_AP_ICONO_PAUSA = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+
+function shAudioPlayerHtml(m) {
+  var url = m.media_url || '';
+  var mime = String(m.media_mime || '').toLowerCase();
+  var esOgg = mime.indexOf('ogg') !== -1 || mime.indexOf('opus') !== -1 || /\.ogg(\?|$)/i.test(url);
+  var etiqueta = m.es_voz ? '🎤 Nota de voz' : '🎵 Audio';
+  if (esOgg && !shApSoportaOgg()) {
+    // iPhone / Safari: el navegador no decodifica OGG/Opus. Decision pendiente
+    // (transcodificar). Mientras tanto se informa y se deja descargar.
+    return '<div class="sh-audio-lbl">' + etiqueta + '</div>' +
+           '<div class="sh-media-ph off">Este navegador no reproduce notas de voz OGG (iPhone/Safari). ' +
+           '<a href="' + shEsc(url) + '&dl=1" download style="color:inherit;margin-left:auto">Descargar</a></div>';
+  }
+  var id = String(m.id);
+  var st = shAp[id];
+  var bars = st && st.bars ? st.bars : shApPseudoBarras(id);
+  var dur = st ? (st.dur || 0) : 0;
+  return '<div class="sh-audio-lbl">' + etiqueta + '</div>' +
+    '<div class="sh-ap" data-apid="' + shEsc(id) + '" data-src="' + shEsc(url) + '">' +
+      '<button class="sh-ap-btn" onclick="shApToggle(this.parentNode.getAttribute(\'data-apid\'))" title="Reproducir">' + SH_AP_ICONO_PLAY + '</button>' +
+      '<div class="sh-ap-mid">' +
+        '<div class="sh-ap-wave" onpointerdown="shApSeekIni(event, this.parentNode.parentNode.getAttribute(\'data-apid\'))">' + shApBarrasHtml(bars, 0) + '<b class="sh-ap-cursor" style="left:0%"></b></div>' +
+        '<div class="sh-ap-time">' + shApFmt(dur || NaN) + '</div>' +
+      '</div>' +
+      '<button class="sh-ap-speed" onclick="shApVelocidad()" title="Velocidad">' + shApVelTxt() + '</button>' +
+    '</div>';
+}
+
+// ── Grabación de notas de voz (fase 2, saliente) ─────────────
+// Mantener pulsado el micrófono para grabar; deslizar a la izquierda cancela;
+// deslizar hacia arriba deja la grabación fija (manos libres). Al soltar se
+// previsualiza y se envía. Codifica a OGG/Opus en el navegador (WASM,
+// vendor/opus): WhatsApp no acepta el webm de MediaRecorder.
+var shRec = null;
+var shRecEstado = 'idle';        // idle | grabando | procesando | preview | subiendo
+var shRecBlob = null;
+var shRecUrlPrev = '';
+var shRecIni = 0;
+var shRecDur = 0;
+var shRecTimer = null;
+var shRecPtr = null;             // {x, y, bloq} del dedo/puntero
+var shRecCancelado = false;
+var SH_REC_MAX_SEG = 600;        // 10 min (16 MB de tope en Meta)
+var SH_REC_MAX_BYTES = 16 * 1024 * 1024;
+
+function shRecSoportado() {
+  return !!(window.Recorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && (window.AudioContext || window.webkitAudioContext));
+}
+
+function shRecEncoderPath() {
+  return new URL('vendor/opus/encoderWorker.min.js', location.href).href;
+}
+
+function shMicDown(ev) {
+  var inp = document.getElementById('shInput');
+  if (inp && inp.value.trim()) return; // con texto, el boton es "enviar" (click)
+  if (shRecEstado !== 'idle') return;
+  if (!shLeadActivo) return;
+  if (!shRecSoportado()) { shToast('Este navegador no permite grabar notas de voz'); return; }
+  ev.preventDefault();
+  try { ev.target.setPointerCapture(ev.pointerId); } catch (e) {}
+  shRecPtr = { x: ev.clientX, y: ev.clientY, bloq: false };
+  shRecEmpezar();
+}
+
+function shMicMove(ev) {
+  if (shRecEstado !== 'grabando' || !shRecPtr || shRecPtr.bloq) return;
+  var dx = ev.clientX - shRecPtr.x, dy = ev.clientY - shRecPtr.y;
+  var hint = document.getElementById('shRecHint');
+  if (dx < -80) { shRecCancelar(); return; }
+  if (dy < -60) { shRecPtr.bloq = true; shRecPintar(); return; }
+  if (hint) hint.style.opacity = String(Math.max(0.2, 1 + dx / 100));
+}
+
+function shMicUp(ev) {
+  if (shRecEstado !== 'grabando') return;
+  if (shRecPtr && shRecPtr.bloq) return; // manos libres: sigue hasta pulsar detener
+  shRecDetener();
+}
+
+function shRecEmpezar() {
+  shRecEstado = 'grabando';
+  shRecCancelado = false;
+  shRecBlob = null;
+  shRecDur = 0;
+  var rec;
+  try {
+    rec = new Recorder({
+      encoderPath: shRecEncoderPath(),
+      numberOfChannels: 1,
+      encoderSampleRate: 48000,
+      encoderApplication: 2048, // voz
+      streamPages: false
+    });
+  } catch (e) {
+    shRecEstado = 'idle'; shRecPintar();
+    shToast('No se pudo iniciar la grabadora');
+    return;
+  }
+  shRec = rec;
+  rec.ondataavailable = function (buf) { shRecListo(buf); };
+  rec.onstart = function () {
+    shRecIni = Date.now();
+    if (shRecTimer) clearInterval(shRecTimer);
+    shRecTimer = setInterval(function () {
+      var seg = (Date.now() - shRecIni) / 1000;
+      var t = document.getElementById('shRecTiempo');
+      if (t) t.textContent = shApFmt(seg);
+      if (seg >= SH_REC_MAX_SEG) shRecDetener();
+    }, 200);
+  };
+  shRecPintar();
+  rec.start().catch(function (err) {
+    shRecEstado = 'idle'; shRec = null; shRecPintar();
+    var msg = err && err.name === 'NotAllowedError' ? 'Permite el acceso al micrófono para grabar' : 'No se pudo acceder al micrófono';
+    shToast(msg);
+  });
+}
+
+function shRecDetener() {
+  if (shRecEstado !== 'grabando' || !shRec) return;
+  if (shRecTimer) { clearInterval(shRecTimer); shRecTimer = null; }
+  shRecDur = shRecIni ? (Date.now() - shRecIni) / 1000 : 0;
+  if (shRecDur < 1) {
+    shRecCancelado = true;
+    shToast('Mantén pulsado el micrófono para grabar');
+    shRecEstado = 'idle';
+  } else {
+    shRecEstado = 'procesando';
+  }
+  try { shRec.stop(); } catch (e) { shRecEstado = 'idle'; }
+  shRecPintar();
+}
+
+function shRecCancelar() {
+  if (shRecTimer) { clearInterval(shRecTimer); shRecTimer = null; }
+  shRecCancelado = true;
+  shRecEstado = 'idle';
+  if (shRec) { try { shRec.stop(); } catch (e) {} }
+  shRecPintar();
+}
+
+function shRecListo(buf) {
+  var rec = shRec; shRec = null;
+  if (rec) { try { rec.close(); } catch (e) {} }
+  if (shRecCancelado) { shRecEstado = 'idle'; shRecPintar(); return; }
+  var blob = new Blob([buf], { type: 'audio/ogg; codecs=opus' });
+  if (blob.size > SH_REC_MAX_BYTES) {
+    shToast('La nota de voz supera los 16 MB que permite WhatsApp');
+    shRecEstado = 'idle'; shRecPintar(); return;
+  }
+  shRecBlob = blob;
+  if (shRecUrlPrev) { try { URL.revokeObjectURL(shRecUrlPrev); } catch (e) {} }
+  shRecUrlPrev = URL.createObjectURL(blob);
+  delete shAp['__preview'];
+  shRecEstado = 'preview';
+  shRecPintar();
+}
+
+function shRecDescartar() {
+  if (shAp['__preview']) { try { shAp['__preview'].audio.pause(); } catch (e) {} delete shAp['__preview']; }
+  if (shRecUrlPrev) { try { URL.revokeObjectURL(shRecUrlPrev); } catch (e) {} shRecUrlPrev = ''; }
+  shRecBlob = null;
+  shRecEstado = 'idle';
+  shRecPintar();
+}
+
+function shSubirAudio(blob, leadId) {
+  var qs = '?key=' + encodeURIComponent(GM_CONFIG.agendaKey) + '&action=shEnviarAudio&leadId=' + encodeURIComponent(leadId) + '&uid=' + encodeURIComponent(CU ? CU.id : '');
+  return fetch(GM_CONFIG.agendaWorkerUrl + qs, { method: 'POST', headers: { 'Content-Type': 'audio/ogg; codecs=opus' }, body: blob, cache: 'no-store' })
+    .then(function (r) { return r.json(); });
+}
+
+function shRecEnviar() {
+  if (shRecEstado !== 'preview' || !shRecBlob || !shLeadActivo) return;
+  shRecEstado = 'subiendo';
+  shRecPintar();
+  if (shAp['__preview']) { try { shAp['__preview'].audio.pause(); } catch (e) {} }
+  var el = document.getElementById('shMsgs');
+  if (el) {
+    var d = new Date();
+    var hh = (d.getHours() < 10 ? '0' : '') + d.getHours();
+    var mm = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    el.innerHTML += '<div class="sh-burbuja out sh-colita" id="shPendiente"><div class="sh-b-txt">🎤 Nota de voz · ' + shApFmt(shRecDur) + '</div><div class="sh-b-meta">' + hh + ':' + mm + ' 🕓</div></div>';
+    el.scrollTop = el.scrollHeight;
+  }
+  shDivisorPendiente = 0;
+  shDivisorAntesDeId = '';
+  var leadId = shLeadActivo.id;
+  shSubirAudio(shRecBlob, leadId).then(function (d2) {
+    if (d2 && d2.ok) {
+      shRecDescartar();
+      shCargarMensajes(true);
+      shCargarLeads();
+    } else {
+      var pend = document.getElementById('shPendiente');
+      if (pend) pend.remove();
+      shRecEstado = 'preview';
+      shRecPintar();
+      shToast('No se pudo enviar la nota de voz: ' + (d2 && d2.error ? d2.error : 'error de red'));
+    }
+  }).catch(function () {
+    var pend = document.getElementById('shPendiente');
+    if (pend) pend.remove();
+    shRecEstado = 'preview';
+    shRecPintar();
+    shToast('Sin conexión con el servidor');
+  });
+}
+
+// Panel de grabación: se superpone al composer segun el estado
+function shRecPintar() {
+  var comp = document.querySelector('.sh-composer');
+  if (!comp) return;
+  var mic = document.getElementById('shSend');
+  if (mic) mic.classList.toggle('sh-rec-on', shRecEstado === 'grabando');
+  var panel = document.getElementById('shRecPanel');
+  if (shRecEstado === 'idle') { if (panel) panel.remove(); return; }
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'shRecPanel';
+    panel.className = 'sh-rec';
+    comp.appendChild(panel);
+  }
+  var html = '';
+  if (shRecEstado === 'grabando') {
+    var bloq = shRecPtr && shRecPtr.bloq;
+    html = '<span class="sh-rec-dot"></span><span class="sh-rec-tiempo" id="shRecTiempo">' + shApFmt(shRecIni ? (Date.now() - shRecIni) / 1000 : 0) + '</span>' +
+      (bloq
+        ? '<button class="sh-rec-x" onclick="shRecCancelar()" title="Cancelar">🗑</button><span class="sh-rec-hint" id="shRecHint">Grabando…</span><button class="sh-rec-stop" onclick="shRecDetener()" title="Detener">■</button>'
+        : '<span class="sh-rec-hint" id="shRecHint">‹ Desliza para cancelar · ↑ manos libres</span>');
+  } else if (shRecEstado === 'procesando') {
+    html = '<span class="sh-spin"></span><span class="sh-rec-hint">Procesando…</span>';
+  } else if (shRecEstado === 'preview' || shRecEstado === 'subiendo') {
+    html = '<button class="sh-rec-x" onclick="shRecDescartar()" title="Descartar"' + (shRecEstado === 'subiendo' ? ' disabled' : '') + '>🗑</button>' +
+      '<div class="sh-rec-prev">' + shAudioPlayerHtml({ id: '__preview', media_url: shRecUrlPrev, media_mime: 'audio/ogg', es_voz: 1 }).replace('<div class="sh-audio-lbl">🎤 Nota de voz</div>', '') + '</div>' +
+      '<button class="sh-rec-send" onclick="shRecEnviar()" title="Enviar"' + (shRecEstado === 'subiendo' ? ' disabled' : '') + '>' +
+        (shRecEstado === 'subiendo' ? '<span class="sh-spin" style="border-color:#fff;border-top-color:#111b21"></span>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>') +
+      '</button>';
+  }
+  panel.innerHTML = html;
+  if (shRecEstado === 'preview' && shRecUrlPrev) {
+    var st = shApEstado('__preview', shRecUrlPrev);
+    st.dur = shRecDur;
+    shApPintar('__preview');
+  }
 }
 
 function shMediaReintentar(mid, btn) {
@@ -10398,6 +10887,7 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
       var e1 = mt.estado_entrega || '';
       sp.className = 'sh-ticks' + shTickClase(e1);
       sp.textContent = shTickGlifo(e1);
+      sp.setAttribute('title', shTickTitulo(e1));
     }
     return;
   }
@@ -10448,6 +10938,7 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
   var estabaAbajo = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
   el.innerHTML = html;
   shMsgsFirmaIds = ids;
+  shApSincronizar();
   if (scrollAlFinal || estabaAbajo) {
     // Scroll instantaneo: el smooth del CSS haria que renders consecutivos
     // (polling cada 12s) lean posiciones a mitad de animacion
