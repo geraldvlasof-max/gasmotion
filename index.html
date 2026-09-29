@@ -1288,11 +1288,18 @@ body.dark-mode .gm-logo-name{color:#F5F5F0}
             .sh-burbuja.in .sh-ap-btn{background:#8696a0;color:#111b21}
             .sh-ap-playing .sh-ap-btn{background:#00a884;color:#fff}
             .sh-ap-mid{flex:1;min-width:0}
-            .sh-ap-wave{position:relative;display:flex;align-items:center;gap:2px;height:30px;cursor:pointer;touch-action:none}
-            .sh-ap-wave i{flex:1;min-width:2px;max-width:4px;border-radius:2px;background:rgba(233,237,239,.35);display:block}
+            .sh-ap-wave{position:relative;display:flex;align-items:center;gap:2px;height:30px;padding:0 6px;cursor:pointer;touch-action:none}
+            .sh-ap-wave i{flex:1 1 0;min-width:2px;border-radius:2px;background:rgba(233,237,239,.35);display:block}
             .sh-ap-wave i.on{background:#e9edef}
             .sh-burbuja.out .sh-ap-wave i.on{background:#e9edef}
-            .sh-ap-cursor{position:absolute;top:50%;width:12px;height:12px;margin-left:-6px;margin-top:-6px;border-radius:50%;background:#00a884;box-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:none}
+            .sh-ap-cursor{position:absolute;top:50%;left:6px;width:12px;height:12px;margin-top:-6px;transform:translateX(-50%);border-radius:50%;background:#00a884;box-shadow:0 1px 3px rgba(0,0,0,.4);pointer-events:none}
+            /* nivel del microfono mientras se graba + aviso de silencio */
+            .sh-rec-nivel{flex:1;height:8px;border-radius:4px;background:rgba(134,150,160,.3);overflow:hidden;min-width:60px}
+            .sh-rec-nivel b{display:block;height:100%;width:0;background:#00a884;border-radius:4px;transition:width .1s linear}
+            .sh-rec-nivel.bajo b{background:#f59e0b}
+            .sh-rec-mic{font-size:11px;color:#8696a0;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+            .sh-rec-mudo{color:#f5b7b1;font-size:12.5px;flex:1;text-align:center}
+            .sh-rec-mudo b{display:block;color:#e9edef;font-size:13px}
             .sh-ap-time{font-size:11px;color:#8696a0;margin-top:1px;font-variant-numeric:tabular-nums}
             .sh-ap-speed{min-width:36px;height:24px;border-radius:12px;border:none;background:rgba(233,237,239,.2);color:#e9edef;font-size:11.5px;font-weight:700;cursor:pointer;padding:0 8px}
             .sh-ap-error .sh-ap-btn{background:#f87171}
@@ -10398,7 +10405,7 @@ function shApCargarOnda(id) {
         bars.push(rms); if (rms > max) max = rms;
       }
       st.bars = bars.map(function (v) { return max ? Math.max(0.12, v / max) : 0.3; });
-      if (isFinite(audio.duration) && audio.duration > 0) st.dur = audio.duration;
+      if (isFinite(audio.duration) && audio.duration > 0) { st.dur = audio.duration; st.durDecodificada = audio.duration; }
       shApPintar(id);
     });
   }).catch(function () { /* se queda con las barras deterministas */ }).then(function () { st.ondaCargando = false; });
@@ -10416,7 +10423,7 @@ function shApVelTxt() { return (shApVel === 1 ? '1' : String(shApVel)) + 'x'; }
 function shApFraccionDesdeEvento(ev, dom) {
   var wave = dom.querySelector('.sh-ap-wave');
   var r = wave.getBoundingClientRect();
-  return Math.max(0, Math.min(1, (ev.clientX - r.left) / Math.max(1, r.width)));
+  return shApAcotar((ev.clientX - r.left - 6) / Math.max(1, r.width - 12));
 }
 
 function shApSeekIni(ev, id) {
@@ -10440,7 +10447,7 @@ function shApSeekIni(ev, id) {
 
 function shApSeekA(ev, dom, st) {
   var f = shApFraccionDesdeEvento(ev, dom);
-  var dur = st.dur || (isFinite(st.audio.duration) ? st.audio.duration : 0);
+  var dur = shApDuracion(st);
   if (!dur) {
     // Aun sin metadatos (primer toque antes de reproducir): se aplica en
     // cuanto el navegador sepa la duracion
@@ -10454,11 +10461,32 @@ function shApSeekA(ev, dom, st) {
 
 function shApBarrasHtml(bars, frac) {
   var h = '';
+  frac = shApAcotar(frac);
   for (var i = 0; i < bars.length; i++) {
     var alto = Math.round(4 + bars[i] * 20);
-    h += '<i class="' + (i / bars.length < frac ? 'on' : '') + '" style="height:' + alto + 'px"></i>';
+    h += '<i class="' + ((i + 0.5) / bars.length <= frac ? 'on' : '') + '" style="height:' + alto + 'px"></i>';
   }
   return h;
+}
+
+// Siempre entre 0 y 1: una duracion Infinity/NaN/0 no puede sacar el cursor
+function shApAcotar(f) {
+  if (typeof f !== 'number' || !isFinite(f) || f < 0) return 0;
+  return f > 1 ? 1 : f;
+}
+
+// Cursor dentro del area util de la onda (padding lateral de 6px)
+function shApCursorCss(frac) {
+  return 'left:calc(6px + (100% - 12px) * ' + shApAcotar(frac).toFixed(4) + ')';
+}
+
+// Duracion mas fiable disponible: la decodificada (WebAudio) manda sobre la
+// que reporta <audio>, que para un OGG puede venir Infinity/NaN o inflada
+function shApDuracion(st) {
+  if (st.durDecodificada && isFinite(st.durDecodificada)) return st.durDecodificada;
+  if (st.dur && isFinite(st.dur)) return st.dur;
+  var d = st.audio ? st.audio.duration : 0;
+  return isFinite(d) && d > 0 ? d : 0;
 }
 
 function shApPintar(id) {
@@ -10466,9 +10494,10 @@ function shApPintar(id) {
   var st = shAp[id];
   if (!dom || !st) return;
   var a = st.audio;
-  var dur = st.dur || (isFinite(a.duration) ? a.duration : 0);
+  var dur = shApDuracion(st);
   var cur = a.currentTime || 0;
-  var frac = dur ? Math.min(1, cur / dur) : 0;
+  if (!isFinite(cur) || cur < 0) cur = 0;
+  var frac = shApAcotar(dur ? cur / dur : 0);
   var btn = dom.querySelector('.sh-ap-btn');
   if (btn) {
     btn.innerHTML = a.paused ? SH_AP_ICONO_PLAY : SH_AP_ICONO_PAUSA;
@@ -10477,10 +10506,10 @@ function shApPintar(id) {
   var wave = dom.querySelector('.sh-ap-wave');
   if (wave) {
     var bars = st.bars || shApPseudoBarras(id);
-    wave.innerHTML = shApBarrasHtml(bars, frac) + '<b class="sh-ap-cursor" style="left:' + (frac * 100).toFixed(2) + '%"></b>';
+    wave.innerHTML = shApBarrasHtml(bars, frac) + '<b class="sh-ap-cursor" style="' + shApCursorCss(frac) + '"></b>';
   }
   var t = dom.querySelector('.sh-ap-time');
-  if (t) t.textContent = (a.paused && !cur ? shApFmt(dur) : shApFmt(cur) + ' / ' + shApFmt(dur));
+  if (t) t.textContent = (a.paused && !cur ? shApFmt(dur || NaN) : shApFmt(Math.min(cur, dur || cur)) + ' / ' + shApFmt(dur || NaN));
   var v = dom.querySelector('.sh-ap-speed');
   if (v) v.textContent = shApVelTxt();
   dom.classList.toggle('sh-ap-playing', !a.paused);
@@ -10514,12 +10543,12 @@ function shAudioPlayerHtml(m) {
   var id = String(m.id);
   var st = shAp[id];
   var bars = st && st.bars ? st.bars : shApPseudoBarras(id);
-  var dur = st ? (st.dur || 0) : 0;
+  var dur = st ? shApDuracion(st) : 0;
   return '<div class="sh-audio-lbl">' + etiqueta + '</div>' +
     '<div class="sh-ap" data-apid="' + shEsc(id) + '" data-src="' + shEsc(url) + '">' +
       '<button class="sh-ap-btn" onclick="shApToggle(this.parentNode.getAttribute(\'data-apid\'))" title="Reproducir">' + SH_AP_ICONO_PLAY + '</button>' +
       '<div class="sh-ap-mid">' +
-        '<div class="sh-ap-wave" onpointerdown="shApSeekIni(event, this.parentNode.parentNode.getAttribute(\'data-apid\'))">' + shApBarrasHtml(bars, 0) + '<b class="sh-ap-cursor" style="left:0%"></b></div>' +
+        '<div class="sh-ap-wave" onpointerdown="shApSeekIni(event, this.parentNode.parentNode.getAttribute(\'data-apid\'))">' + shApBarrasHtml(bars, 0) + '<b class="sh-ap-cursor" style="' + shApCursorCss(0) + '"></b></div>' +
         '<div class="sh-ap-time">' + shApFmt(dur || NaN) + '</div>' +
       '</div>' +
       '<button class="sh-ap-speed" onclick="shApVelocidad()" title="Velocidad">' + shApVelTxt() + '</button>' +
@@ -10542,6 +10571,11 @@ var shRecPtr = null;             // {x, y, bloq} del dedo/puntero
 var shRecCancelado = false;
 var SH_REC_MAX_SEG = 600;        // 10 min (16 MB de tope en Meta)
 var SH_REC_MAX_BYTES = 16 * 1024 * 1024;
+var SH_REC_PICO_SILENCIO = 0.02; // ~ -34 dBFS: por debajo, la grabacion es muda
+var shRecAnalisis = null;        // {duracion, pico, rms, bars, silencio} del blob grabado
+var shRecNivelTimer = null;      // medidor de nivel del microfono en vivo
+var shRecNivelMax = 0;
+var shRecAnalyser = null;
 
 function shRecSoportado() {
   return !!(window.Recorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && (window.AudioContext || window.webkitAudioContext));
@@ -10601,6 +10635,7 @@ function shRecEmpezar() {
   rec.ondataavailable = function (buf) { shRecListo(buf); };
   rec.onstart = function () {
     shRecIni = Date.now();
+    shRecNivelIniciar(rec);
     if (shRecTimer) clearInterval(shRecTimer);
     shRecTimer = setInterval(function () {
       var seg = (Date.now() - shRecIni) / 1000;
@@ -10617,9 +10652,88 @@ function shRecEmpezar() {
   });
 }
 
+// Medidor de nivel: un AnalyserNode colgado del mismo nodo de entrada que va
+// al codificador. Si la barra no se mueve, el microfono no esta entregando
+// senal (dispositivo equivocado, silenciado, sin permiso) y se avisa.
+var shRecMicNombre = '';
+
+function shRecNivelIniciar(rec) {
+  shRecNivelMax = 0;
+  shRecMicNombre = '';
+  try {
+    // Que dispositivo esta capturando: si es el equivocado o esta muteado, la
+    // grabacion sale en silencio digital (-91 dB) aunque todo "funcione".
+    var pistas = rec.stream && rec.stream.getAudioTracks ? rec.stream.getAudioTracks() : [];
+    if (pistas.length) {
+      shRecMicNombre = pistas[0].label || '';
+      var st = pistas[0].getSettings ? pistas[0].getSettings() : {};
+      console.info('[nota de voz] microfono: "' + shRecMicNombre + '"', JSON.stringify({ muted: pistas[0].muted, enabled: pistas[0].enabled, sampleRate: st.sampleRate, channelCount: st.channelCount, echoCancellation: st.echoCancellation }));
+      var mic = document.getElementById('shRecMic');
+      if (mic) mic.textContent = shRecMicNombre ? '🎙 ' + shRecMicNombre : '';
+    }
+    if (!rec.sourceNode || !rec.audioContext) return;
+    shRecAnalyser = rec.audioContext.createAnalyser();
+    shRecAnalyser.fftSize = 512;
+    rec.sourceNode.connect(shRecAnalyser);
+    var datos = new Uint8Array(shRecAnalyser.fftSize);
+    if (shRecNivelTimer) clearInterval(shRecNivelTimer);
+    shRecNivelTimer = setInterval(function () {
+      if (!shRecAnalyser) return;
+      shRecAnalyser.getByteTimeDomainData(datos);
+      var pico = 0;
+      for (var i = 0; i < datos.length; i++) { var v = Math.abs(datos[i] - 128) / 128; if (v > pico) pico = v; }
+      if (pico > shRecNivelMax) shRecNivelMax = pico;
+      var barra = document.getElementById('shRecNivel');
+      if (barra) {
+        var b = barra.firstChild;
+        if (b) b.style.width = Math.min(100, Math.round(pico * 160)) + '%';
+        var seg = (Date.now() - shRecIni) / 1000;
+        barra.classList.toggle('bajo', seg > 2 && shRecNivelMax < SH_REC_PICO_SILENCIO);
+      }
+    }, 100);
+  } catch (e) { shRecAnalyser = null; }
+}
+
+function shRecNivelParar() {
+  if (shRecNivelTimer) { clearInterval(shRecNivelTimer); shRecNivelTimer = null; }
+  if (shRecAnalyser) { try { shRecAnalyser.disconnect(); } catch (e) {} shRecAnalyser = null; }
+}
+
+// Decodifica el blob grabado ANTES de enviarlo: duracion exacta, pico, RMS y
+// forma de onda. Si es silencio, no se envia (guarda permanente).
+function shRecAnalizar(blob) {
+  var Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return Promise.resolve(null);
+  return blob.arrayBuffer().then(function (ab) {
+    var ctx = new Ctx();
+    return ctx.decodeAudioData(ab).then(function (audio) {
+      try { ctx.close(); } catch (e) {}
+      var d = audio.getChannelData(0), n = d.length, pico = 0, suma = 0;
+      for (var i = 0; i < n; i++) { var v = d[i] < 0 ? -d[i] : d[i]; if (v > pico) pico = v; suma += d[i] * d[i]; }
+      var paso = Math.max(1, Math.floor(n / SH_AP_BARRAS)), bars = [], max = 0;
+      for (var b = 0; b < SH_AP_BARRAS; b++) {
+        var s2 = 0, ini = b * paso, fin = Math.min(n, ini + paso);
+        for (var j = ini; j < fin; j += 4) s2 += d[j] * d[j];
+        var rms = Math.sqrt(s2 / Math.max(1, (fin - ini) / 4));
+        bars.push(rms); if (rms > max) max = rms;
+      }
+      var rmsTotal = Math.sqrt(suma / Math.max(1, n));
+      return {
+        duracion: audio.duration, canales: audio.numberOfChannels, pico: pico, rms: rmsTotal,
+        bars: bars.map(function (x) { return max ? Math.max(0.12, x / max) : 0.3; }),
+        silencio: pico < SH_REC_PICO_SILENCIO
+      };
+    }).catch(function (err) {
+      try { ctx.close(); } catch (e2) {}
+      return { error: err && err.message ? err.message : String(err) };
+    });
+  });
+}
+
 function shRecDetener() {
   if (shRecEstado !== 'grabando' || !shRec) return;
   if (shRecTimer) { clearInterval(shRecTimer); shRecTimer = null; }
+  shRecNivelParar();
   shRecDur = shRecIni ? (Date.now() - shRecIni) / 1000 : 0;
   if (shRecDur < 1) {
     shRecCancelado = true;
@@ -10634,6 +10748,7 @@ function shRecDetener() {
 
 function shRecCancelar() {
   if (shRecTimer) { clearInterval(shRecTimer); shRecTimer = null; }
+  shRecNivelParar();
   shRecCancelado = true;
   shRecEstado = 'idle';
   if (shRec) { try { shRec.stop(); } catch (e) {} }
@@ -10650,17 +10765,30 @@ function shRecListo(buf) {
     shRecEstado = 'idle'; shRecPintar(); return;
   }
   shRecBlob = blob;
+  shRecAnalisis = null;
   if (shRecUrlPrev) { try { URL.revokeObjectURL(shRecUrlPrev); } catch (e) {} }
   shRecUrlPrev = URL.createObjectURL(blob);
   delete shAp['__preview'];
-  shRecEstado = 'preview';
+  shRecEstado = 'procesando';
   shRecPintar();
+  shRecAnalizar(blob).then(function (an) {
+    if (shRecEstado !== 'procesando' || shRecBlob !== blob) return; // se descarto mientras tanto
+    shRecAnalisis = an;
+    if (an && !an.error) {
+      console.info('[nota de voz] duracion ' + an.duracion.toFixed(2) + 's, pico ' + an.pico.toFixed(3) + ', rms ' + an.rms.toFixed(4) + ', nivel mic max ' + shRecNivelMax.toFixed(3));
+      if (an.silencio) { shRecEstado = 'mudo'; shRecPintar(); return; }
+      if (an.duracion && isFinite(an.duracion)) shRecDur = an.duracion;
+    }
+    shRecEstado = 'preview';
+    shRecPintar();
+  });
 }
 
 function shRecDescartar() {
   if (shAp['__preview']) { try { shAp['__preview'].audio.pause(); } catch (e) {} delete shAp['__preview']; }
   if (shRecUrlPrev) { try { URL.revokeObjectURL(shRecUrlPrev); } catch (e) {} shRecUrlPrev = ''; }
   shRecBlob = null;
+  shRecAnalisis = null;
   shRecEstado = 'idle';
   shRecPintar();
 }
@@ -10673,6 +10801,7 @@ function shSubirAudio(blob, leadId) {
 
 function shRecEnviar() {
   if (shRecEstado !== 'preview' || !shRecBlob || !shLeadActivo) return;
+  if (shRecAnalisis && shRecAnalisis.silencio) { shRecEstado = 'mudo'; shRecPintar(); return; }
   shRecEstado = 'subiendo';
   shRecPintar();
   if (shAp['__preview']) { try { shAp['__preview'].audio.pause(); } catch (e) {} }
@@ -10726,11 +10855,19 @@ function shRecPintar() {
   if (shRecEstado === 'grabando') {
     var bloq = shRecPtr && shRecPtr.bloq;
     html = '<span class="sh-rec-dot"></span><span class="sh-rec-tiempo" id="shRecTiempo">' + shApFmt(shRecIni ? (Date.now() - shRecIni) / 1000 : 0) + '</span>' +
+      '<div class="sh-rec-nivel" id="shRecNivel" title="Nivel del micrófono"><b></b></div>' +
+      '<span class="sh-rec-mic" id="shRecMic" title="Micrófono en uso">' + (shRecMicNombre ? '🎙 ' + shEsc(shRecMicNombre) : '') + '</span>' +
       (bloq
         ? '<button class="sh-rec-x" onclick="shRecCancelar()" title="Cancelar">🗑</button><span class="sh-rec-hint" id="shRecHint">Grabando…</span><button class="sh-rec-stop" onclick="shRecDetener()" title="Detener">■</button>'
         : '<span class="sh-rec-hint" id="shRecHint">‹ Desliza para cancelar · ↑ manos libres</span>');
   } else if (shRecEstado === 'procesando') {
     html = '<span class="sh-spin"></span><span class="sh-rec-hint">Procesando…</span>';
+  } else if (shRecEstado === 'mudo') {
+    var an = shRecAnalisis || {};
+    html = '<button class="sh-rec-x" onclick="shRecDescartar()" title="Descartar">🗑</button>' +
+      '<div class="sh-rec-mudo"><b>🔇 La grabación salió en silencio: no se envió</b>' +
+      (shRecMicNombre ? 'Micrófono usado: ' + shEsc(shRecMicNombre) + '. ' : '') + 'Revisa que sea el correcto, que no esté silenciado y que el navegador tenga permiso' +
+      (typeof an.pico === 'number' ? ' (pico ' + an.pico.toFixed(3) + ', nivel ' + shRecNivelMax.toFixed(3) + ')' : '') + '</div>';
   } else if (shRecEstado === 'preview' || shRecEstado === 'subiendo') {
     html = '<button class="sh-rec-x" onclick="shRecDescartar()" title="Descartar"' + (shRecEstado === 'subiendo' ? ' disabled' : '') + '>🗑</button>' +
       '<div class="sh-rec-prev">' + shAudioPlayerHtml({ id: '__preview', media_url: shRecUrlPrev, media_mime: 'audio/ogg', es_voz: 1 }).replace('<div class="sh-audio-lbl">🎤 Nota de voz</div>', '') + '</div>' +
@@ -10742,6 +10879,10 @@ function shRecPintar() {
   if (shRecEstado === 'preview' && shRecUrlPrev) {
     var st = shApEstado('__preview', shRecUrlPrev);
     st.dur = shRecDur;
+    if (shRecAnalisis && !shRecAnalisis.error) {
+      st.durDecodificada = shRecAnalisis.duracion;
+      st.bars = shRecAnalisis.bars;
+    }
     shApPintar('__preview');
   }
 }
