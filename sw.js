@@ -1,9 +1,15 @@
-// Gasmotion Service Worker v5.52
-const CACHE_NAME = 'gasmotion-v552';
+// Gasmotion Service Worker v5.53
+const CACHE_NAME = 'gasmotion-v553';
 // Los DOS workers (sync y agenda/sales hub) van SIEMPRE a la red, sin caché:
 // cachear respuestas de API muestra datos viejos y llena el almacenamiento.
 const WORKER_DOMAINS = ['gasmotion-sync.geraldvlasof.workers.dev', 'gasmotion-worker.geraldvlasof.workers.dev'];
-self.addEventListener('install', function(e) { self.skipWaiting(); });
+// El SW nuevo NO toma el control solo: queda en espera hasta que la app,
+// tras avisar "Hay una version nueva", le manda SKIP_WAITING al pulsar
+// Actualizar. Asi una recarga nunca interrumpe a nadie a mitad de un chat.
+self.addEventListener('install', function(e) { /* esperar */ });
+self.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {

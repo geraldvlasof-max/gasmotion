@@ -2677,6 +2677,189 @@ function migrarPasswordAHash(uid, passPlano) {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════
+// RUTAS POR HASH (#/...) — una direccion por vista
+// ═══════════════════════════════════════════════════════════════
+// Gasmotion es una sola pagina: sin esto, al recargar se volvia a la
+// pantalla central y el boton "atras" sacaba de la aplicacion entera.
+//   #/<modulo>                         (panel, saleshub, fise, inventario, ...)
+//   #/saleshub/<vista>                 (bandeja | cola | pipeline | calendario | flujos | dashboard)
+//   #/saleshub/bandeja/<leadId>        (conversacion abierta)
+// Al cargar se lee el hash y se abre esa vista; sin hash, la pantalla
+// central de siempre. Navegar dentro de la app actualiza el hash, asi que
+// atras/adelante del navegador (y el gesto de volver en Android) recorren
+// las vistas en vez de salir. Una ruta directa sin permiso (el nav de ese
+// modulo esta oculto para el rol) manda a la pantalla inicial del rol.
+var GM_RUTA_TABS = {
+  panel: 'panel', bandeja: 'bandeja', glp: 'glp', expedientes: 'expedientes', clientes: 'clientes',
+  tecnico: 'tecnico', fise: 'fise', misventas: 'mis-ventas', usuarios: 'usuarios', config: 'config',
+  radar: 'radar', agendaGral: 'agenda', tareasEquipo: 'tareas', agendaServicios: 'servicios',
+  salesHub: 'saleshub', inventario: 'inventario', facturacion: 'facturacion', videoteca: 'videoteca',
+  asistencia: 'asistencia', creditos: 'creditos'
+};
+var GM_RUTA_SLUGS = {};
+(function () { for (var k in GM_RUTA_TABS) GM_RUTA_SLUGS[GM_RUTA_TABS[k]] = k; })();
+var SH_VISTAS_RUTA = { bandeja: 1, cola: 1, pipeline: 1, calendario: 1, flujos: 1, dashboard: 1 };
+var gmTabActual = 'panel';
+var gmRutasListas = false;    // hasta que la app arranca no se escribe el hash
+var gmRutaUltima = '';        // ultimo hash escrito por la app (para ignorar su propio hashchange)
+var gmRutaAplicando = false;  // true mientras se aplica una ruta: los ganchos no reescriben el hash
+var shAbrirPendiente = '';    // leadId a abrir cuando terminen de cargar los leads
+var shLeadsCargados = false;  // true tras la primera carga de leads de la sesion
+var shScrollPorLead = {};     // leadId -> scrollTop de la conversacion (se restaura al volver)
+var shScrollRestaurar;        // scrollTop a aplicar en el siguiente render con scrollAlFinal
+
+function gmRutaDeEstado() {
+  var h = '#/' + (GM_RUTA_TABS[gmTabActual] || 'panel');
+  if (gmTabActual === 'salesHub') {
+    h += '/' + (shVista || 'bandeja');
+    if (shVista === 'bandeja' && shLeadActivo) h += '/' + encodeURIComponent(shLeadActivo.id);
+  }
+  return h;
+}
+
+// Escribe el hash que corresponde al estado actual. Con reemplazar=true no
+// crea entrada en el historial (arranque, correcciones de ruta).
+function gmRutaEscribir(reemplazar) {
+  if (!gmRutasListas || gmRutaAplicando) return;
+  var h = gmRutaDeEstado();
+  gmRutaUltima = h;
+  if (h === location.hash) return;
+  try {
+    if (reemplazar) history.replaceState(null, '', h);
+    else location.hash = h;
+  } catch (e) {}
+}
+
+// '#/saleshub/bandeja/ID' -> {tab, sub, id} | null si no es una ruta valida
+function gmRutaParsear(hash) {
+  var h = String(hash || '');
+  if (h.indexOf('#/') === 0) h = h.slice(2); else if (h.indexOf('#') === 0) h = h.slice(1);
+  var partes = h.split('/').filter(function (p) { return !!p; });
+  if (!partes.length) return null;
+  var tab = GM_RUTA_SLUGS[partes[0].toLowerCase()];
+  if (!tab) return null;
+  var r = { tab: tab, sub: '', id: '' };
+  if (tab === 'salesHub') {
+    r.sub = (partes[1] || 'bandeja').toLowerCase();
+    if (!SH_VISTAS_RUTA[r.sub]) r.sub = 'bandeja';
+    if (r.sub === 'bandeja' && partes[2]) { try { r.id = decodeURIComponent(partes[2]); } catch (e) { r.id = ''; } }
+  }
+  return r;
+}
+
+function gmNavDe(tab) {
+  var navs = document.querySelectorAll('.nav-item');
+  for (var i = 0; i < navs.length; i++) {
+    var oc = navs[i].getAttribute('onclick') || '';
+    if (oc.indexOf("switchTab('" + tab + "'") === 0) return navs[i];
+  }
+  return null;
+}
+
+// Permiso = el boton del menu existe y no esta oculto para este rol. Es la
+// misma regla que ya decide que ve cada usuario; una URL no la salta.
+function gmTabPermitido(tab) {
+  if (!CU || !GM_RUTA_TABS[tab]) return false;
+  var btn = gmNavDe(tab);
+  if (!btn) return false;
+  return btn.style.display !== 'none';
+}
+
+function gmTabInicial() {
+  return (typeof isTecnico === 'function' && isTecnico()) ? 'tecnico' : 'panel';
+}
+
+// Aplica una ruta al estado de la app (cambia de pestaña, vista y chat).
+function gmRutaAplicar(hash, reemplazar) {
+  if (!CU) return false;
+  var r = gmRutaParsear(hash);
+  var corregida = false;
+  if (!r || !gmTabPermitido(r.tab)) {
+    if (r && r.tab) shToastSeguro('No tienes acceso a esa sección');
+    r = { tab: gmTabInicial(), sub: '', id: '' };
+    corregida = true;
+  }
+  if (r.tab === 'salesHub' && (r.sub === 'flujos' || r.sub === 'dashboard') && !shEsJefe()) { r.sub = 'bandeja'; corregida = true; }
+  gmRutaAplicando = true;
+  try {
+    var tc = document.getElementById('tab-' + r.tab);
+    if (gmTabActual !== r.tab || !tc || !tc.classList.contains('active')) switchTab(r.tab, gmNavDe(r.tab));
+    if (r.tab === 'salesHub' && document.getElementById('shVistaCont')) {
+      if (shVista !== r.sub) shCambiarVista(r.sub);
+      if (r.sub === 'bandeja') {
+        if (r.id) {
+          if (shLeadActivo && shLeadActivo.id !== r.id) shVolverLista(); // otra conversacion: cerrar la actual
+          if (!shLeadActivo) shAbrirLeadPorId(r.id);
+        } else if (shLeadActivo) shVolverLista();
+      }
+    }
+  } finally { gmRutaAplicando = false; }
+  gmRutaEscribir(reemplazar || corregida);
+  return true;
+}
+
+function shToastSeguro(txt) {
+  if (typeof showToast === 'function') showToast(txt);
+}
+
+// Abre un lead por id; si los leads aun no cargaron, queda pendiente y
+// shCargarLeads lo abre al terminar (enlace directo en una sesion nueva).
+function shAbrirLeadPorId(id) {
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    if (shLeadsCache[i].id === id) { shAbrirChat(id); return; }
+  }
+  shAbrirPendiente = id;
+  if (shLeadsCargados) shAbrirPendienteSiCargo(); // ya cargaron: no existe para este usuario
+}
+
+function shAbrirPendienteSiCargo() {
+  if (!shAbrirPendiente) return;
+  var id = shAbrirPendiente;
+  shAbrirPendiente = '';
+  for (var i = 0; i < shLeadsCache.length; i++) {
+    if (shLeadsCache[i].id === id) { shAbrirChat(id); return; }
+  }
+  // No esta en la bandeja de este usuario (otra vendedora, o no existe)
+  shToastSeguro('Esa conversación no está disponible para tu usuario');
+  gmRutaEscribir(true);
+}
+
+// Arranque (tras login o al restaurar la sesion): abre la ruta del hash o
+// deja la pantalla inicial del rol, sin crear entradas en el historial.
+function gmRutasIniciar() {
+  var activa = document.querySelector('.tab-content.active');
+  if (activa && activa.id.indexOf('tab-') === 0) gmTabActual = activa.id.slice(4);
+  gmRutasListas = true;
+  var h = location.hash;
+  if (gmRutaParsear(h)) gmRutaAplicar(h, true);
+  else gmRutaEscribir(true);
+}
+
+window.addEventListener('hashchange', function () {
+  if (!gmRutasListas || !CU) return;
+  if (location.hash === gmRutaUltima) return; // lo escribio la app
+  gmRutaAplicar(location.hash, true);
+});
+
+// Sales Hub en una ventana aparte, con su ruta actual. El nombre fijo hace
+// que un segundo clic reutilice la misma ventana en vez de abrir otra.
+function shAbrirVentanaPropia() {
+  var base = location.href.split('#')[0];
+  var ruta = gmTabActual === 'salesHub' ? gmRutaDeEstado() : '#/saleshub/bandeja';
+  var w = window.open(base + ruta, 'gasmotion_saleshub');
+  if (w && w.focus) w.focus();
+}
+
+// Guarda la posicion de lectura de la conversacion abierta. Si esta abajo
+// (leyendo lo ultimo) no se guarda: al volver ira al final, como siempre.
+function shScrollRecordar(el) {
+  if (!shLeadActivo || !el) return;
+  var abajo = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+  if (abajo) delete shScrollPorLead[shLeadActivo.id];
+  else shScrollPorLead[shLeadActivo.id] = el.scrollTop;
+}
+
 function doLogin() {
   if(_loginBlocked){
     setLoginError('Cuenta bloqueada temporalmente. Espera 2 minutos.');
@@ -2986,7 +3169,19 @@ function editarNombreAdmin() {
     });
   }
   var s=sessionStorage.getItem('gm_session');
-  if(s){try{CU=JSON.parse(s);mostrarApp();setupInactivity();setTimeout(gmAutoMigrate,1500);}catch(e){}}
+  // La sesion se restaura DESPUES de que todo el script cargo: este IIFE
+  // corre a mitad del archivo y mostrarApp() usa cosas definidas mas abajo
+  // (TAB_TITLES, rutas...). Antes fallaba en silencio y saltaba el resto del
+  // arranque (polling, rutas) en cada recarga.
+  if(s){
+    try{CU=JSON.parse(s);}catch(e0){CU=null;}
+    if(CU){
+      setTimeout(function(){
+        try{mostrarApp();setupInactivity();setTimeout(gmAutoMigrate,1500);}
+        catch(e){console.error('RESTORE sesion: fallo al restaurar la app', e && e.stack ? e.stack : e);}
+      },0);
+    }
+  }
 })();
 
 // ==================
@@ -3050,6 +3245,8 @@ function switchTab(name, el) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebarOverlay').classList.remove('show');
   }
+  gmTabActual = name;
+  gmRutaEscribir(false);
   if(window.innerWidth<=768) toggleSidebar();
 }
 
@@ -9692,6 +9889,7 @@ function renderSalesHub() {
   shCargarLeads();
   if (shTimer) clearInterval(shTimer);
   shTimer = setInterval(function () {
+    if (document.hidden) return; // pestaña/ventana no visible: no sondear
     var tab = document.getElementById('tab-salesHub');
     if (!tab || !tab.classList.contains('active')) return;
     if (shDragId) return; // no refrescar en medio de un arrastre
@@ -9707,6 +9905,7 @@ function shCambiarVista(v) {
   shLeadActivo = null;
   shRenderVista();
   shRefrescarVistaActual();
+  gmRutaEscribir(false);
 }
 
 function shRenderVista() {
@@ -9726,6 +9925,7 @@ function shRenderVista() {
             '<div class="sh-hicons">' +
               '<button class="sh-hicon" title="Buscar" onclick="shFocoBusqueda()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>' +
               '<button class="sh-hicon" title="Filtrar" onclick="shMenuFiltros(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.5 10 19 14 21 14 12.5 22 3"/></svg></button>' +
+              '<button class="sh-hicon" title="Abrir en ventana propia" onclick="shAbrirVentanaPropia()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>' +
               '<button class="sh-hicon" title="Menú" onclick="shMenuLista(event)"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>' +
             '</div>' +
           '</div>' +
@@ -9774,9 +9974,11 @@ function shCargarLeads() {
   agendaWorkerFetch('shLeadsListar', q).then(function (d) {
     if (!d || !d.ok) return;
     shLeadsCache = d.leads || [];
+    shLeadsCargados = true;
     shChequearNuevosMensajes(shLeadsCache);
     shRefrescarVistaActual();
     shActualizarNavBadge(shLeadsCache);
+    shAbrirPendienteSiCargo();
   }).catch(function () {});
 }
 
@@ -9962,6 +10164,7 @@ function shAbrirChat(leadId) {
   }
   if (!lead) return;
   shLeadActivo = lead;
+  shScrollRestaurar = shScrollPorLead[lead.id]; // posicion de lectura guardada (o undefined)
   shMsgsFirmaIds = '';
   shNuevosAbajo = 0;
   shBusqChatTxt = '';
@@ -9976,6 +10179,7 @@ function shAbrirChat(leadId) {
   shRenderChatPane();
   shCargarMensajes(true);
   shRenderLista();
+  gmRutaEscribir(false);
   if ((parseInt(lead.no_leidos, 10) || 0) > 0) {
     lead.no_leidos = 0;
     // El badge del item se desvanece antes de re-renderizar la lista
@@ -9990,9 +10194,12 @@ function shAbrirChat(leadId) {
 }
 
 function shVolverLista() {
+  var msgsEl = document.getElementById('shMsgs');
+  if (msgsEl) shScrollRecordar(msgsEl);
   shLeadActivo = null;
   var app = document.getElementById('shApp');
   if (app) app.classList.remove('sh-chat-open');
+  gmRutaEscribir(false);
   setTimeout(function () {
     if (shLeadActivo) return;
     var pane = document.getElementById('shPaneChat');
@@ -11080,7 +11287,13 @@ function shRenderMensajes(mensajes, scrollAlFinal, forzar) {
   el.innerHTML = html;
   shMsgsFirmaIds = ids;
   shApSincronizar();
-  if (scrollAlFinal || estabaAbajo) {
+  if (scrollAlFinal && typeof shScrollRestaurar === 'number') {
+    // Se vuelve a una conversacion ya leida a medias: misma posicion
+    el.style.scrollBehavior = 'auto';
+    el.scrollTop = Math.min(shScrollRestaurar, el.scrollHeight);
+    el.style.scrollBehavior = '';
+    shScrollRestaurar = undefined;
+  } else if (scrollAlFinal || estabaAbajo) {
     // Scroll instantaneo: el smooth del CSS haria que renders consecutivos
     // (polling cada 12s) lean posiciones a mitad de animacion
     el.style.scrollBehavior = 'auto';
@@ -11116,6 +11329,7 @@ function shIrAlFinal() {
 }
 
 function shMsgsScroll(el) {
+  shScrollRecordar(el);
   if (shNuevosAbajo > 0 && (el.scrollHeight - el.scrollTop - el.clientHeight) < 60) {
     shNuevosAbajo = 0;
     shPintarBtnAbajo();
@@ -12047,6 +12261,7 @@ function shActualizarNavBadge(leads) {
 function shIniciarBadgeGlobal() {
   if (shBadgeTimer || !agendaWorkerListo()) return;
   var tick = function () {
+    if (document.hidden) return; // no sondear desde ventanas ocultas
     var q = {};
     if (!shPuedeVerTodo()) q.vendedoraUid = CU.id;
     agendaWorkerFetch('shLeadsListar', q).then(function (d) {
@@ -20350,6 +20565,8 @@ function mostrarApp(){
   poblarUserSelects();poblarSelectVendedores();poblarSelectVendServicio();
   // Mostrar botón de guardar en topbar
   setTimeout(mostrarBtnSync, 500);
+  // Rutas #/...: abre la vista del hash (enlace directo / recarga) o fija la inicial
+  gmRutasIniciar();
 }
 
 // ── crearUsuario con especialidad ────────────────────────
@@ -20403,24 +20620,72 @@ function toggleEspecialidadField(){
 }
 
 // ── PWA ──────────────────────────────────────────────────
+// Version nueva: el SW nuevo queda EN ESPERA (ya no hace skipWaiting solo) y
+// se muestra un aviso discreto. Nada se recarga hasta que la persona pulsa
+// "Actualizar": entonces el SW en espera toma el control y se recarga una
+// vez. Asi nadie pierde una conversacion a mitad, pero tampoco se queda
+// dias en una version vieja sin saberlo.
+var gmSwReg = null;
+var gmSwActualizarPedido = false;
+
+function gmSwAvisoNuevaVersion(reg) {
+  gmSwReg = reg || gmSwReg;
+  if (document.getElementById('gmActualizarBanner')) return;
+  var b = document.createElement('div');
+  b.id = 'gmActualizarBanner';
+  b.setAttribute('role', 'status');
+  b.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:10000;background:#131313;color:#fff;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 28px rgba(0,0,0,.35);font-size:13.5px;max-width:calc(100vw - 32px)';
+  b.innerHTML = '<span>🆕 Hay una versión nueva de Gasmotion</span>' +
+    '<button id="gmActualizarBtn" style="background:#00c853;color:#0b141a;border:none;border-radius:8px;padding:7px 12px;font-weight:800;cursor:pointer;font-size:13px">Actualizar</button>' +
+    '<button id="gmActualizarLuego" title="Más tarde" style="background:none;border:none;color:#aaa;font-size:16px;cursor:pointer;padding:4px 6px">✕</button>';
+  document.body.appendChild(b);
+  document.getElementById('gmActualizarBtn').onclick = gmSwActualizarAhora;
+  document.getElementById('gmActualizarLuego').onclick = function () { b.remove(); };
+}
+
+function gmSwActualizarAhora() {
+  gmSwActualizarPedido = true;
+  var btn = document.getElementById('gmActualizarBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Actualizando…'; }
+  if (gmSwReg && gmSwReg.waiting) {
+    gmSwReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
+}
+
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js')
   .then(function(reg){
     console.log('SW registrado');
-    reg.update();
-    // Cuando hay nueva versión instalada → recargar automáticamente
-    reg.onupdatefound = function() {
-      var newWorker = reg.installing;
-      newWorker.onstatechange = function() {
-        if(newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          console.log('Nueva versión disponible — actualizando...');
-          window.location.reload();
+    gmSwReg = reg;
+    // Ya habia uno esperando (p. ej. se instalo en otra pestaña)
+    if (reg.waiting && navigator.serviceWorker.controller) gmSwAvisoNuevaVersion(reg);
+    reg.addEventListener('updatefound', function () {
+      var nuevo = reg.installing;
+      if (!nuevo) return;
+      nuevo.addEventListener('statechange', function () {
+        if (nuevo.state === 'installed' && navigator.serviceWorker.controller) {
+          console.log('Nueva versión instalada, en espera');
+          gmSwAvisoNuevaVersion(reg);
         }
-      };
-    };
+      });
+    });
+    // Buscar actualizaciones al volver a la pestaña y cada 30 minutos: una
+    // pestaña abierta durante dias tambien se entera
+    reg.update();
+    setInterval(function () { reg.update().catch(function () {}); }, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) reg.update().catch(function () {}); });
   })
   .catch(function(e){console.log('SW error',e);});
-  
+
+  // El SW nuevo tomo el control (tras pulsar Actualizar): recargar una sola vez
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!gmSwActualizarPedido) return;
+    gmSwActualizarPedido = false;
+    window.location.reload();
+  });
+
   // Escuchar mensajes del SW para forzar recarga
   navigator.serviceWorker.addEventListener('message', function(e) {
     if(e.data && e.data.type === 'FORCE_RELOAD') {
