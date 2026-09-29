@@ -2300,8 +2300,11 @@ function nowHora() { return new Date().toLocaleTimeString('es-PE',{hour:'2-digit
 // ==================
 // STORAGE
 // ==================
+// Respaldo local del admin SIN contrasena: solo sirve para que el uid exista
+// en la cache; la contrasena se valida siempre contra el servidor. Antes iba
+// en texto plano en este archivo publico (retirada el 29-sep-2026).
 var DEFAULT_USERS = {
-  iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'carrigas2025', especialidad:'', correo:'geraldvlasof@gmail.com', mustChangePass: false }
+  iki: { nombre:'Iki', role:'admin', sede:'Todas', pass:'', especialidad:'', correo:'geraldvlasof@gmail.com', mustChangePass: false }
 };
 var SERVER_USERS_CACHE = null;
 // ═══════════════════════════════════════════════════════════
@@ -2873,9 +2876,11 @@ function doLogin() {
   setLoginError('');
   setLoginBtn('Buscando usuario...', true);
 
-  // Paso 1: buscar en caché local
+  // Paso 1: buscar en caché local. Un usuario sin contrasena guardada (el
+  // respaldo DEFAULT_USERS) no puede validarse aqui: se consulta al servidor.
   var localUsers = getUsers();
   var found = buscarUsuario(rawUid, localUsers);
+  if(found && !found.user.pass) found = null;
 
   if(found) {
     verificarPassword(pass, found.user.pass, function(okPass, eraPlano){
