@@ -41,7 +41,9 @@ mediante fórmulas — no se tocan salvo las celdas literales listadas al final.
 | B46 | Serie VIN | TIV | `JN1TANT31AW000916` |
 | B47 | Partida registral | TIV | `51077751` |
 
-**No tocar en DATOS**: B2:B5 (taller), B36 (responsable de conversión), C25/D25/E25
+**B36** (responsable de conversión, copiado en CHECK!B40): el "Técnico certificado" de la sede, configurado en Gasmotion; la plantilla lo trae vacío.
+
+**No tocar en DATOS**: B2:B5 (taller), C25/D25/E25
 (fórmulas día/mes/año de B25), D21/D22, B38-B44 (tanque/reductor, se llenan a mano
 en taller).
 
