@@ -72,8 +72,10 @@ solas mediante fórmulas que apuntan a `DATOS`.
 - **Persona jurídica**: si el solicitante es una empresa (tiene RUC), llenar también
   `B9` (RUC), `B13` (representante legal) y `B14` (DNI del rep. legal); si es persona
   natural, dejarlos vacíos.
-- **Datos del taller** (`B2:B5`) y **responsable de conversión** (`B36`): NO tocarlos,
-  ya vienen en la plantilla.
+- **Datos del taller** (`B2:B5`): NO tocarlos, ya vienen en la plantilla.
+- **Responsable de conversión** (`B36`, copiado en `CHECK!B40`): la plantilla lo trae VACÍO.
+  Es el "Técnico certificado" de la sede, que se configura en Gasmotion (lo edita solo Iki).
+  Escribir ese nombre en `B36`; si no se conoce, dejarlo vacío y avisar. Nunca poner un nombre fijo.
 - **NO tocar** `COND. DE DEVOLUCION PN!G46` ni `COND. DE DEVOLUCION PJ!G46` (fórmulas
   en la plantilla v2), ni ninguna otra celda con fórmula salvo las que el script
   sobreescribe expresamente.
