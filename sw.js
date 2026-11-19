@@ -1,49 +1,17 @@
-// Gasmotion Service Worker v5.55
-const CACHE_NAME = 'gasmotion-v555';
-// Los DOS workers (sync y agenda/sales hub) van SIEMPRE a la red, sin caché:
-// cachear respuestas de API muestra datos viejos y llena el almacenamiento.
-const WORKER_DOMAINS = ['gasmotion-sync.geraldvlasof.workers.dev', 'gasmotion-worker.geraldvlasof.workers.dev'];
-// El SW nuevo NO toma el control solo: queda en espera hasta que la app,
-// tras avisar "Hay una version nueva", le manda SKIP_WAITING al pulsar
-// Actualizar. Asi una recarga nunca interrumpe a nadie a mitad de un chat.
-self.addEventListener('install', function(e) { /* esperar */ });
-self.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
-});
-self.addEventListener('activate', function(e) {
+// Gasmotion Service Worker v5.95 (retiro): el panel se mudó al worker.
+// Se instala al instante, borra la caché del panel viejo, se da de baja y
+// recarga las pestañas abiertas para que lleguen a la página de redirección.
+const CACHE_NAME = 'gasmotion-v595-retiro';
+self.addEventListener('install', function () { self.skipWaiting(); });
+self.addEventListener('activate', function (e) {
   e.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(keys.filter(function(k){return k!==CACHE_NAME;}).map(function(k){return caches.delete(k);}));
-    }).then(function(){ return self.clients.claim(); })
+    caches.keys()
+      .then(function (keys) { return Promise.all(keys.map(function (k) { return caches.delete(k); })); })
+      .then(function () { return self.registration.unregister(); })
+      .then(function () { return self.clients.matchAll({ type: 'window' }); })
+      .then(function (clientes) { clientes.forEach(function (c) { try { c.navigate(c.url); } catch (e) {} }); })
   );
 });
-self.addEventListener('fetch', function(e) {
-  var url = e.request.url;
-  var esWorker = false;
-  for(var i=0;i<WORKER_DOMAINS.length;i++){ if(url.indexOf(WORKER_DOMAINS[i]) !== -1) esWorker = true; }
-  if(esWorker) { e.respondWith(fetch(e.request, {cache:'no-store'})); return; }
-  if(e.request.method === 'GET') {
-    // Red primero (siempre fresco) pero con tope de 4s: si la conexion esta
-    // lenta, se sirve la copia en cache al instante y la red actualiza detras.
-    e.respondWith(
-      new Promise(function(resolver){
-        var resuelto = false;
-        var temporizador = setTimeout(function(){
-          caches.match(e.request).then(function(cacheada){
-            if(cacheada && !resuelto){ resuelto = true; resolver(cacheada); }
-          });
-        }, 4000);
-        fetch(e.request, {cache:'no-cache'})
-        .then(function(res){
-          if(res && res.status===200){ var c=res.clone(); caches.open(CACHE_NAME).then(function(ch){ch.put(e.request,c);}); }
-          clearTimeout(temporizador);
-          if(!resuelto){ resuelto = true; resolver(res); }
-        })
-        .catch(function(){
-          clearTimeout(temporizador);
-          if(!resuelto){ caches.match(e.request).then(function(cacheada){ resuelto = true; resolver(cacheada || Response.error()); }); }
-        });
-      })
-    );
-  }
+self.addEventListener('message', function (e) {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

@@ -76,6 +76,9 @@ solas mediante fórmulas que apuntan a `DATOS`.
 - **Responsable de conversión** (`B36`, copiado en `CHECK!B40`): la plantilla lo trae VACÍO.
   Es el "Técnico certificado" de la sede, que se configura en Gasmotion (lo edita solo Iki).
   Escribir ese nombre en `B36`; si no se conoce, dejarlo vacío y avisar. Nunca poner un nombre fijo.
+- **DNI del responsable** (`B48`, copiado en `CHECK!C42` con el rótulo "N° DNI:" bajo
+  "RESPONSABLE DE LA REVISION"): la plantilla lo trae VACÍO. Es el DNI de esa misma ficha (8 dígitos).
+  Si no se conoce, dejarlo vacío y avisar. Nunca inventarlo. El N.º de certificado del técnico no tiene celda.
 - **NO tocar** `COND. DE DEVOLUCION PN!G46` ni `COND. DE DEVOLUCION PJ!G46` (fórmulas
   en la plantilla v2), ni ninguna otra celda con fórmula salvo las que el script
   sobreescribe expresamente.
