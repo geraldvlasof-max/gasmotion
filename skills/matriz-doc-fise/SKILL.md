@@ -73,7 +73,7 @@ solas mediante fórmulas que apuntan a `DATOS`.
   `B9` (RUC), `B13` (representante legal) y `B14` (DNI del rep. legal); si es persona
   natural, dejarlos vacíos.
 - **Datos del taller** (`B2:B5`): NO tocarlos, ya vienen en la plantilla.
-- **Responsable de conversión** (`B36`, copiado en `CHECK!B40`): la plantilla lo trae VACÍO.
+- **Responsable de conversión** (`B36`, copiado en `PROF.!D34` —"Nombre del responsable de la revisión"— y en `CHECK!B40`): la plantilla lo trae VACÍO.
   Es el "Técnico certificado" de la sede, que se configura en Gasmotion (lo edita solo Iki).
   Escribir ese nombre en `B36`; si no se conoce, dejarlo vacío y avisar. Nunca poner un nombre fijo.
 - **DNI del responsable** (`B48`, copiado en `CHECK!C42` con el rótulo "N° DNI:" bajo

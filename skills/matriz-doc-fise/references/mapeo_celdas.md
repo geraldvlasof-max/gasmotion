@@ -42,7 +42,7 @@ mediante fórmulas — no se tocan salvo las celdas literales listadas al final.
 | B47 | Partida registral | TIV | `51077751` |
 | B48 | DNI del responsable de conversión (copiado en CHECK!C42) | Gasmotion (ficha del técnico certificado) | 8 dígitos |
 
-**B36** (responsable de conversión, copiado en CHECK!B40): el "Técnico certificado" de la sede, configurado en Gasmotion; la plantilla lo trae vacío.
+**B36** (responsable de conversión, copiado en PROF.!D34 —"Nombre del responsable de la revisión", PREINSPECCIÓN— y en CHECK!B40): el "Técnico certificado" de la sede, configurado en Gasmotion; la plantilla lo trae vacío.
 
 **B48** (DNI del responsable, copiado en CHECK!C42 con el rótulo "N° DNI:" en CHECK!B42): de la misma ficha; vacío si no se conoce, nunca inventado.
 
@@ -60,6 +60,7 @@ vaciarlos.
 | PROF. | J6 | fecha ingreso `DD/MM/YYYY` |
 | PROF. | F17 | fórmula `=DATOS!B29` (corrige el `2+2` fijo de la plantilla) |
 | PROF. | G22 | fecha ingreso `DD/MM/YYYY` |
+| PROF. | D34 | fórmula `=DATOS!B36` (combinada D34:G35, "Nombre del responsable de la revisión"); no escribir en H33:I35 "V° B° o firma" |
 | DECLARACIÒN. | C6 | `<NOMBRE>, ` |
 | DECLARACIÒN. | K6 | `<DNI 8 dígitos>,` |
 | DECLARACIÒN. | H7 | placa |
